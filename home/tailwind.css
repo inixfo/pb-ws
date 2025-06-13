@@ -1,0 +1,198 @@
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .all-\[unset\] {
+    all: unset;
+  }
+}
+
+:root {
+  --body-extra-small-font-family: "Inter", Helvetica;
+  --body-extra-small-font-size: 12px;
+  --body-extra-small-font-style: normal;
+  --body-extra-small-font-weight: 400;
+  --body-extra-small-letter-spacing: 0px;
+  --body-extra-small-line-height: 18px;
+  --body-extrasmall-font-family: "Inter", Helvetica;
+  --body-extrasmall-font-size: 12px;
+  --body-extrasmall-font-style: normal;
+  --body-extrasmall-font-weight: 400;
+  --body-extrasmall-letter-spacing: 0px;
+  --body-extrasmall-line-height: 150%;
+  --body-regular-font-family: "Inter", Helvetica;
+  --body-regular-font-size: 16px;
+  --body-regular-font-style: normal;
+  --body-regular-font-weight: 400;
+  --body-regular-letter-spacing: 0px;
+  --body-regular-line-height: 24px;
+  --body-small-font-family: "Inter", Helvetica;
+  --body-small-font-size: 14px;
+  --body-small-font-style: normal;
+  --body-small-font-weight: 400;
+  --body-small-letter-spacing: 0px;
+  --body-small-line-height: 150%;
+  --dangermain: rgba(240, 61, 61, 1);
+  --display-desktop-d2-font-family: "Inter", Helvetica;
+  --display-desktop-d2-font-size: 72px;
+  --display-desktop-d2-font-style: normal;
+  --display-desktop-d2-font-weight: 700;
+  --display-desktop-d2-letter-spacing: 0px;
+  --display-desktop-d2-line-height: 86px;
+  --display-desktop-d4-font-family: "Inter", Helvetica;
+  --display-desktop-d4-font-size: 56px;
+  --display-desktop-d4-font-style: normal;
+  --display-desktop-d4-font-weight: 700;
+  --display-desktop-d4-letter-spacing: 0px;
+  --display-desktop-d4-line-height: 68px;
+  --gray-100: rgba(238, 241, 246, 1);
+  --gray-200: rgba(224, 229, 235, 1);
+  --gray-300: rgba(202, 208, 217, 1);
+  --gray-400: rgba(156, 163, 175, 1);
+  --gray-50: rgba(245, 247, 250, 1);
+  --gray-500: rgba(108, 114, 127, 1);
+  --gray-600: rgba(78, 85, 98, 1);
+  --gray-700: rgba(51, 61, 76, 1);
+  --gray-800: rgba(34, 41, 52, 1);
+  --gray-900: rgba(24, 29, 37, 1);
+  --heading-desktop-h3-font-family: "Inter", Helvetica;
+  --heading-desktop-h3-font-size: 28px;
+  --heading-desktop-h3-font-style: normal;
+  --heading-desktop-h3-font-weight: 600;
+  --heading-desktop-h3-letter-spacing: 0px;
+  --heading-desktop-h3-line-height: 36px;
+  --heading-desktop-h4-font-family: "Inter", Helvetica;
+  --heading-desktop-h4-font-size: 24px;
+  --heading-desktop-h4-font-style: normal;
+  --heading-desktop-h4-font-weight: 600;
+  --heading-desktop-h4-letter-spacing: 0px;
+  --heading-desktop-h4-line-height: 32px;
+  --heading-desktop-h5-font-family: "Inter", Helvetica;
+  --heading-desktop-h5-font-size: 20px;
+  --heading-desktop-h5-font-style: normal;
+  --heading-desktop-h5-font-weight: 600;
+  --heading-desktop-h5-letter-spacing: 0px;
+  --heading-desktop-h5-line-height: 28px;
+  --heading-desktop-h6-font-family: "Inter", Helvetica;
+  --heading-desktop-h6-font-size: 16px;
+  --heading-desktop-h6-font-style: normal;
+  --heading-desktop-h6-font-weight: 600;
+  --heading-desktop-h6-letter-spacing: 0px;
+  --heading-desktop-h6-line-height: 24px;
+  --heading-h6-font-family: "Inter", Helvetica;
+  --heading-h6-font-size: 16px;
+  --heading-h6-font-style: normal;
+  --heading-h6-font-weight: 600;
+  --heading-h6-letter-spacing: 0px;
+  --heading-h6-line-height: 150%;
+  --infomain: rgba(47, 110, 213, 1);
+  --navigation-nav-link-extra-small-font-family: "Inter", Helvetica;
+  --navigation-nav-link-extra-small-font-size: 12px;
+  --navigation-nav-link-extra-small-font-style: normal;
+  --navigation-nav-link-extra-small-font-weight: 500;
+  --navigation-nav-link-extra-small-letter-spacing: 0px;
+  --navigation-nav-link-extra-small-line-height: 16px;
+  --navigation-nav-link-regular-font-family: "Inter", Helvetica;
+  --navigation-nav-link-regular-font-size: 16px;
+  --navigation-nav-link-regular-font-style: normal;
+  --navigation-nav-link-regular-font-weight: 500;
+  --navigation-nav-link-regular-letter-spacing: 0px;
+  --navigation-nav-link-regular-line-height: 24px;
+  --navigation-nav-link-small-font-family: "Inter", Helvetica;
+  --navigation-nav-link-small-font-size: 14px;
+  --navigation-nav-link-small-font-style: normal;
+  --navigation-nav-link-small-font-weight: 500;
+  --navigation-nav-link-small-letter-spacing: 0px;
+  --navigation-nav-link-small-line-height: 20px;
+  --primaryaction: rgba(242, 34, 59, 1);
+  --primarymain: rgba(245, 82, 102, 1);
+  --shadow-light-mode-medium: 0px 8px 32px -4px rgba(103, 111, 123, 0.1);
+  --successmain: rgba(51, 179, 107, 1);
+  --warningmain: rgba(252, 146, 49, 1);
+  --white-100: rgba(255, 255, 255, 1);
+  --white-25: rgba(255, 255, 255, 0.25);
+  --white-80: rgba(255, 255, 255, 0.8);
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+
+    --card: transparent;
+    --card-foreground: 222.2 47.4% 11.2%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 210 40% 98%;
+
+    --ring: 215 20.2% 65.1%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 56.9%;
+
+    --accent: 216 34% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 215 20.2% 65.1%;
+
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+
+    --card: transparent;
+    --card-foreground: 213 31% 91%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 1.2%;
+
+    --secondary: 222.2 47.4% 11.2%;
+    --secondary-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --ring: 216 34% 17%;
+
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}

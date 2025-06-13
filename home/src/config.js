@@ -1,0 +1,59 @@
+// Configuration variables for the application
+
+// API base URL - use absolute URL for more reliable connection
+export const API_URL = 'http://localhost:8000/api';  // Absolute URL for development
+// export const API_URL = '/api';  // Relative URL (works with proxy in development)
+
+// Application name
+export const APP_NAME = 'Phone Bay';
+
+// Images URL base path
+export const IMAGES_URL = '/images';
+
+// Default currency symbol
+export const CURRENCY_SYMBOL = '৳';
+
+// Default language
+export const DEFAULT_LANGUAGE = 'en';
+
+// Default theme
+export const DEFAULT_THEME = 'light';
+
+// Maximum number of cart items to display in the header cart dropdown
+export const MAX_CART_DROPDOWN_ITEMS = 3;
+
+// Product image placeholder
+export const PRODUCT_IMAGE_PLACEHOLDER = '/placeholder-product.png';
+
+// Category image placeholder
+export const CATEGORY_IMAGE_PLACEHOLDER = '/placeholder-category.png';
+
+// User avatar placeholder
+export const USER_AVATAR_PLACEHOLDER = '/avatar-placeholder.png';
+
+// Banner placeholder
+export const BANNER_PLACEHOLDER = '/placeholder-banner.png';
+
+// Number of products to show per page in catalog
+export const PRODUCTS_PER_PAGE = 12;
+
+// Default pagination settings
+export const DEFAULT_PAGE_SIZE = 10;
+
+// Product image fallback
+export const DEFAULT_PRODUCT_IMAGE = '/placeholder.png';
+
+// Local storage keys
+export const STORAGE_KEYS = {
+  TOKEN: 'token',
+  USER: 'user',
+  CART: 'cart',
+  CART_EXTRAS: 'cart_extras',
+  PROMO_CODE: 'promo_code',
+};
+
+// Cart configuration
+export const CART_CONFIG = {
+  MAX_QUANTITY: 99,
+  MIN_QUANTITY: 1,
+};

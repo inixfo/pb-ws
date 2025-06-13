@@ -1,0 +1,1 @@
+export { CtaFooterByAnima } from "./CtaFooterByAnima";

@@ -1,0 +1,12 @@
+/* Special Offers Swiper styles */
+.special-offers-swiper {
+  position: relative;
+  padding: 0 10px;
+}
+
+/* Add a little extra padding on mobile */
+@media (max-width: 640px) {
+  .special-offers-swiper {
+    padding: 0 5px;
+  }
+} 

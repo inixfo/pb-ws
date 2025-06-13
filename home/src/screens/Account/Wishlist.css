@@ -1,0 +1,135 @@
+.wishlist-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.wishlist-container h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  color: #1a1a1a;
+}
+
+.wishlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.wishlist-item {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.wishlist-item:hover {
+  transform: translateY(-4px);
+}
+
+.product-image {
+  position: relative;
+  padding-top: 100%;
+  cursor: pointer;
+}
+
+.product-image img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-info {
+  padding: 1rem;
+}
+
+.product-info h3 {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.product-info h3:hover {
+  color: #2563eb;
+}
+
+.price {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 1rem;
+}
+
+.original-price {
+  font-size: 0.9rem;
+  color: #6b7280;
+  text-decoration: line-through;
+  margin-left: 0.5rem;
+}
+
+.remove-btn {
+  width: 100%;
+  padding: 0.5rem;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.remove-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.wishlist-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.wishlist-empty h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 1rem;
+}
+
+.wishlist-empty p {
+  color: #6b7280;
+  margin-bottom: 2rem;
+}
+
+.browse-products-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.browse-products-btn:hover {
+  background-color: #1d4ed8;
+}
+
+.wishlist-loading {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.wishlist-error {
+  text-align: center;
+  padding: 2rem;
+  color: #dc2626;
+} 

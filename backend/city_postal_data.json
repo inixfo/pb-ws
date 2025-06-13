@@ -1,0 +1,167 @@
+{
+  "BD": {
+    "country_name": "Bangladesh",
+    "cities": [
+      {
+        "name": "Dhaka",
+        "native_name": "ঢাকা",
+        "state": "Dhaka",
+        "is_capital": true,
+        "population": 8906039,
+        "latitude": 23.7104,
+        "longitude": 90.4074,
+        "postal_codes": ["1000", "1100", "1200", "1205", "1206", "1207", "1208", "1209", "1210", "1211", "1212", "1213", "1214", "1215", "1216", "1217", "1229", "1230", "1231", "1232", "1233", "1234", "1235", "1236", "1237", "1238"],
+        "districts": ["Dhanmondi", "Mohammadpur", "Gulshan", "Banani", "Mirpur", "Uttara", "Motijheel", "Old Dhaka", "Tejgaon", "Farmgate"],
+        "shipping_available": true,
+        "delivery_time": {
+          "standard": {"min": 1, "max": 2},
+          "express": {"min": 0, "max": 1}
+        }
+      },
+      {
+        "name": "Chittagong",
+        "native_name": "চট্টগ্রাম",
+        "state": "Chittagong",
+        "is_capital": false,
+        "population": 2581643,
+        "latitude": 22.3569,
+        "longitude": 91.7832,
+        "postal_codes": ["4000", "4100", "4200", "4201", "4202", "4203", "4204", "4205", "4206", "4207", "4208", "4209", "4210", "4211", "4212"],
+        "districts": ["Agrabad", "Nasirabad", "Halishahar", "Patenga", "Kotwali", "GEC", "Khulshi"],
+        "shipping_available": true,
+        "delivery_time": {
+          "standard": {"min": 2, "max": 3},
+          "express": {"min": 1, "max": 2}
+        }
+      },
+      {
+        "name": "Sylhet",
+        "native_name": "সিলেট",
+        "state": "Sylhet",
+        "is_capital": false,
+        "population": 526412,
+        "latitude": 24.8949,
+        "longitude": 91.8687,
+        "postal_codes": ["3100", "3101", "3102", "3103", "3104", "3105", "3106", "3107", "3108", "3109", "3110", "3111", "3112"],
+        "districts": ["Zindabazar", "Ambarkhana", "Tilagor", "Upashahar", "Kadamtali", "Shahjalal"],
+        "shipping_available": true,
+        "delivery_time": {
+          "standard": {"min": 3, "max": 4},
+          "express": {"min": 1, "max": 2}
+        }
+      },
+      {
+        "name": "Rajshahi",
+        "native_name": "রাজশাহী",
+        "state": "Rajshahi",
+        "is_capital": false,
+        "population": 449756,
+        "latitude": 24.3745,
+        "longitude": 88.6042,
+        "postal_codes": ["6000", "6100", "6201", "6202", "6203", "6204", "6205", "6206", "6207", "6208"],
+        "districts": ["Boalia", "Rajpara", "Motihar", "Shahmokhdum", "Kazla"],
+        "shipping_available": true,
+        "delivery_time": {
+          "standard": {"min": 3, "max": 5},
+          "express": {"min": 2, "max": 3}
+        }
+      },
+      {
+        "name": "Khulna",
+        "native_name": "খুলনা",
+        "state": "Khulna",
+        "is_capital": false,
+        "population": 663342,
+        "latitude": 22.8456,
+        "longitude": 89.5403,
+        "postal_codes": ["9000", "9100", "9201", "9202", "9203", "9204", "9205", "9206", "9207", "9208"],
+        "districts": ["Khalishpur", "Sonadanga", "Boyra", "Daulatpur", "Khan Jahan Ali"],
+        "shipping_available": true,
+        "delivery_time": {
+          "standard": {"min": 3, "max": 5},
+          "express": {"min": 2, "max": 3}
+        }
+      },
+      {
+        "name": "Barisal",
+        "native_name": "বরিশাল",
+        "state": "Barisal",
+        "is_capital": false,
+        "population": 339616,
+        "latitude": 22.7010,
+        "longitude": 90.3535,
+        "postal_codes": ["8200", "8201", "8202", "8203", "8204", "8205", "8206"],
+        "districts": ["Sadar Road", "Amtala", "Rupatali", "Nathullabad", "Kashipur"],
+        "shipping_available": true,
+        "delivery_time": {
+          "standard": {"min": 3, "max": 5},
+          "express": {"min": 2, "max": 3}
+        }
+      },
+      {
+        "name": "Rangpur",
+        "native_name": "রংপুর",
+        "state": "Rangpur",
+        "is_capital": false,
+        "population": 294265,
+        "latitude": 25.7439,
+        "longitude": 89.2752,
+        "postal_codes": ["5400", "5401", "5402", "5403", "5404", "5405"],
+        "districts": ["Modern More", "Jahaj Company More", "Shapla Chottor", "Dhap"],
+        "shipping_available": true,
+        "delivery_time": {
+          "standard": {"min": 4, "max": 6},
+          "express": {"min": 2, "max": 3}
+        }
+      },
+      {
+        "name": "Mymensingh",
+        "native_name": "ময়মনসিংহ",
+        "state": "Mymensingh",
+        "is_capital": false,
+        "population": 389918,
+        "latitude": 24.7471,
+        "longitude": 90.4203,
+        "postal_codes": ["2200", "2201", "2202", "2203", "2204", "2205", "2206", "2207"],
+        "districts": ["Ganginar Par", "Town Hall", "Bridge Road", "Chorpara", "Borobazar"],
+        "shipping_available": true,
+        "delivery_time": {
+          "standard": {"min": 2, "max": 4},
+          "express": {"min": 1, "max": 2}
+        }
+      },
+      {
+        "name": "Comilla",
+        "native_name": "কুমিল্লা",
+        "state": "Chittagong",
+        "is_capital": false,
+        "population": 389411,
+        "latitude": 23.4607,
+        "longitude": 91.1809,
+        "postal_codes": ["3500", "3501", "3502", "3503", "3504", "3505", "3506"],
+        "districts": ["Kandirpar", "Kotbari", "Bagichagaon", "Tomsom Bridge", "Chawkbazar"],
+        "shipping_available": true,
+        "delivery_time": {
+          "standard": {"min": 2, "max": 4},
+          "express": {"min": 1, "max": 2}
+        }
+      },
+      {
+        "name": "Narayanganj",
+        "native_name": "নারায়ণগঞ্জ",
+        "state": "Dhaka",
+        "is_capital": false,
+        "population": 286330,
+        "latitude": 23.6238,
+        "longitude": 90.5000,
+        "postal_codes": ["1400", "1401", "1402", "1403", "1404", "1405", "1410", "1420", "1430", "1440", "1450"],
+        "districts": ["Chashara", "Fatullah", "Siddhirganj", "Shitalakkhya", "Khanpur"],
+        "shipping_available": true,
+        "delivery_time": {
+          "standard": {"min": 1, "max": 3},
+          "express": {"min": 1, "max": 1}
+        }
+      }
+    ]
+  }
+} 
