@@ -9,8 +9,8 @@ services:
     env_file:
       - backend.env
     volumes:
-      - backend_static:/app/staticfiles
-      - backend_media:/app/media
+      - ./media:/app/media
+      - ./staticfiles:/app/staticfiles
     depends_on:
       - db
       - redis
@@ -24,6 +24,8 @@ services:
     restart: always
     ports:
       - "80:80"
+    volumes:
+      - ./media:/usr/share/nginx/html/media
     depends_on:
       - backend
     networks:
@@ -55,6 +57,8 @@ services:
     command: celery -A backend worker -l info
     env_file:
       - backend.env
+    volumes:
+      - ./media:/app/media
     depends_on:
       - db
       - redis
@@ -70,6 +74,8 @@ services:
     command: celery -A backend beat -l info
     env_file:
       - backend.env
+    volumes:
+      - ./media:/app/media
     depends_on:
       - db
       - redis
@@ -80,8 +86,6 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  backend_static:
-  backend_media:
 
 networks:
   phonebay_network:
