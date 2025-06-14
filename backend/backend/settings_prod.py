@@ -36,7 +36,6 @@ CORS_ALLOWED_ORIGINS = [
     'http://3.25.95.103',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'http://localhost:5174',
 ]
 
 # SSLCOMMERZ Payment Gateway Settings

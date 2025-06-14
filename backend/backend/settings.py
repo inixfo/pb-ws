@@ -220,49 +220,21 @@ SIMPLE_JWT = {
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'formatters': { 
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {asctime} {name} {message}', # Added asctime and name
-            'style': '{',
-        },
-    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'simple', 
         },
-    },
-    'root': { 
-        'handlers': ['console'],
-        'level': 'INFO',
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'INFO', 
-            'propagate': False, 
+            'level': 'INFO',
         },
         'rest_framework_simplejwt': {
             'handlers': ['console'],
-            'level': 'DEBUG', # Kept as DEBUG for detailed JWT logs
-            'propagate': False, # Avoid double logging with root
+            'level': 'DEBUG',
+            'propagate': True,
         },
-        'backend': { # Logger for the 'backend' app, including 'backend.urls'
-            'handlers': ['console'],
-            'level': 'DEBUG', # Set to DEBUG to ensure our INFO logs from backend.urls are captured
-            'propagate': False,
-        },
-        # You can add other specific app loggers here if needed
-        # For example, to get DEBUG logs from products app:
-        # 'products': {
-        #     'handlers': ['console'],
-        #     'level': 'DEBUG',
-        #     'propagate': False,
-        # },
     },
 }
 
