@@ -3,10 +3,13 @@ from rest_framework.response import Response
 from django.http import FileResponse
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
+import logging
 
 from products.models import Category
 from products.utils.bulk_upload import generate_upload_template, process_upload_file
 from users.permissions import IsVendorOwnerOrAdmin
+
+logger = logging.getLogger(__name__)
 
 
 class BulkUploadTemplateView(views.APIView):
@@ -20,15 +23,24 @@ class BulkUploadTemplateView(views.APIView):
         category_id = request.query_params.get('category_id')
         file_format = request.query_params.get('format', 'csv')
         
+        logger.info(f"[BulkUploadTemplateView] Received request for template. Category ID: {category_id}, Format: {file_format}")
+        logger.info(f"[BulkUploadTemplateView] Request user: {request.user}, Is Authenticated: {request.user.is_authenticated}")
+        if hasattr(request.user, 'role'):
+            logger.info(f"[BulkUploadTemplateView] User role: {request.user.role}")
+        logger.info(f"[BulkUploadTemplateView] User is staff: {request.user.is_staff}")
+        
         if not category_id:
+            logger.warning("[BulkUploadTemplateView] Category ID is missing in request.")
             return Response(
                 {'error': 'Category ID is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         try:
+            logger.info(f"[BulkUploadTemplateView] Attempting to fetch Category with ID: {category_id}, is_active=True")
             # Verify category exists and is active
             category = get_object_or_404(Category, id=category_id, is_active=True)
+            logger.info(f"[BulkUploadTemplateView] Successfully fetched category: {category.name}")
             
             # Generate template
             template_file = generate_upload_template(category_id, file_format)
@@ -49,7 +61,14 @@ class BulkUploadTemplateView(views.APIView):
                 content_type=content_type
             )
         
+        except Category.DoesNotExist:
+            logger.error(f"[BulkUploadTemplateView] Category with ID {category_id} and is_active=True DOES NOT EXIST (Caught DoesNotExist).")
+            return Response(
+                {'error': f'Active category with ID {category_id} not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         except Exception as e:
+            logger.error(f"[BulkUploadTemplateView] An unexpected error occurred: {str(e)}", exc_info=True)
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
