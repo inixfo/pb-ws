@@ -11,9 +11,11 @@ from users.permissions import IsVendorOwnerOrAdmin
 
 class BulkUploadTemplateView(views.APIView):
     """
-    API view for generating bulk upload templates.
+    API view for generating bulk upload templates. This endpoint is safe to
+    expose publicly so vendors can download the CSV/XLSX skeleton before they
+    have credentials. Therefore we allow unauthenticated access.
     """
-    permission_classes = [permissions.IsAuthenticated, IsVendorOwnerOrAdmin]
+    permission_classes = [permissions.AllowAny]
     
     def get(self, request, *args, **kwargs):
         """Generate a template for bulk product upload."""
