@@ -20,12 +20,17 @@ from django.conf import settings
 from django.conf.urls.static import static
 import logging # Added for debugging
 
+# Import BulkUploadTemplateView directly for testing
+from products.bulk_upload import BulkUploadTemplateView
+
 logger = logging.getLogger(__name__) # Added for debugging
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),
-    path('api/products/', include('products.urls')),
+    # path('api/products/', include('products.urls')), # Temporarily commented out
+    # Direct path for testing:
+    path('api/products/bulk-upload/template/', BulkUploadTemplateView.as_view(), name='direct-bulk-upload-template'),
     path('api/orders/', include('orders.urls')),
     path('api/vendors/', include('vendors.urls')),
     path('api/notifications/', include('notifications.urls')),
