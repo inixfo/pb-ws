@@ -1,6 +1,6 @@
 from rest_framework import status, views, permissions
 from rest_framework.response import Response
-from django.http import FileResponse
+from django.http import FileResponse, Http404
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 import logging
@@ -64,7 +64,13 @@ class BulkUploadTemplateView(views.APIView):
         except Category.DoesNotExist:
             logger.error(f"[BulkUploadTemplateView] Category with ID {category_id} and is_active=True DOES NOT EXIST (Caught DoesNotExist).")
             return Response(
-                {'error': f'Active category with ID {category_id} not found.'},
+                {'error': f'Active category with ID {category_id} not found. (DoesNotExist)'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Http404:
+            logger.error(f"[BulkUploadTemplateView] get_object_or_404 failed for Category ID {category_id}, is_active=True (Caught Http404).")
+            return Response(
+                {'error': f'Resource not found. Active category with ID {category_id} may not exist or an issue occurred. (Http404)'},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
@@ -100,8 +106,10 @@ class BulkUploadProcessView(views.APIView):
             )
         
         try:
-            # Verify category exists
-            category = get_object_or_404(Category, id=category_id)
+            # Verify category exists and is active
+            logger.info(f"[BulkUploadProcessView] Attempting to fetch Category with ID: {category_id}, is_active=True")
+            category = get_object_or_404(Category, id=category_id, is_active=True)
+            logger.info(f"[BulkUploadProcessView] Successfully fetched category: {category.name}")
             
             # Get vendor ID (for vendors) or None (for admins)
             vendor_id = None
