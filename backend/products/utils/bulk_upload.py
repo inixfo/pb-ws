@@ -5,10 +5,12 @@ import numpy as np
 import openpyxl
 from typing import Dict, List, Any, Tuple
 from django.db import transaction
-from products.models import Product, Category, Brand, ProductField, ProductVariation, ProductImage, User, EMIPlan
+from products.models import Product, Category, Brand, ProductField, ProductVariation, ProductImage
 from django.core.files.base import ContentFile
 import requests
 from django.utils.text import slugify
+from emi.models import EMIPlan
+from users.models import User
 
 
 def validate_required_fields(data: Dict[str, Any], category: Category) -> Tuple[bool, List[str]]:
