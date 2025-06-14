@@ -29,7 +29,7 @@ from .pagination import StandardResultsSetPagination
 class CategoryViewSet(viewsets.ModelViewSet):
     """ViewSet for viewing and editing categories."""
     
-    queryset = Category.objects.all()
+    queryset = Category.objects.filter(is_active=True)
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAdminUser]
     filter_backends = [filters.SearchFilter]

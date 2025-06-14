@@ -93,18 +93,28 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      // Reset form state
       setSelectedFile(null);
       setErrorMessage('');
       setSelectedCategoryForTemplateId('');
       setUploadCategoryId('');
       setIsUploading(false);
       
+      // Fetch categories
       const fetchCategoriesForModal = async () => {
         setIsLoadingCategories(true);
         try {
-          const fetchedCategories = await categoryService.getAllCategories();
-          setAllCategoriesList(fetchedCategories || []);
-          if (fetchedCategories && fetchedCategories.length > 0) {
+          const response = await categoryService.getAllCategories(); // response might be {count: ..., results: [...]}
+          
+          if (response && Array.isArray(response.results)) {
+            setAllCategoriesList(response.results);
+          } else if (Array.isArray(response)) { 
+            // Fallback if the API unexpectedly returns a direct array
+            setAllCategoriesList(response);
+          } else {
+            console.error("Fetched categories response is not in expected format (array or {results: array}):", response);
+            toast.error('Failed to load categories: Unexpected format.');
+            setAllCategoriesList([]); 
           }
         } catch (error) {
           console.error("Failed to fetch categories for modal:", error);
@@ -334,6 +344,52 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
   );
 };
 
+// Helper function to convert ProductFormData to FormData
+const convertProductFormDataToFormData = (data: ProductFormData): FormData => {
+  const formDataInstance = new FormData();
+
+  // Append simple fields
+  Object.keys(data).forEach(key => {
+    const value = data[key as keyof ProductFormData];
+    if (key === 'primary_image' || key === 'additional_images' || key === 'specifications' || key === 'emi_plans') {
+      // Skip file, object, and array fields for now, handle them separately
+      return;
+    }
+    if (value !== undefined && value !== null) {
+      formDataInstance.append(key, String(value));
+    }
+  });
+
+  // Append primary_image if it exists
+  if (data.primary_image) {
+    formDataInstance.append('primary_image', data.primary_image);
+  }
+
+  // Append additional_images if they exist
+  if (data.additional_images && data.additional_images.length > 0) {
+    data.additional_images.forEach((file, index) => {
+      formDataInstance.append(`additional_images[${index}]`, file);
+    });
+  }
+  
+  // Append specifications as a JSON string
+  if (data.specifications) {
+    formDataInstance.append('specifications', JSON.stringify(data.specifications));
+  }
+
+  // Append emi_plans as a comma-separated string or individual fields if required by backend
+  // Assuming backend expects a JSON string or similar for multiple IDs from a text input
+  if (data.emi_plans && data.emi_plans.length > 0) {
+    // If backend expects comma-separated string:
+    // formDataInstance.append('emi_plans', data.emi_plans.join(','));
+    // If backend expects array-like form fields:
+    data.emi_plans.forEach(planId => formDataInstance.append('emi_plans', planId.toString()));
+  }
+
+
+  return formDataInstance;
+};
+
 const ProductManagement: React.FC = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
@@ -434,7 +490,12 @@ const ProductManagement: React.FC = () => {
 
   const handleStatusToggle = async (id: number, isActive: boolean) => {
     try {
-      await productService.update(id, { is_active: !isActive });
+      const formDataInstance = new FormData();
+      formDataInstance.append('is_active', String(!isActive));
+      // If other fields are mandatory for PATCH and not automatically set by backend,
+      // you might need to fetch the product and append its current values.
+      // For now, assuming only is_active is being changed.
+      await productService.update(id, formDataInstance);
       setProducts(products.map(product => 
         product.id === id ? { ...product, is_active: !isActive } : product
       ));
@@ -532,10 +593,12 @@ const ProductManagement: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
+    const dataForApi = convertProductFormDataToFormData(formData);
+
     try {
       if (isEditing && currentProduct) {
         // Update existing product
-        await productService.update(currentProduct.id, formData);
+        await productService.update(currentProduct.id, dataForApi);
         
         // Find category and brand names for display
         const category = categories.find(c => c.id === formData.category_id)?.name || '';
@@ -566,7 +629,7 @@ const ProductManagement: React.FC = () => {
         toast.success('Product updated successfully');
       } else {
         // Create new product
-        const newProduct = await productService.create(formData);
+        const newProduct = await productService.create(dataForApi);
         
         // Find category and brand names for display
         const category = categories.find(c => c.id === formData.category_id)?.name || '';

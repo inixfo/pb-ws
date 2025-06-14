@@ -27,8 +27,8 @@ class BulkUploadTemplateView(views.APIView):
             )
         
         try:
-            # Verify category exists
-            category = get_object_or_404(Category, id=category_id)
+            # Verify category exists and is active
+            category = get_object_or_404(Category, id=category_id, is_active=True)
             
             # Generate template
             template_file = generate_upload_template(category_id, file_format)
