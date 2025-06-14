@@ -49,7 +49,8 @@ def generate_upload_template(category_id: int, file_format: str = 'csv') -> io.B
                 column_name += " *"
             columns.append(column_name)
             dynamic_fields.append({
-                'name': field.name,
+                'name': field.name,            # raw field name (e.g. "Brand")
+                'column': column_name,         # actual column in CSV (may include " *")
                 'type': field.field_type,
                 'group': field.group,
                 'required': field.is_required,
@@ -68,25 +69,27 @@ def generate_upload_template(category_id: int, file_format: str = 'csv') -> io.B
         'emi_plan_ids': '1,2,3'  # Comma-separated EMI plan IDs
     }
     
+    # Use the exact column key that was added to columns list
     for field in dynamic_fields:
+        key = field['column']
         if field['type'] == 'boolean':
-            example_row[field['name']] = 'True/False'
+            example_row[key] = 'True/False'
         elif field['type'] == 'select' and field['options']:
             options = field['options']
             if isinstance(options, list) and options:
-                example_row[field['name']] = options[0]
+                example_row[key] = options[0]
             else:
-                example_row[field['name']] = 'Select an option'
+                example_row[key] = 'Select an option'
         elif field['type'] == 'multi_select' and field['options']:
             options = field['options']
             if isinstance(options, list) and len(options) >= 2:
-                example_row[field['name']] = f"{options[0]}, {options[1]}"
+                example_row[key] = f"{options[0]}, {options[1]}"
             else:
-                example_row[field['name']] = 'Option1, Option2'
+                example_row[key] = 'Option1, Option2'
         elif field['type'] == 'number':
-            example_row[field['name']] = '0'
+            example_row[key] = '0'
         else:
-            example_row[field['name']] = f'Sample {field["name"]}'
+            example_row[key] = f'Sample {field["name"]}'
     
     # Create a template file
     if file_format == 'csv':
