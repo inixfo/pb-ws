@@ -1,7 +1,7 @@
 // Configuration variables for the application
 
 // API base URL - use absolute URL for more reliable connection
-export const API_URL = 'http://localhost:8000/api';  // Absolute URL for development
+export const API_URL = 'http://3.25.95.103/api';  // Production API URL
 // export const API_URL = '/api';  // Relative URL (works with proxy in development)
 
 // Application name
