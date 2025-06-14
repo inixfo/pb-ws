@@ -23,15 +23,18 @@ router.register('skus', SKUViewSet, basename='sku')
 filter_options_view = ProductViewSet.as_view({'get': 'filter_options'})
 
 urlpatterns = [
+    # Bulk-upload aliases FIRST so they are matched before router captures 'products/<pk>'
+    path('bulk-upload/template/', BulkUploadTemplateView.as_view(), name='bulk-upload-template'),
+    path('bulk-upload/process/', BulkUploadProcessView.as_view(), name='bulk-upload-process'),
+    path('template/', BulkUploadTemplateView.as_view(), name='product-template'),
+    path('bulk_upload/', BulkUploadProcessView.as_view(), name='product-bulk-upload'),
+    path('products/template/', BulkUploadTemplateView.as_view(), name='product-template-alt'),
+    path('products/bulk_upload/', BulkUploadProcessView.as_view(), name='product-bulk-upload-alt'),
+
+    # Router and other endpoints
     path('', include(router.urls)),
     path('filter-options/', filter_options_view, name='filter-options'),
     path('products/filter-options/', filter_options_view, name='products-filter-options'),
-    path('bulk-upload/template/', BulkUploadTemplateView.as_view(), name='bulk-upload-template'),
-    path('template/', BulkUploadTemplateView.as_view(), name='product-template'),
-    path('products/template/', BulkUploadTemplateView.as_view(), name='product-template-alt'),
-    path('bulk-upload/process/', BulkUploadProcessView.as_view(), name='bulk-upload-process'),
-    path('bulk_upload/', BulkUploadProcessView.as_view(), name='product-bulk-upload'),
-    path('products/bulk_upload/', BulkUploadProcessView.as_view(), name='product-bulk-upload-alt'),
     path('image-upload-test/', TemplateView.as_view(
         template_name='products/image_upload_test.html'
     ), name='image-upload-test'),
