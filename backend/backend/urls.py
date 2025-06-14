@@ -19,10 +19,10 @@ from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 import logging # Added for debugging
-from django.http import HttpResponse # Import HttpResponse for lambda test
+# from django.http import HttpResponse # No longer needed for lambda test
 
-# Import BulkUploadTemplateView directly for testing
-from products.bulk_upload import BulkUploadTemplateView 
+# Import TemplateGenView directly for testing
+from products.bulk_upload import TemplateGenView # Changed import to TemplateGenView
 
 logger = logging.getLogger(__name__) # Added for debugging
 
@@ -31,7 +31,7 @@ urlpatterns = [
     path('api/users/', include('users.urls')),
     # path('api/products/', include('products.urls')), # Temporarily commented out
     # Direct path for testing:
-    re_path(r'^api/products/bulk-upload/template/?$', BulkUploadTemplateView.as_view(), name='direct-bulk-upload-template'), # Original direct path reinstated
+    re_path(r'^api/products/bulk-upload/template/?$', TemplateGenView.as_view(), name='direct-bulk-upload-template'), # Changed to TemplateGenView
     # re_path(r'^api/products/bulk-upload/template/?$', lambda request: HttpResponse("Direct lambda test OK"), name='direct-bulk-upload-template-lambda'), # Lambda test commented out
     path('api/orders/', include('orders.urls')),
     path('api/vendors/', include('vendors.urls')),
