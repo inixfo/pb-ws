@@ -306,13 +306,14 @@ export const productService = {
     body: imageData,
   }),
   getFieldsByCategory: (categoryId: number) => fetchWithAuth(`/products/categories/${categoryId}/fields/`),
-  downloadTemplate: (categoryId: string, format: string = 'csv') => {
-    return fetchWithAuth(`/products/bulk-upload/template/?category_id=${categoryId}&format=${format}`, {}, true);
-  },
-  bulkUpload: (data: FormData) => fetchWithAuth('/products/bulk-upload/process/', {
-    method: 'POST',
-    body: data,
-  }),
+  // Bulk-upload helper endpoints (uses ProductViewSet actions)
+  downloadTemplate: (categoryId: string, format: string = 'csv') =>
+    fetchWithAuth(`/products/products/template/?category_id=${categoryId}&format=${format}`, {}, true),
+  bulkUpload: (data: FormData) =>
+    fetchWithAuth('/products/products/bulk_upload/', {
+      method: 'POST',
+      body: data,
+    }),
   getProductFields: (categoryId: string | number) => fetchWithAuth(`/products/categories/${categoryId}/fields/`),
 };
 
