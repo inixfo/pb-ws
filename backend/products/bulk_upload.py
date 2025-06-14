@@ -16,7 +16,7 @@ class TemplateGenView(views.APIView):
     """
     API view for generating bulk upload templates.
     """
-    # permission_classes = [permissions.IsAuthenticated, IsVendorOwnerOrAdmin] # Temporarily commented out
+    permission_classes = []  # No permissions to isolate issue
     
     def get(self, request, *args, **kwargs):
         """Generate a template for bulk product upload."""
