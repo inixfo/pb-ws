@@ -28,8 +28,10 @@ urlpatterns = [
     path('products/filter-options/', filter_options_view, name='products-filter-options'),
     path('bulk-upload/template/', BulkUploadTemplateView.as_view(), name='bulk-upload-template'),
     path('template/', BulkUploadTemplateView.as_view(), name='product-template'),
+    path('products/template/', BulkUploadTemplateView.as_view(), name='product-template-alt'),
     path('bulk-upload/process/', BulkUploadProcessView.as_view(), name='bulk-upload-process'),
     path('bulk_upload/', BulkUploadProcessView.as_view(), name='product-bulk-upload'),
+    path('products/bulk_upload/', BulkUploadProcessView.as_view(), name='product-bulk-upload-alt'),
     path('image-upload-test/', TemplateView.as_view(
         template_name='products/image_upload_test.html'
     ), name='image-upload-test'),
