@@ -5,12 +5,13 @@ services:
     build:
       context: ..
       dockerfile: deployment/Dockerfile.backend
+      target: backend
     restart: always
     env_file:
       - backend.env
     volumes:
       - ./media:/app/media
-      - ./staticfiles:/app/staticfiles
+      - ./static:/app/staticfiles
     depends_on:
       - db
       - redis
@@ -24,8 +25,11 @@ services:
     restart: always
     ports:
       - "80:80"
+    env_file:
+      - frontend.env
     volumes:
       - ./media:/usr/share/nginx/html/media
+      - ./static:/usr/share/nginx/html/static
     depends_on:
       - backend
     networks:
@@ -53,8 +57,8 @@ services:
     build:
       context: ..
       dockerfile: deployment/Dockerfile.backend
+      target: celery
     restart: always
-    command: celery -A backend worker -l info
     env_file:
       - backend.env
     volumes:
@@ -70,8 +74,8 @@ services:
     build:
       context: ..
       dockerfile: deployment/Dockerfile.backend
+      target: celery-beat
     restart: always
-    command: celery -A backend beat -l info
     env_file:
       - backend.env
     volumes:

@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from .models import Notification
 from .notification_service import NotificationService
-from emi.models import EMIPayment, EMIInstallment
+from emi.models import EMIInstallment
 from products.models import Product
 from .services import SMSService
 
