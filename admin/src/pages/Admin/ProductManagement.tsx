@@ -75,33 +75,47 @@ interface Brand {
 interface BulkUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  categories: Category[];
-  brands: Brand[];
   onUploadSuccess: () => void;
 }
 
 const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ 
   isOpen, 
   onClose, 
-  categories, 
-  brands,
   onUploadSuccess 
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [categoryId, setCategoryId] = useState<number>(0);
-  const [brandId, setBrandId] = useState<number>(0);
+  const [allCategoriesList, setAllCategoriesList] = useState<Category[]>([]);
+  const [selectedCategoryForTemplateId, setSelectedCategoryForTemplateId] = useState<string>('');
+  const [uploadCategoryId, setUploadCategoryId] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
-    // Reset form when modal opens
     if (isOpen) {
       setSelectedFile(null);
-      setCategoryId(categories.length > 0 ? categories[0].id : 0);
-      setBrandId(brands.length > 0 ? brands[0].id : 0);
       setErrorMessage('');
+      setSelectedCategoryForTemplateId('');
+      setUploadCategoryId('');
+      setIsUploading(false);
+      
+      const fetchCategoriesForModal = async () => {
+        setIsLoadingCategories(true);
+        try {
+          const fetchedCategories = await categoryService.getAllCategories();
+          setAllCategoriesList(fetchedCategories || []);
+          if (fetchedCategories && fetchedCategories.length > 0) {
+          }
+        } catch (error) {
+          console.error("Failed to fetch categories for modal:", error);
+          toast.error('Failed to load categories.');
+          setAllCategoriesList([]);
+        }
+        setIsLoadingCategories(false);
+      };
+      fetchCategoriesForModal();
     }
-  }, [isOpen, categories, brands]);
+  }, [isOpen]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -129,26 +143,23 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     }
   };
 
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setCategoryId(parseInt(e.target.value));
+  const handleCategoryForTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCategoryForTemplateId(e.target.value);
   };
 
-  const handleBrandChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setBrandId(parseInt(e.target.value));
+  const handleUploadCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setUploadCategoryId(e.target.value);
   };
 
   const handleDownloadTemplate = async () => {
+    if (!selectedCategoryForTemplateId) {
+      toast.error('Please select a category to download the template for.');
+      return;
+    }
     try {
-      // Show loading toast
       const loadingToast = toast.loading('Downloading template...');
-      
-      // Fetch the template from the API
-      const response = await productService.downloadTemplate();
-      
-      // Dismiss loading toast
+      const response = await productService.downloadTemplate(selectedCategoryForTemplateId, 'csv');
       toast.dismiss(loadingToast);
-      
-      // Check if response is valid
       if (!response) {
         throw new Error('Empty response received');
       }
@@ -167,8 +178,6 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
       
       // Clean up
       window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
       toast.success('Template downloaded successfully');
     } catch (error) {
       console.error('Failed to download template:', error);
@@ -184,27 +193,19 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
       return;
     }
     
-    if (!categoryId) {
-      setErrorMessage('Please select a category');
+    if (!uploadCategoryId) {
+      setErrorMessage('Please select a category for the upload.');
       return;
     }
-    
-    if (!brandId) {
-      setErrorMessage('Please select a brand');
-      return;
-    }
-    
+        
     setIsUploading(true);
     setErrorMessage('');
     
     try {
-      // Create a FormData object to send the file
       const formData = new FormData();
       formData.append('file', selectedFile);
-      formData.append('category_id', categoryId.toString());
-      formData.append('brand_id', brandId.toString());
+      formData.append('category_id', uploadCategoryId);
       
-      // Call the bulk upload API
       const response = await productService.bulkUpload(formData);
       
       toast.success(response.message || 'Products uploaded successfully');
@@ -241,7 +242,8 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
         </div>
         
         <p className="text-gray-600 dark:text-gray-300 mb-4">
-          Upload a CSV or Excel file containing product data. All products will be assigned to the selected category and brand.
+          Download a template for a specific category, fill it, then select the same category and upload the file.
+          Brand information should be included as a column in the sheet.
         </p>
         
         {errorMessage && (
@@ -249,100 +251,82 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
             <span className="block sm:inline">{errorMessage}</span>
           </div>
         )}
-        
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="file">
-              Upload File (CSV or Excel)
-            </label>
-            <input
-              type="file"
-              id="file"
-              accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-              onChange={handleFileChange}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline"
-            />
-            <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
-              {selectedFile ? `Selected file: ${selectedFile.name}` : 'No file selected'}
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="category">
-                Category
-              </label>
-              <select
-                id="category"
-                value={categoryId}
-                onChange={handleCategoryChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline"
-              >
-                {categories.length === 0 ? (
-                  <option value="">No categories available</option>
-                ) : (
-                  categories.map(category => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="brand">
-                Brand
-              </label>
-              <select
-                id="brand"
-                value={brandId}
-                onChange={handleBrandChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline"
-              >
-                {brands.length === 0 ? (
-                  <option value="">No brands available</option>
-                ) : (
-                  brands.map(brand => (
-                    <option key={brand.id} value={brand.id}>
-                      {brand.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={handleDownloadTemplate}
-              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-transparent rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="categoryForTemplate" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Category for Template Download</label>
+            <select 
+              id="categoryForTemplate"
+              value={selectedCategoryForTemplateId}
+              onChange={handleCategoryForTemplateChange}
+              disabled={isLoadingCategories}
+              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-              </svg>
-              Download Template
+              <option value="">-- Select Category for Template --</option>
+              {allCategoriesList.map((category) => (
+                <option key={category.id} value={category.id.toString()}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDownloadTemplate}
+            disabled={!selectedCategoryForTemplateId || isLoadingCategories}
+            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center disabled:opacity-50 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+          >
+            Download Template (CSV)
+          </button>
+
+          <hr className="my-6 border-gray-200 dark:border-gray-600" />
+
+          <div>
+            <label htmlFor="uploadCategory" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Category for Upload</label>
+            <select 
+              id="uploadCategory"
+              value={uploadCategoryId}
+              onChange={handleUploadCategoryChange}
+              disabled={isLoadingCategories}
+              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            >
+              <option value="">-- Select Upload Category --</option>
+              {allCategoriesList.map((category) => (
+                <option key={category.id} value={category.id.toString()}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="productFile" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Upload File</label>
+            <input 
+              type="file" 
+              id="productFile"
+              onChange={handleFileChange} 
+              className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
+              accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+            />
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">CSV, XLS, or XLSX file.</p>
+          </div>
+
+          <div className="flex items-center justify-end space-x-4">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
+            >
+              Cancel
             </button>
-            
-            <div className="flex">
-              <button
-                type="button"
-                onClick={onClose}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l focus:outline-none focus:shadow-outline"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isUploading || !selectedFile}
-                className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r focus:outline-none focus:shadow-outline ${
-                  (isUploading || !selectedFile) ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {isUploading ? 'Uploading...' : 'Upload Products'}
-              </button>
-            </div>
+            <button 
+              type="submit" 
+              disabled={isUploading || !selectedFile || !uploadCategoryId}
+              className="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center disabled:opacity-50 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+            >
+              {isUploading ? 'Uploading...' : 'Upload Products'}
+            </button>
           </div>
         </form>
       </div>
@@ -1124,8 +1108,6 @@ const ProductManagement: React.FC = () => {
       <BulkUploadModal 
         isOpen={showBulkUploadModal}
         onClose={closeBulkUploadModal}
-        categories={categories}
-        brands={brands}
         onUploadSuccess={fetchData}
       />
     </>

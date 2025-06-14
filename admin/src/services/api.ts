@@ -284,35 +284,21 @@ export const userService = {
 };
 
 export const productService = {
-  getAll: () => fetchWithAuth('/products/products/'),
-  getById: (id: number | string) => {
-    // When fetching by ID, append 'id-' prefix to force lookup by ID
-    // This helps the backend distinguish between IDs and slugs
-    return fetchWithAuth(`/products/products/id-${id}/`);
+  getAll: (params?: Record<string, string | number>) => {
+    const query = params ? `?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString()}` : '';
+    return fetchWithAuth(`/products/products/${query}`);
   },
+  getById: (id: number) => fetchWithAuth(`/products/products/${id}/`),
   getBySlug: (slug: string) => fetchWithAuth(`/products/products/${slug}/`),
-  create: (data: any) => {
-    // Check if data is FormData
-    const isFormData = data instanceof FormData;
-    
-    return fetchWithAuth('/products/products/', {
-      method: 'POST',
-      body: isFormData ? data : JSON.stringify(data),
-      // Don't set headers for FormData - will be set automatically by fetch
-    });
-  },
-  update: (id: number | string, data: any) => {
-    // Check if data is FormData
-    const isFormData = data instanceof FormData;
-    
-    // Use id- prefix to ensure we're using ID-based lookup
-    return fetchWithAuth(`/products/products/id-${id}/`, {
-      method: 'PUT',
-      body: isFormData ? data : JSON.stringify(data),
-      // Don't set headers for FormData - will be set automatically by fetch
-    });
-  },
-  delete: (id: number | string) => fetchWithAuth(`/products/products/id-${id}/`, {
+  create: (data: FormData) => fetchWithAuth('/products/products/', {
+    method: 'POST',
+    body: data,
+  }),
+  update: (id: number, data: FormData) => fetchWithAuth(`/products/products/${id}/`, {
+    method: 'PATCH',
+    body: data,
+  }),
+  delete: (id: number) => fetchWithAuth(`/products/products/${id}/`, {
     method: 'DELETE',
   }),
   uploadImage: (productId: number | string, imageData: FormData) => fetchWithAuth(`/products/products/id-${productId}/images/`, {
@@ -320,14 +306,14 @@ export const productService = {
     body: imageData,
   }),
   getFieldsByCategory: (categoryId: number) => fetchWithAuth(`/products/categories/${categoryId}/fields/`),
-  // Add new methods for bulk operations
-  bulkUpload: (formData: FormData) => fetchWithAuth('/products/products/bulk_upload/', {
+  downloadTemplate: (categoryId: string, format: string = 'csv') => {
+    return fetchWithAuth(`/products/bulk-upload/template/?category_id=${categoryId}&format=${format}`, {}, true);
+  },
+  bulkUpload: (data: FormData) => fetchWithAuth('/products/bulk-upload/process/', {
     method: 'POST',
-    body: formData,
+    body: data,
   }),
-  downloadTemplate: () => fetchWithAuth('/products/products/template/', {
-    method: 'GET',
-  }, true), // Set raw response to true to get the raw text
+  getProductFields: (categoryId: string | number) => fetchWithAuth(`/products/categories/${categoryId}/fields/`),
 };
 
 // SKU Service
@@ -409,6 +395,19 @@ export const categoryService = {
     });
   },
   delete: (id: number) => fetchWithAuth(`/products/categories/${id}/`, {
+    method: 'DELETE',
+  }),
+  getAllCategories: () => fetchWithAuth('/products/categories/'),
+  getCategoryById: (id: number) => fetchWithAuth(`/products/categories/${id}/`),
+  createCategory: (data: any) => fetchWithAuth('/products/categories/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  updateCategory: (id: number, data: any) => fetchWithAuth(`/products/categories/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  }),
+  deleteCategory: (id: number) => fetchWithAuth(`/products/categories/${id}/`, {
     method: 'DELETE',
   }),
 };
