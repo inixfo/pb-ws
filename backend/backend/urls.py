@@ -18,6 +18,9 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+import logging # Added for debugging
+
+logger = logging.getLogger(__name__) # Added for debugging
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -38,6 +41,29 @@ urlpatterns = [
     path('api/sms/', include('sms.urls')),
 ]
 
+# Debugging: Print urlpatterns
+# logger.info("Root urlpatterns:") # Using logger instead of print for production servers
+# for i, pattern in enumerate(urlpatterns):
+#     logger.info(f"{i}: {pattern}")
+#     if hasattr(pattern, 'url_patterns'):
+#         logger.info("  Included sub-patterns:")
+#         for j, sub_pattern in enumerate(pattern.url_patterns):
+#             logger.info(f"    {j}: {sub_pattern}")
+#     elif hasattr(pattern, 'pattern'):
+#         logger.info(f"  Pattern regex: {pattern.pattern}")
+
 # Serve media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Another debug print after static files, just in case
+logger.info("Final urlpatterns (after static if DEBUG):")
+for i, pattern in enumerate(urlpatterns):
+    logger.info(f"FINAL {i}: {pattern}")
+    if hasattr(pattern, 'url_patterns'): # For include()
+        logger.info(f"  FINAL Included app: {pattern.app_name if pattern.app_name else pattern.namespace}")
+        logger.info(f"  FINAL Included namespace: {pattern.namespace}")
+        # To see sub-patterns, they need to be resolved, which is complex here.
+        # This basic log shows if 'products.urls' is being included.
+    elif hasattr(pattern, 'pattern'): # For path() or re_path()
+        logger.info(f"  FINAL Pattern regex: {pattern.pattern}")
