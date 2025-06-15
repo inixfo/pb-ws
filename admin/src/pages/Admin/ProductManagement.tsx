@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageMeta from '../../components/common/PageMeta';
 import { productService, categoryService, brandService } from '../../services/api';
@@ -427,6 +427,38 @@ const ProductManagement: React.FC = () => {
   // Add new state for bulk upload modal
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
 
+  // Compute filtered products
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    
+    return products.filter(product => {
+      // Search query filter
+      const matchesSearch = searchQuery === '' || 
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      // Category filter
+      const matchesCategory = categoryFilter === '' || 
+        (typeof product.category === 'object' && product.category && product.category.id.toString() === categoryFilter) ||
+        (product.category_id && product.category_id.toString() === categoryFilter);
+      
+      // Brand filter
+      const matchesBrand = brandFilter === '' || 
+        (typeof product.brand === 'object' && product.brand && product.brand.id.toString() === brandFilter) ||
+        (product.brand_id && product.brand_id.toString() === brandFilter);
+      
+      // Status filter
+      let matchesStatus = true;
+      if (statusFilter === 'active') {
+        matchesStatus = product.is_active === true && product.stock_quantity > 0;
+      } else if (statusFilter === 'inactive') {
+        matchesStatus = product.is_active === false || product.stock_quantity <= 0;
+      }
+      
+      return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
+    });
+  }, [products, searchQuery, categoryFilter, brandFilter, statusFilter]);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -443,23 +475,23 @@ const ProductManagement: React.FC = () => {
       ]);
       
       // Ensure we're working with arrays
-      const productsArray = Array.isArray(productsData) 
+      const productsArray = productsData && (Array.isArray(productsData) 
         ? productsData 
         : productsData.results && Array.isArray(productsData.results) 
           ? productsData.results 
-          : [];
+          : []);
           
-      const categoriesArray = Array.isArray(categoriesData) 
+      const categoriesArray = categoriesData && (Array.isArray(categoriesData) 
         ? categoriesData 
         : categoriesData.results && Array.isArray(categoriesData.results) 
           ? categoriesData.results 
-          : [];
+          : []);
           
-      const brandsArray = Array.isArray(brandsData) 
+      const brandsArray = brandsData && (Array.isArray(brandsData) 
         ? brandsData 
         : brandsData.results && Array.isArray(brandsData.results) 
           ? brandsData.results 
-          : [];
+          : []);
       
       setProducts(productsArray);
       setCategories(categoriesArray);
@@ -656,17 +688,6 @@ const ProductManagement: React.FC = () => {
     }
   };
 
-  // Apply filters
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter ? product.category_id.toString() === categoryFilter : true;
-    const matchesBrand = brandFilter ? product.brand_id.toString() === brandFilter : true;
-    const matchesStatus = statusFilter ? 
-      (statusFilter === 'active' ? product.is_active : !product.is_active || product.stock_quantity === 0) : true;
-    
-    return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
-  });
-
   // Function to open bulk upload modal
   const openBulkUploadModal = () => {
     setShowBulkUploadModal(true);
@@ -741,7 +762,7 @@ const ProductManagement: React.FC = () => {
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
               <option value="">All Categories</option>
-              {categories.map(category => (
+              {categories && categories.map(category => (
                 <option key={category.id} value={category.id.toString()}>
                   {category.name}
                 </option>
@@ -753,7 +774,7 @@ const ProductManagement: React.FC = () => {
               onChange={(e) => setBrandFilter(e.target.value)}
             >
               <option value="">All Brands</option>
-              {brands.map(brand => (
+              {brands && brands.map(brand => (
                 <option key={brand.id} value={brand.id.toString()}>
                   {brand.name}
                 </option>
@@ -940,7 +961,7 @@ const ProductManagement: React.FC = () => {
                               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             >
                               <option value="">Select Category</option>
-                              {categories.map(category => (
+                              {categories && categories.map(category => (
                                 <option key={category.id} value={category.id}>
                                   {category.name}
                                 </option>
@@ -960,7 +981,7 @@ const ProductManagement: React.FC = () => {
                               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             >
                               <option value="">Select Brand</option>
-                              {brands.map(brand => (
+                              {brands && brands.map(brand => (
                                 <option key={brand.id} value={brand.id}>
                                   {brand.name}
                                 </option>

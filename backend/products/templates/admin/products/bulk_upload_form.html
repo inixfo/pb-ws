@@ -1,0 +1,103 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static 'admin/css/forms.css' %}">
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+  &rsaquo; <a href="{% url 'admin:products_product_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; {% translate 'Bulk Upload' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <div class="module">
+    <h2>{% translate 'Bulk Upload Products' %}</h2>
+    
+    <div class="form-row">
+      <p>{% translate 'Upload a CSV or Excel file to bulk import products.' %}</p>
+      <p>{% translate 'First select a category, then download a template file. Fill in the template and upload it.' %}</p>
+    </div>
+    
+    <form action="" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      
+      <div class="form-row">
+        <div>
+          <label for="id_category">{% translate 'Category:' %}</label>
+          <select name="category" id="id_category" required>
+            <option value="">---------</option>
+            {% for category in categories %}
+              <option value="{{ category.id }}">{{ category.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div>
+          <label>{% translate 'Download Template:' %}</label>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" id="download_csv" class="button">CSV Template</button>
+            <button type="button" id="download_xlsx" class="button">Excel Template</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div>
+          <label for="id_file">{% translate 'Upload File:' %}</label>
+          <input type="file" name="file" id="id_file" required accept=".csv,.xlsx,.xls">
+        </div>
+      </div>
+      
+      <div class="submit-row">
+        <input type="submit" value="{% translate 'Upload' %}" class="default">
+        <a href="{% url 'admin:products_product_changelist' %}" class="button">{% translate 'Cancel' %}</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const categorySelect = document.getElementById('id_category');
+  const downloadCsvBtn = document.getElementById('download_csv');
+  const downloadXlsxBtn = document.getElementById('download_xlsx');
+  
+  function updateDownloadButtons() {
+    const categoryId = categorySelect.value;
+    const buttonsEnabled = categoryId !== '';
+    
+    downloadCsvBtn.disabled = !buttonsEnabled;
+    downloadXlsxBtn.disabled = !buttonsEnabled;
+  }
+  
+  categorySelect.addEventListener('change', updateDownloadButtons);
+  
+  // Initialize button state
+  updateDownloadButtons();
+  
+  // Handle download button clicks
+  downloadCsvBtn.addEventListener('click', function() {
+    const categoryId = categorySelect.value;
+    if (categoryId) {
+      window.location.href = `{% url 'admin:products_product_changelist' %}download-template/${categoryId}/?format=csv`;
+    }
+  });
+  
+  downloadXlsxBtn.addEventListener('click', function() {
+    const categoryId = categorySelect.value;
+    if (categoryId) {
+      window.location.href = `{% url 'admin:products_product_changelist' %}download-template/${categoryId}/?format=xlsx`;
+    }
+  });
+});
+</script>
+{% endblock %} 

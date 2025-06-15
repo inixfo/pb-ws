@@ -1,6 +1,7 @@
 import { toast } from 'react-hot-toast';
 
-const API_URL = 'http://3.25.95.103/api';
+// Use dynamic base URL instead of hardcoded IP
+const API_URL = `${window.location.origin}/api`;
 
 // Helper function to get authentication token
 const getToken = () => localStorage.getItem('auth_token');
@@ -308,9 +309,9 @@ export const productService = {
   getFieldsByCategory: (categoryId: number) => fetchWithAuth(`/products/categories/${categoryId}/fields/`),
   // Bulk-upload helper endpoints (uses ProductViewSet actions)
   downloadTemplate: (categoryId: string, format: string = 'csv') =>
-    fetchWithAuth(`/products/products/template/?category_id=${categoryId}&format=${format}`, {}, true),
+    fetchWithAuth(`/products/bulk-upload/template/?category_id=${categoryId}&format=${format}`, {}, true),
   bulkUpload: (data: FormData) =>
-    fetchWithAuth('/products/products/bulk_upload/', {
+    fetchWithAuth('/products/bulk-upload/process/', {
       method: 'POST',
       body: data,
     }),

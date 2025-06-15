@@ -1,8 +1,13 @@
 from django.contrib import admin
 from django.db.models import ProtectedError
 from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.urls import path
+from django.http import HttpResponse
+from django.template.response import TemplateResponse
 from .models import Category, Brand, ProductField, Product, ProductImage, SKU, ProductVariation
 from reviews.models import Review
+from .utils.bulk_upload import generate_upload_template, process_upload_file
 
 
 class ProductFieldInline(admin.TabularInline):
@@ -99,6 +104,111 @@ class ProductAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
+    
+    change_list_template = 'admin/products/product_changelist.html'
+    
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('bulk-upload/', self.admin_site.admin_view(self.bulk_upload_view), name='product_bulk_upload'),
+            path('download-template/<int:category_id>/', self.admin_site.admin_view(self.download_template_view), name='product_download_template'),
+        ]
+        return custom_urls + urls
+    
+    def bulk_upload_view(self, request):
+        if request.method == 'POST':
+            category_id = request.POST.get('category')
+            file = request.FILES.get('file')
+            
+            if not category_id:
+                self.message_user(request, "Category is required", level=messages.ERROR)
+                return redirect('..')
+                
+            if not file:
+                self.message_user(request, "File is required", level=messages.ERROR)
+                return redirect('..')
+                
+            try:
+                # Process the uploaded file
+                results = process_upload_file(file, int(category_id), None)  # None for vendor_id means admin upload
+                
+                # Count successes and errors
+                success_count = sum(1 for r in results if r['status'] == 'success')
+                error_count = len(results) - success_count
+                
+                if success_count > 0:
+                    self.message_user(
+                        request, 
+                        f"Successfully imported {success_count} products with {error_count} errors.",
+                        level=messages.SUCCESS
+                    )
+                else:
+                    self.message_user(
+                        request, 
+                        f"No products were imported. {error_count} errors found.",
+                        level=messages.ERROR
+                    )
+                    
+                # If there are errors, show them
+                if error_count > 0:
+                    for result in results:
+                        if result['status'] == 'error':
+                            self.message_user(
+                                request,
+                                f"Row {result['row']}: {result['errors']}",
+                                level=messages.WARNING
+                            )
+                
+                return redirect('admin:products_product_changelist')
+                
+            except Exception as e:
+                self.message_user(
+                    request,
+                    f"Error processing file: {str(e)}",
+                    level=messages.ERROR
+                )
+                return redirect('..')
+        
+        # GET request - show the upload form
+        categories = Category.objects.all()
+        context = {
+            'categories': categories,
+            'title': 'Bulk Upload Products',
+            'opts': self.model._meta,
+            'app_label': self.model._meta.app_label,
+        }
+        return TemplateResponse(request, 'admin/products/bulk_upload_form.html', context)
+    
+    def download_template_view(self, request, category_id):
+        try:
+            # Generate template file
+            file_format = request.GET.get('format', 'csv')
+            template_file = generate_upload_template(category_id, file_format)
+            
+            # Get category name for filename
+            category = Category.objects.get(id=category_id)
+            
+            # Set content type and filename
+            if file_format == 'csv':
+                content_type = 'text/csv'
+                filename = f"{category.name}_template.csv"
+            else:
+                content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                filename = f"{category.name}_template.xlsx"
+            
+            # Create response
+            response = HttpResponse(template_file, content_type=content_type)
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            return response
+            
+        except Exception as e:
+            self.message_user(
+                request,
+                f"Error generating template: {str(e)}",
+                level=messages.ERROR
+            )
+            return redirect('admin:products_product_changelist')
 
     def delete_model(self, request, obj):
         """Override delete_model to handle ProtectedError."""
