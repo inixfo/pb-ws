@@ -3,11 +3,35 @@ import io
 import pandas as pd
 import numpy as np
 import openpyxl
+import requests
+import os
+from urllib.parse import urlparse
+from django.core.files import File
+from django.core.files.temp import NamedTemporaryFile
 from typing import Dict, List, Any, Tuple
 from django.db import transaction
 from django.contrib.auth import get_user_model
 
 from products.models import Product, Category, Brand, ProductField, ProductVariation, ProductImage
+
+
+def _parse_boolean(value):
+    """
+    Parse a value as a boolean.
+    
+    Handles various input types:
+    - Boolean: returns as is
+    - String: converts 'true', 'yes', '1', 'y' (case insensitive) to True
+    - Number: 1 is True, 0 is False
+    - None: returns False
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in ('true', 'yes', '1', 'y')
+    if isinstance(value, (int, float)):
+        return bool(value)
+    return False
 
 
 def validate_required_fields(data: Dict[str, Any], category: Category) -> Tuple[bool, List[str]]:
@@ -23,6 +47,79 @@ def validate_required_fields(data: Dict[str, Any], category: Category) -> Tuple[
             missing_fields.append(field)
     
     return len(missing_fields) == 0, missing_fields
+
+
+def is_url(path):
+    """Check if a path is a URL."""
+    try:
+        result = urlparse(path)
+        return all([result.scheme, result.netloc])
+    except:
+        return False
+
+
+def save_image_from_path(product, image_path, is_primary=False, display_order=0):
+    """Save an image from a path or URL to a ProductImage instance."""
+    if not image_path:
+        return None
+        
+    try:
+        if is_url(image_path):
+            # Handle URL
+            img_temp = NamedTemporaryFile(delete=True)
+            response = requests.get(image_path, stream=True)
+            
+            if not response.ok:
+                return None
+                
+            # Write the image to a temporary file
+            for block in response.iter_content(1024 * 8):
+                if not block:
+                    break
+                img_temp.write(block)
+                
+            img_temp.flush()
+            
+            # Create the product image
+            image = ProductImage.objects.create(
+                product=product,
+                is_primary=is_primary,
+                display_order=display_order
+            )
+            
+            # Get the filename from the URL
+            filename = os.path.basename(urlparse(image_path).path)
+            if not filename:
+                filename = f"image_{display_order}.jpg"
+                
+            # Save the image file
+            image.image.save(filename, File(img_temp))
+            return image
+            
+        else:
+            # Handle local file path
+            if not os.path.exists(image_path):
+                return None
+                
+            # Create the product image
+            image = ProductImage.objects.create(
+                product=product,
+                is_primary=is_primary,
+                display_order=display_order
+            )
+            
+            # Get the filename
+            filename = os.path.basename(image_path)
+            
+            # Open and save the file
+            with open(image_path, 'rb') as f:
+                image.image.save(filename, File(f))
+                
+            return image
+            
+    except Exception as e:
+        print(f"Error saving image: {str(e)}")
+        return None
 
 
 def generate_upload_template(category_id: int, file_format: str = 'csv') -> io.BytesIO:
@@ -57,9 +154,9 @@ def generate_upload_template(category_id: int, file_format: str = 'csv') -> io.B
         'variation3_name', 'variation3_price', 'variation3_stock', 'variation3_is_default', 'variation3_is_active',
         
         # Product images (up to 3 images)
-        'image1_url', 'image1_is_primary',
-        'image2_url', 'image2_is_primary',
-        'image3_url', 'image3_is_primary',
+        'image1_path', 'image1_is_primary',
+        'image2_path', 'image2_is_primary',
+        'image3_path', 'image3_is_primary',
     ]
     
     # Add dynamic fields
@@ -124,11 +221,11 @@ def generate_upload_template(category_id: int, file_format: str = 'csv') -> io.B
         'variation3_is_active': 'True',
         
         # Product images
-        'image1_url': 'https://example.com/image1.jpg',
+        'image1_path': 'C:/path/to/image1.jpg or https://example.com/image1.jpg',
         'image1_is_primary': 'True',
-        'image2_url': 'https://example.com/image2.jpg',
+        'image2_path': 'C:/path/to/image2.jpg or https://example.com/image2.jpg',
         'image2_is_primary': 'False',
-        'image3_url': 'https://example.com/image3.jpg',
+        'image3_path': 'C:/path/to/image3.jpg or https://example.com/image3.jpg',
         'image3_is_primary': 'False',
     }
     
@@ -251,15 +348,15 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
                     'category': category,
                     'brand': brand,
                     'vendor_id': vendor.id if vendor else vendor_id,
-                    'is_available': row_data.get('is_available', 'True').lower() == 'true',
-                    'is_approved': row_data.get('is_approved', 'False').lower() == 'true',
-                    'emi_available': row_data.get('emi_available', 'False').lower() == 'true',
+                    'is_available': _parse_boolean(row_data.get('is_available', 'True')),
+                    'is_approved': _parse_boolean(row_data.get('is_approved', 'False')),
+                    'emi_available': _parse_boolean(row_data.get('emi_available', 'False')),
                     
                     # Promotional fields
-                    'is_trending': row_data.get('is_trending', 'False').lower() == 'true',
-                    'is_special_offer': row_data.get('is_special_offer', 'False').lower() == 'true',
-                    'is_best_seller': row_data.get('is_best_seller', 'False').lower() == 'true',
-                    'is_todays_deal': row_data.get('is_todays_deal', 'False').lower() == 'true',
+                    'is_trending': _parse_boolean(row_data.get('is_trending', 'False')),
+                    'is_special_offer': _parse_boolean(row_data.get('is_special_offer', 'False')),
+                    'is_best_seller': _parse_boolean(row_data.get('is_best_seller', 'False')),
+                    'is_todays_deal': _parse_boolean(row_data.get('is_todays_deal', 'False')),
                 }
                 
                 # Create product
@@ -282,7 +379,7 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
                         
                         # Convert types based on field type
                         if field.field_type == 'boolean':
-                            value = str(value).lower() == 'true'
+                            value = _parse_boolean(value)
                         elif field.field_type == 'multi_select' and isinstance(value, str):
                             value = [item.strip() for item in value.split(',')]
                         
@@ -300,8 +397,8 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
                         try:
                             var_price = float(row_data.get(f'variation{i}_price', 0))
                             var_stock = int(row_data.get(f'variation{i}_stock', 0))
-                            var_is_default = row_data.get(f'variation{i}_is_default', 'False').lower() == 'true'
-                            var_is_active = row_data.get(f'variation{i}_is_active', 'True').lower() == 'true'
+                            var_is_default = _parse_boolean(row_data.get(f'variation{i}_is_default', 'False'))
+                            var_is_active = _parse_boolean(row_data.get(f'variation{i}_is_active', 'True'))
                             
                             # Create variation
                             ProductVariation.objects.create(
@@ -318,17 +415,15 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
                 
                 # Process product images
                 for i in range(1, 4):  # Handle up to 3 images
-                    img_url = row_data.get(f'image{i}_url')
-                    if img_url:
+                    img_path = row_data.get(f'image{i}_path')
+                    if img_path:
                         try:
-                            img_is_primary = row_data.get(f'image{i}_is_primary', 'False').lower() == 'true'
+                            img_is_primary = _parse_boolean(row_data.get(f'image{i}_is_primary', 'False'))
                             
-                            # Create image
-                            # Note: This only stores the URL, not the actual image file
-                            # In a real implementation, you might want to download the image from the URL
-                            ProductImage.objects.create(
+                            # Save image from path or URL
+                            save_image_from_path(
                                 product=product,
-                                image=img_url,  # This might need adjustment based on your model
+                                image_path=img_path,
                                 is_primary=img_is_primary,
                                 display_order=i
                             )
