@@ -339,23 +339,24 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
     
     # Process each row
     results = []
-    with transaction.atomic():
-        for index, row in df.iterrows():
-            row_data = row.to_dict()
-            
-            # Validate required fields
-            is_valid, missing_fields = validate_required_fields(row_data, category)
-            
-            if not is_valid:
-                results.append({
-                    'row': index + 2,  # +2 for Excel row number (1-based + header)
-                    'status': 'error',
-                    'errors': f"Missing required fields: {', '.join(missing_fields)}",
-                    'data': row_data
-                })
-                continue
-            
-            try:
+    for index, row in df.iterrows():
+        row_data = row.to_dict()
+        
+        # Validate required fields
+        is_valid, missing_fields = validate_required_fields(row_data, category)
+        
+        if not is_valid:
+            results.append({
+                'row': index + 2,  # +2 for Excel row number (1-based + header)
+                'status': 'error',
+                'errors': f"Missing required fields: {', '.join(missing_fields)}",
+                'data': row_data
+            })
+            continue
+        
+        try:
+            # Use a transaction for each row
+            with transaction.atomic():
                 # Process basic product fields
                 brand_name = row_data.get('brand')
                 brand, _ = Brand.objects.get_or_create(name=brand_name) if brand_name else (None, False)
@@ -464,9 +465,6 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
                         try:
                             img_is_primary = _parse_boolean(row_data.get(f'image{i}_is_primary', 'False'))
                             
-                            # Debug image path
-                            print(f"Processing image path: {img_path}")
-                            
                             # Try multiple approaches to save the image
                             image = None
                             
@@ -494,7 +492,6 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
                                     with open(full_path, 'rb') as f:
                                         filename = os.path.basename(full_path)
                                         image.image.save(filename, File(f))
-                                    print(f"Saved image using media root path: {full_path}")
                             
                             # 3. For Docker deployment, try container path
                             if not image:
@@ -508,86 +505,10 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
                                     with open(docker_path, 'rb') as f:
                                         filename = os.path.basename(docker_path)
                                         image.image.save(filename, File(f))
-                                    print(f"Saved image using Docker container path: {docker_path}")
-                                    
-                            # 4. Try to copy the file to the media directory and then use it
-                            if not image:
-                                try:
-                                    # Try to find the file in various locations
-                                    base_name = os.path.basename(img_path)
-                                    possible_paths = [
-                                        img_path,  # Original path
-                                        os.path.abspath(img_path),  # Absolute path
-                                        os.path.join(os.getcwd(), img_path),  # Current working directory
-                                        os.path.join(os.getcwd(), 'media', base_name),  # Media in current directory
-                                        os.path.join(os.path.dirname(os.getcwd()), img_path),  # Parent directory
-                                    ]
-                                    
-                                    source_path = None
-                                    for path in possible_paths:
-                                        if os.path.exists(path):
-                                            source_path = path
-                                            break
-                                    
-                                    if source_path:
-                                        # Create the product image
-                                        image = ProductImage.objects.create(
-                                            product=product,
-                                            is_primary=img_is_primary,
-                                            display_order=i
-                                        )
-                                        
-                                        # Save directly from the file
-                                        with open(source_path, 'rb') as f:
-                                            image.image.save(base_name, File(f))
-                                            
-                                        print(f"Saved image by finding and copying from: {source_path}")
-                                except Exception as copy_error:
-                                    print(f"Error copying image: {str(copy_error)}")
-                            
-                            # 5. If the path looks like a URL but wasn't detected as one, try it explicitly
-                            if not image and ('http://' in img_path or 'https://' in img_path):
-                                try:
-                                    img_temp = NamedTemporaryFile(delete=True)
-                                    response = requests.get(img_path, stream=True)
-                                    
-                                    if response.ok:
-                                        # Write the image to a temporary file
-                                        for block in response.iter_content(1024 * 8):
-                                            if not block:
-                                                break
-                                            img_temp.write(block)
-                                            
-                                        img_temp.flush()
-                                        
-                                        # Create the product image
-                                        image = ProductImage.objects.create(
-                                            product=product,
-                                            is_primary=img_is_primary,
-                                            display_order=i
-                                        )
-                                        
-                                        # Get the filename from the URL
-                                        filename = os.path.basename(urlparse(img_path).path)
-                                        if not filename:
-                                            filename = f"image_{i}.jpg"
-                                            
-                                        # Save the image file
-                                        image.image.save(filename, File(img_temp))
-                                        print(f"Successfully saved image from URL (direct method): {img_path}")
-                                except Exception as url_error:
-                                    print(f"Error downloading image from URL: {str(url_error)}")
-                            
-                            if not image:
-                                print(f"Failed to save image from path: {img_path}")
-                                print(f"Current working directory: {os.getcwd()}")
-                                print(f"Media root: {getattr(settings, 'MEDIA_ROOT', 'Not set')}")
-                                print(f"File exists check: {os.path.exists(img_path)}")
                         except Exception as e:
-                            # Log image errors
-                            print(f"Error processing image {i}: {str(e)}")
-                            # Skip invalid images
-                            pass
+                            # Log image error but continue processing
+                            print(f"Error processing image {img_path}: {str(e)}")
+                            continue
                 
                 # Add success result
                 results.append({
@@ -597,13 +518,14 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
                     'product_name': product.name
                 })
                 
-            except Exception as e:
-                # Add error result
-                results.append({
-                    'row': index + 2,
-                    'status': 'error',
-                    'errors': str(e),
-                    'data': row_data
-                })
-                
+        except Exception as e:
+            # Add error result
+            results.append({
+                'row': index + 2,
+                'status': 'error',
+                'errors': str(e),
+                'data': row_data
+            })
+            continue
+    
     return results 
