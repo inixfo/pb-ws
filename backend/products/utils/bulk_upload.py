@@ -11,6 +11,7 @@ from django.core.files.temp import NamedTemporaryFile
 from typing import Dict, List, Any, Tuple
 from django.db import transaction
 from django.contrib.auth import get_user_model
+from django.utils.text import slugify
 
 from products.models import Product, Category, Brand, ProductField, ProductVariation, ProductImage
 
@@ -70,6 +71,7 @@ def save_image_from_path(product, image_path, is_primary=False, display_order=0)
             response = requests.get(image_path, stream=True)
             
             if not response.ok:
+                print(f"Failed to download image from URL: {image_path}")
                 return None
                 
             # Write the image to a temporary file
@@ -94,13 +96,47 @@ def save_image_from_path(product, image_path, is_primary=False, display_order=0)
                 
             # Save the image file
             image.image.save(filename, File(img_temp))
+            print(f"Successfully saved image from URL: {image_path}")
             return image
             
         else:
-            # Handle local file path
-            if not os.path.exists(image_path):
-                return None
+            # For local file paths, try to handle both Windows and Unix paths
+            # and convert to absolute paths if needed
+            
+            # Try to normalize the path
+            normalized_path = os.path.normpath(image_path)
+            
+            # Check if file exists directly
+            if os.path.exists(normalized_path):
+                file_path = normalized_path
+            else:
+                # Try common media locations
+                from django.conf import settings
+                media_root = getattr(settings, 'MEDIA_ROOT', '')
+                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(settings.__file__)))
                 
+                # List of possible paths to try
+                possible_paths = [
+                    normalized_path,
+                    os.path.join(media_root, normalized_path),
+                    os.path.join(base_dir, normalized_path),
+                    os.path.join(base_dir, 'media', normalized_path),
+                    # For Docker container paths
+                    os.path.join('/app/media', os.path.basename(normalized_path)),
+                ]
+                
+                # Try each path
+                file_path = None
+                for path in possible_paths:
+                    if os.path.exists(path):
+                        file_path = path
+                        break
+                
+                if not file_path:
+                    print(f"Could not find image file: {image_path}")
+                    print(f"Tried paths: {possible_paths}")
+                    return None
+            
             # Create the product image
             image = ProductImage.objects.create(
                 product=product,
@@ -109,12 +145,13 @@ def save_image_from_path(product, image_path, is_primary=False, display_order=0)
             )
             
             # Get the filename
-            filename = os.path.basename(image_path)
+            filename = os.path.basename(file_path)
             
             # Open and save the file
-            with open(image_path, 'rb') as f:
+            with open(file_path, 'rb') as f:
                 image.image.save(filename, File(f))
                 
+            print(f"Successfully saved image from file: {file_path}")
             return image
             
     except Exception as e:
@@ -329,25 +366,32 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
                 if vendor_email:
                     try:
                         user = User.objects.get(email=vendor_email)
-                        if hasattr(user, 'vendor_profile'):
-                            vendor = user.vendor_profile
+                        vendor_id = user.id  # Use the found user's ID
                     except User.DoesNotExist:
-                        pass
+                        pass  # Keep using the provided vendor_id
                 
-                # If vendor_id is provided (admin upload) and no vendor found in CSV, use it
-                if not vendor and vendor_id:
-                    vendor_id = vendor_id
+                # Generate slug
+                product_name = row_data.get('name')
+                slug = slugify(product_name)
+                
+                # Ensure slug uniqueness
+                base_slug = slug
+                counter = 1
+                while Product.objects.filter(slug=slug).exists():
+                    slug = f"{base_slug}-{counter}"
+                    counter += 1
                 
                 # Extract basic product fields
                 basic_fields = {
-                    'name': row_data.get('name'),
+                    'name': product_name,
+                    'slug': slug,  # Add the generated slug
                     'description': row_data.get('description', ''),
                     'base_price': row_data.get('price'),
                     'sale_price': row_data.get('sale_price'),
                     'stock_quantity': row_data.get('stock_quantity', 0),
                     'category': category,
                     'brand': brand,
-                    'vendor_id': vendor.id if vendor else vendor_id,
+                    'vendor_id': vendor_id,  # Use the vendor_id directly
                     'is_available': _parse_boolean(row_data.get('is_available', 'True')),
                     'is_approved': _parse_boolean(row_data.get('is_approved', 'False')),
                     'emi_available': _parse_boolean(row_data.get('emi_available', 'False')),
@@ -420,14 +464,128 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
                         try:
                             img_is_primary = _parse_boolean(row_data.get(f'image{i}_is_primary', 'False'))
                             
-                            # Save image from path or URL
-                            save_image_from_path(
+                            # Debug image path
+                            print(f"Processing image path: {img_path}")
+                            
+                            # Try multiple approaches to save the image
+                            image = None
+                            
+                            # 1. Try direct URL or file path
+                            image = save_image_from_path(
                                 product=product,
                                 image_path=img_path,
                                 is_primary=img_is_primary,
                                 display_order=i
                             )
-                        except Exception:
+                            
+                            # 2. If that fails, try treating it as a relative path in the media directory
+                            if not image:
+                                from django.conf import settings
+                                media_root = getattr(settings, 'MEDIA_ROOT', '')
+                                relative_path = img_path.replace('\\', '/').lstrip('/')
+                                full_path = os.path.join(media_root, relative_path)
+                                
+                                if os.path.exists(full_path):
+                                    image = ProductImage.objects.create(
+                                        product=product,
+                                        is_primary=img_is_primary,
+                                        display_order=i
+                                    )
+                                    with open(full_path, 'rb') as f:
+                                        filename = os.path.basename(full_path)
+                                        image.image.save(filename, File(f))
+                                    print(f"Saved image using media root path: {full_path}")
+                            
+                            # 3. For Docker deployment, try container path
+                            if not image:
+                                docker_path = f"/app/media/{os.path.basename(img_path)}"
+                                if os.path.exists(docker_path):
+                                    image = ProductImage.objects.create(
+                                        product=product,
+                                        is_primary=img_is_primary,
+                                        display_order=i
+                                    )
+                                    with open(docker_path, 'rb') as f:
+                                        filename = os.path.basename(docker_path)
+                                        image.image.save(filename, File(f))
+                                    print(f"Saved image using Docker container path: {docker_path}")
+                                    
+                            # 4. Try to copy the file to the media directory and then use it
+                            if not image:
+                                try:
+                                    # Try to find the file in various locations
+                                    base_name = os.path.basename(img_path)
+                                    possible_paths = [
+                                        img_path,  # Original path
+                                        os.path.abspath(img_path),  # Absolute path
+                                        os.path.join(os.getcwd(), img_path),  # Current working directory
+                                        os.path.join(os.getcwd(), 'media', base_name),  # Media in current directory
+                                        os.path.join(os.path.dirname(os.getcwd()), img_path),  # Parent directory
+                                    ]
+                                    
+                                    source_path = None
+                                    for path in possible_paths:
+                                        if os.path.exists(path):
+                                            source_path = path
+                                            break
+                                    
+                                    if source_path:
+                                        # Create the product image
+                                        image = ProductImage.objects.create(
+                                            product=product,
+                                            is_primary=img_is_primary,
+                                            display_order=i
+                                        )
+                                        
+                                        # Save directly from the file
+                                        with open(source_path, 'rb') as f:
+                                            image.image.save(base_name, File(f))
+                                            
+                                        print(f"Saved image by finding and copying from: {source_path}")
+                                except Exception as copy_error:
+                                    print(f"Error copying image: {str(copy_error)}")
+                            
+                            # 5. If the path looks like a URL but wasn't detected as one, try it explicitly
+                            if not image and ('http://' in img_path or 'https://' in img_path):
+                                try:
+                                    img_temp = NamedTemporaryFile(delete=True)
+                                    response = requests.get(img_path, stream=True)
+                                    
+                                    if response.ok:
+                                        # Write the image to a temporary file
+                                        for block in response.iter_content(1024 * 8):
+                                            if not block:
+                                                break
+                                            img_temp.write(block)
+                                            
+                                        img_temp.flush()
+                                        
+                                        # Create the product image
+                                        image = ProductImage.objects.create(
+                                            product=product,
+                                            is_primary=img_is_primary,
+                                            display_order=i
+                                        )
+                                        
+                                        # Get the filename from the URL
+                                        filename = os.path.basename(urlparse(img_path).path)
+                                        if not filename:
+                                            filename = f"image_{i}.jpg"
+                                            
+                                        # Save the image file
+                                        image.image.save(filename, File(img_temp))
+                                        print(f"Successfully saved image from URL (direct method): {img_path}")
+                                except Exception as url_error:
+                                    print(f"Error downloading image from URL: {str(url_error)}")
+                            
+                            if not image:
+                                print(f"Failed to save image from path: {img_path}")
+                                print(f"Current working directory: {os.getcwd()}")
+                                print(f"Media root: {getattr(settings, 'MEDIA_ROOT', 'Not set')}")
+                                print(f"File exists check: {os.path.exists(img_path)}")
+                        except Exception as e:
+                            # Log image errors
+                            print(f"Error processing image {i}: {str(e)}")
                             # Skip invalid images
                             pass
                 

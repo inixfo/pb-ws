@@ -171,26 +171,26 @@ export const ProductDetailsSection = (): JSX.Element => {
 
   return (
     <div className="w-full py-6">
-      {/* Product Summary */}
-      <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-4">Product Summary</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {getProductSummary.map((spec, index) => (
-            <div key={index} className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-sm text-gray-500">{spec.label}</div>
-              <div className="font-medium text-gray-900">{spec.value}</div>
+      {/* Brand and Category Information */}
+      <div className="mt-6 mb-6 border rounded-lg overflow-hidden">
+          <div className="bg-gray-50 px-4 py-3 border-b">
+            <h4 className="font-semibold text-gray-900">Product Information</h4>
+          </div>
+          <div className="divide-y">
+            <div className="flex px-4 py-3">
+              <div className="w-1/3 font-medium text-gray-700">Brand</div>
+              <div className="w-2/3 text-gray-600">{product.brand.name}</div>
             </div>
-          ))}
+            <div className="flex px-4 py-3">
+              <div className="w-1/3 font-medium text-gray-700">Category</div>
+              <div className="w-2/3 text-gray-600">{product.category.name}</div>
+            </div>
+            <div className="flex px-4 py-3">
+              <div className="w-1/3 font-medium text-gray-700">SKU</div>
+              <div className="w-2/3 text-gray-600">{product.default_sku || `PB-${product.id.toString().padStart(6, '0')}`}</div>
+            </div>
+          </div>
         </div>
-      </div>
-      
-      {/* Product Description */}
-      <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-4">Description</h3>
-        <div className="text-gray-700 whitespace-pre-line">
-          {product.description}
-        </div>
-      </div>
       
       {/* Product Specifications */}
       <div>
@@ -238,28 +238,7 @@ export const ProductDetailsSection = (): JSX.Element => {
           </div>
         ) : (
           <p className="text-gray-500 italic">No detailed specifications available for this product.</p>
-        )}
-        
-        {/* Brand and Category Information */}
-        <div className="mt-6 border rounded-lg overflow-hidden">
-          <div className="bg-gray-50 px-4 py-3 border-b">
-            <h4 className="font-semibold text-gray-900">Product Information</h4>
-          </div>
-          <div className="divide-y">
-            <div className="flex px-4 py-3">
-              <div className="w-1/3 font-medium text-gray-700">Brand</div>
-              <div className="w-2/3 text-gray-600">{product.brand.name}</div>
-            </div>
-            <div className="flex px-4 py-3">
-              <div className="w-1/3 font-medium text-gray-700">Category</div>
-              <div className="w-2/3 text-gray-600">{product.category.name}</div>
-            </div>
-            <div className="flex px-4 py-3">
-              <div className="w-1/3 font-medium text-gray-700">SKU</div>
-              <div className="w-2/3 text-gray-600">{product.default_sku || `PB-${product.id.toString().padStart(6, '0')}`}</div>
-            </div>
-          </div>
-        </div>
+        )}       
       </div>
     </div>
   );
