@@ -5,8 +5,9 @@ import numpy as np
 import openpyxl
 from typing import Dict, List, Any, Tuple
 from django.db import transaction
+from django.contrib.auth import get_user_model
 
-from products.models import Product, Category, Brand, ProductField
+from products.models import Product, Category, Brand, ProductField, ProductVariation, ProductImage
 
 
 def validate_required_fields(data: Dict[str, Any], category: Category) -> Tuple[bool, List[str]]:
@@ -37,8 +38,29 @@ def generate_upload_template(category_id: int, file_format: str = 'csv') -> io.B
         field_groups[field.group].append(field)
     
     # Create a list of column names
-    columns = ['name', 'description', 'price', 'sale_price', 'stock_quantity', 
-               'brand', 'emi_available', 'emi_plan_ids']
+    columns = [
+        # Basic info
+        'name', 'description', 'price', 'sale_price', 'stock_quantity', 'brand', 
+        
+        # Status fields
+        'is_available', 'is_approved', 'vendor_email',
+        
+        # Promotional fields
+        'is_trending', 'is_special_offer', 'is_best_seller', 'is_todays_deal',
+        
+        # EMI options
+        'emi_available', 'emi_plan_ids',
+        
+        # Product variations (up to 3 variations)
+        'variation1_name', 'variation1_price', 'variation1_stock', 'variation1_is_default', 'variation1_is_active',
+        'variation2_name', 'variation2_price', 'variation2_stock', 'variation2_is_default', 'variation2_is_active',
+        'variation3_name', 'variation3_price', 'variation3_stock', 'variation3_is_default', 'variation3_is_active',
+        
+        # Product images (up to 3 images)
+        'image1_url', 'image1_is_primary',
+        'image2_url', 'image2_is_primary',
+        'image3_url', 'image3_is_primary',
+    ]
     
     # Add dynamic fields
     dynamic_fields = []
@@ -59,14 +81,55 @@ def generate_upload_template(category_id: int, file_format: str = 'csv') -> io.B
     
     # Create an example row
     example_row = {
-        'name': 'Product Name',
-        'description': 'Product Description',
+        # Basic info
+        'name': 'Sample Product',
+        'description': 'This is a sample product description',
         'price': '1000.00',
         'sale_price': '900.00',
         'stock_quantity': '100',
-        'brand': 'Brand Name',
+        'brand': 'Sample Brand',
+        
+        # Status fields
+        'is_available': 'True',
+        'is_approved': 'True',
+        'vendor_email': 'vendor@example.com',
+        
+        # Promotional fields
+        'is_trending': 'False',
+        'is_special_offer': 'True',
+        'is_best_seller': 'False',
+        'is_todays_deal': 'True',
+        
+        # EMI options
         'emi_available': 'True',
-        'emi_plan_ids': '1,2,3'  # Comma-separated EMI plan IDs
+        'emi_plan_ids': '1,2,3',  # Comma-separated EMI plan IDs
+        
+        # Product variations
+        'variation1_name': '128GB Black',
+        'variation1_price': '1000.00',
+        'variation1_stock': '50',
+        'variation1_is_default': 'True',
+        'variation1_is_active': 'True',
+        
+        'variation2_name': '256GB Black',
+        'variation2_price': '1200.00',
+        'variation2_stock': '30',
+        'variation2_is_default': 'False',
+        'variation2_is_active': 'True',
+        
+        'variation3_name': '512GB Black',
+        'variation3_price': '1500.00',
+        'variation3_stock': '20',
+        'variation3_is_default': 'False',
+        'variation3_is_active': 'True',
+        
+        # Product images
+        'image1_url': 'https://example.com/image1.jpg',
+        'image1_is_primary': 'True',
+        'image2_url': 'https://example.com/image2.jpg',
+        'image2_is_primary': 'False',
+        'image3_url': 'https://example.com/image3.jpg',
+        'image3_is_primary': 'False',
     }
     
     # Use the exact column key that was added to columns list
@@ -117,6 +180,7 @@ def generate_upload_template(category_id: int, file_format: str = 'csv') -> io.B
 
 def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str, Any]]:
     """Process an uploaded file and create products."""
+    User = get_user_model()
     category = Category.objects.get(id=category_id)
     
     # Read file based on extension
@@ -162,17 +226,40 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
                 brand_name = row_data.get('brand')
                 brand, _ = Brand.objects.get_or_create(name=brand_name) if brand_name else (None, False)
                 
+                # Handle vendor
+                vendor = None
+                vendor_email = row_data.get('vendor_email')
+                if vendor_email:
+                    try:
+                        user = User.objects.get(email=vendor_email)
+                        if hasattr(user, 'vendor_profile'):
+                            vendor = user.vendor_profile
+                    except User.DoesNotExist:
+                        pass
+                
+                # If vendor_id is provided (admin upload) and no vendor found in CSV, use it
+                if not vendor and vendor_id:
+                    vendor_id = vendor_id
+                
                 # Extract basic product fields
                 basic_fields = {
                     'name': row_data.get('name'),
                     'description': row_data.get('description', ''),
-                    'price': row_data.get('price'),
+                    'base_price': row_data.get('price'),
                     'sale_price': row_data.get('sale_price'),
                     'stock_quantity': row_data.get('stock_quantity', 0),
                     'category': category,
                     'brand': brand,
-                    'vendor_id': vendor_id,
+                    'vendor_id': vendor.id if vendor else vendor_id,
+                    'is_available': row_data.get('is_available', 'True').lower() == 'true',
+                    'is_approved': row_data.get('is_approved', 'False').lower() == 'true',
                     'emi_available': row_data.get('emi_available', 'False').lower() == 'true',
+                    
+                    # Promotional fields
+                    'is_trending': row_data.get('is_trending', 'False').lower() == 'true',
+                    'is_special_offer': row_data.get('is_special_offer', 'False').lower() == 'true',
+                    'is_best_seller': row_data.get('is_best_seller', 'False').lower() == 'true',
+                    'is_todays_deal': row_data.get('is_todays_deal', 'False').lower() == 'true',
                 }
                 
                 # Create product
@@ -199,15 +286,57 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
                         elif field.field_type == 'multi_select' and isinstance(value, str):
                             value = [item.strip() for item in value.split(',')]
                         
-                        # Add to specs
-                        if field.group not in specs:
-                            specs[field.group] = {}
-                        specs[field.group][field_name] = value
+                        # Add to specifications
+                        specs[field.name] = value
                 
                 # Save specifications
                 product.specifications = specs
                 product.save()
                 
+                # Process product variations
+                for i in range(1, 4):  # Handle up to 3 variations
+                    var_name = row_data.get(f'variation{i}_name')
+                    if var_name:
+                        try:
+                            var_price = float(row_data.get(f'variation{i}_price', 0))
+                            var_stock = int(row_data.get(f'variation{i}_stock', 0))
+                            var_is_default = row_data.get(f'variation{i}_is_default', 'False').lower() == 'true'
+                            var_is_active = row_data.get(f'variation{i}_is_active', 'True').lower() == 'true'
+                            
+                            # Create variation
+                            ProductVariation.objects.create(
+                                product=product,
+                                name=var_name,
+                                price=var_price,
+                                stock_quantity=var_stock,
+                                is_default=var_is_default,
+                                is_active=var_is_active
+                            )
+                        except (ValueError, TypeError):
+                            # Skip invalid variations
+                            pass
+                
+                # Process product images
+                for i in range(1, 4):  # Handle up to 3 images
+                    img_url = row_data.get(f'image{i}_url')
+                    if img_url:
+                        try:
+                            img_is_primary = row_data.get(f'image{i}_is_primary', 'False').lower() == 'true'
+                            
+                            # Create image
+                            # Note: This only stores the URL, not the actual image file
+                            # In a real implementation, you might want to download the image from the URL
+                            ProductImage.objects.create(
+                                product=product,
+                                image=img_url,  # This might need adjustment based on your model
+                                is_primary=img_is_primary,
+                                display_order=i
+                            )
+                        except Exception:
+                            # Skip invalid images
+                            pass
+                
+                # Add success result
                 results.append({
                     'row': index + 2,
                     'status': 'success',
@@ -216,11 +345,12 @@ def process_upload_file(file, category_id: int, vendor_id: int) -> List[Dict[str
                 })
                 
             except Exception as e:
+                # Add error result
                 results.append({
                     'row': index + 2,
                     'status': 'error',
                     'errors': str(e),
                     'data': row_data
                 })
-    
+                
     return results 
