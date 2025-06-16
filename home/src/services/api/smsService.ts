@@ -89,7 +89,7 @@ class SMSService {
    */
   private formatPhoneNumber(phoneNumber: string): string {
     // Remove any non-digit characters
-    let cleaned = phoneNumber.replace(/\D/g, '');
+    const cleaned = phoneNumber.replace(/\D/g, '');
     
     // Case 1: If the number starts with 880, it's already in international format
     if (cleaned.startsWith('880') && cleaned.length === 13) {
@@ -106,7 +106,7 @@ class SMSService {
       return `880${cleaned}`;
     }
     
-    // Return as-is for other cases
+    // Return as-is for other cases - the backend also has validation
     return cleaned;
   }
 }

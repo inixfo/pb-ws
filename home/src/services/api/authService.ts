@@ -32,13 +32,16 @@ class AuthService {
       const data = { ...user };
 
       // Map full_name -> first_name + last_name for backend compatibility
-      if (data.full_name && (!data.first_name || !data.last_name)) {
+      if (data.full_name) {
         const parts = (data.full_name as string).trim().split(' ');
-        data.first_name = parts.shift();
-        data.last_name = parts.join(' ') || '';
+        data.first_name = parts[0] || '';
+        data.last_name = parts.length > 1 ? parts.slice(1).join(' ') : '';
+        
+        // Delete full_name to prevent it being sent to the API
         delete data.full_name;
       }
 
+      console.log('Sending registration data:', data);
       const response = await axios.post(`${API_URL}/users/register/`, data);
       return response.data;
     } catch (error) {

@@ -65,8 +65,31 @@ class VerifyPhoneNumberView(APIView):
         if records.exists():
             latest = records.first()
             logger.info(f"Found verification record: code={latest.verification_code}, expired={latest.is_expired}, verified={latest.is_verified}")
+            
+            # If code is already verified, consider this a success
+            if latest.is_verified and latest.verification_code == code:
+                logger.info(f"Code was already verified for {clean_phone}")
+                return Response({'message': 'Phone number verified successfully'})
         else:
             logger.warning(f"No verification records found for {clean_phone}")
+            
+            # Try alternative phone formats if no records found
+            possible_formats = [
+                clean_phone,
+                f"880{clean_phone}" if not clean_phone.startswith('880') else clean_phone,
+                f"880{clean_phone[1:]}" if clean_phone.startswith('0') else clean_phone
+            ]
+            
+            logger.info(f"Trying alternative formats: {possible_formats}")
+            
+            for alt_format in possible_formats:
+                alt_records = PhoneVerification.objects.filter(phone_number=alt_format).order_by('-created_at')
+                if alt_records.exists():
+                    latest = alt_records.first()
+                    logger.info(f"Found record with alternative format {alt_format}: code={latest.verification_code}")
+                    clean_phone = alt_format
+                    records = alt_records
+                    break
         
         is_verified = sms_service.verify_code(clean_phone, code)
         

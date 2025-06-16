@@ -7,6 +7,8 @@ from django.contrib.auth import get_user_model
 import json
 import logging
 
+logger = logging.getLogger(__name__)
+
 from .models import Profile, Address, PaymentMethod
 from .serializers import (
     UserSerializer, UserDetailSerializer, UserCreateSerializer,
@@ -28,6 +30,22 @@ class UserRegistrationView(generics.CreateAPIView):
         # Check if this is a vendor registration
         is_vendor = self.request.data.get('is_vendor', False)
         vendor_approved = self.request.data.get('vendor_approved', False)
+        
+        # Format phone number consistently
+        phone = serializer.validated_data.get('phone')
+        if phone:
+            # Import the SMS service for phone formatting
+            try:
+                from sms.services import SMSService
+                sms_service = SMSService()
+                formatted_phone = sms_service._clean_phone_number(phone)
+                # Update the phone in validated_data
+                serializer.validated_data['phone'] = formatted_phone
+                logger.info(f"Phone number formatted: {phone} -> {formatted_phone}")
+            except ImportError:
+                logger.warning("SMS module not available for phone formatting")
+            except Exception as e:
+                logger.error(f"Error formatting phone number: {str(e)}")
         
         # Create user (not verified yet)
         user = serializer.save(is_verified=False)
@@ -52,7 +70,7 @@ class UserRegistrationView(generics.CreateAPIView):
         # Send verification code to user's phone
         try:
             from sms.services import SMSService
-            phone = serializer.validated_data.get('phone')
+            phone = user.phone
             if phone:
                 verification_phone = phone
                 sms_service = SMSService()
@@ -60,11 +78,9 @@ class UserRegistrationView(generics.CreateAPIView):
                 verification_sent = True
         except ImportError:
             # SMS module not available
-            pass
+            logger.warning("SMS module not available for verification")
         except Exception as e:
             # Log the error but don't prevent user creation
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Error sending verification SMS: {str(e)}")
         
         # Store these for the response

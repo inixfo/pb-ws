@@ -147,80 +147,80 @@ export const SignUp = () => {
     try {
       console.log(`Verifying phone ${phone} with code ${verificationCode}`);
       
-      // Add phone formatting debug
-      const cleanedPhone = phone.replace(/\D/g, '');
-      let formattedPhone = cleanedPhone;
+      // Format the phone number consistently with how the backend expects it
+      const formattedPhone = formatPhoneNumber(phone);
       
-      if (cleanedPhone.startsWith('01') && cleanedPhone.length === 11) {
-        formattedPhone = `880${cleanedPhone.substring(1)}`;
-      } else if (cleanedPhone.startsWith('1') && cleanedPhone.length === 10) {
-        formattedPhone = `880${cleanedPhone}`;
-      }
+      console.log(`Original: ${phone}, Formatted: ${formattedPhone}`);
       
-      console.log(`Original: ${phone}, Cleaned: ${cleanedPhone}, Formatted: ${formattedPhone}`);
-      
-      // Try verification with formatted phone number
       try {
-        // Verify the code
-        await smsService.verifyPhoneNumber(phone, verificationCode);
+        // First verify the phone number
+        await smsService.verifyPhoneNumber(formattedPhone, verificationCode);
+        console.log("Phone verification successful");
         
-        // If verification successful, register the user
-        await authService.register({ full_name: fullName, email, password, phone: formattedPhone });
-        
-        // Auto login after registration
-        await authService.login(email, password);
-        
-        // Navigate to home or redirect URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirectTo = urlParams.get('redirect') || '/';
-        
-        navigate(redirectTo);
+        try {
+          // If verification is successful, register the user
+          const userData = {
+            full_name: fullName,
+            email,
+            password,
+            phone: formattedPhone
+          };
+          
+          console.log("Registering user with data:", userData);
+          await authService.register(userData);
+          
+          // Auto login after registration
+          await authService.login(email, password);
+          
+          // Navigate to home or redirect URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectTo = urlParams.get('redirect') || '/';
+          
+          navigate(redirectTo);
+        } catch (registerError: any) {
+          console.error("Registration error:", registerError);
+          setError(registerError.response?.data?.error || 
+                  "Registration failed. Please check your information and try again.");
+        }
       } catch (verifyError: any) {
         console.error("Verification failed:", verifyError);
         
-        // If verification fails with original phone format, try with formatted number
-        if (phone !== formattedPhone) {
-          console.log("Trying verification with formatted phone number");
+        // Show the specific error message from the API if available
+        const errorMsg = verifyError.response?.data?.error || 
+          "Verification failed. Please check the code and try again.";
           
-          try {
-            await smsService.verifyPhoneNumber(formattedPhone, verificationCode);
-            
-            // If verification successful, register the user
-            await authService.register({ full_name: fullName, email, password, phone: formattedPhone });
-            
-            // Auto login after registration
-            await authService.login(email, password);
-            
-            // Navigate to home or redirect URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const redirectTo = urlParams.get('redirect') || '/';
-            
-            navigate(redirectTo);
-          } catch (formattedError: any) {
-            console.error("Verification also failed with formatted number:", formattedError);
-            
-            // Show the specific error message from the API if available
-            const errorMsg = 
-              formattedError.response?.data?.error || 
-              verifyError.response?.data?.error || 
-              "Verification failed. Please check the code and try again.";
-              
-            setError(errorMsg);
-          }
-        } else {
-          // Show the specific error message from the API if available
-          const errorMsg = verifyError.response?.data?.error || 
-            "Verification failed. Please check the code and try again.";
-            
-          setError(errorMsg);
-        }
+        setError(errorMsg);
       }
     } catch (err: any) {
-      console.error("Registration error:", err);
-      setError(err.response?.data?.error || "Registration failed. Please try again.");
+      console.error("Unexpected error:", err);
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setVerifying(false);
     }
+  };
+
+  // Helper function to ensure consistent phone number formatting
+  const formatPhoneNumber = (phoneNumber: string): string => {
+    // Remove any non-digit characters
+    const cleaned = phoneNumber.replace(/\D/g, '');
+    
+    // Case 1: If the number starts with 880, it's already in international format
+    if (cleaned.startsWith('880') && cleaned.length === 13) {
+      return cleaned;
+    }
+    
+    // Case 2: If the number starts with 01, add the country code
+    if (cleaned.startsWith('01') && cleaned.length === 11) {
+      return `880${cleaned.substring(1)}`;
+    }
+    
+    // Case 3: If the number starts with 1 and is 10 digits, add country code
+    if (cleaned.startsWith('1') && cleaned.length === 10) {
+      return `880${cleaned}`;
+    }
+    
+    // Return as-is for other cases
+    return cleaned;
   };
 
   const togglePasswordVisibility = () => {
