@@ -5,7 +5,7 @@
 import { Product, ProductImage } from "../types/products";
 
 // Define the backend URL constant
-const BACKEND_URL = 'http://localhost:8000';
+const BACKEND_URL = 'http://3.25.95.103/';
 
 /**
  * Ensure a URL is absolute by adding the backend URL if needed

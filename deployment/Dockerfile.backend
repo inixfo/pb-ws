@@ -22,7 +22,7 @@ COPY backend/ .
 # Install Python dependencies
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt && \
-    pip install gunicorn psycopg2-binary Pillow
+    pip install gunicorn psycopg2-binary Pillow requests
 
 # Copy and run SSLCommerz installation script
 COPY deployment/install_sslcommerz.py .

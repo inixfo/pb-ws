@@ -270,7 +270,7 @@ SMS_API_URL = os.getenv('SMS_API_URL', 'https://smsplus.sslwireless.com')
 SMS_API_SID = os.getenv('SMS_API_SID', 'PHONEBAYBRAND')  # SSL Wireless SID
 SMS_API_TOKEN = os.getenv('SMS_API_TOKEN', '4v32ycsy-q0f22usn-qk8aminl-g78imsro-hzhagexp')  # SSL Wireless API token
 SMS_BRAND_NAME = os.getenv('SMS_BRAND_NAME', 'Phone Bay')
-SMS_TEST_MODE = os.getenv('SMS_TEST_MODE', 'True').lower() == 'true'  # Set to True for development
+SMS_TEST_MODE = os.getenv('SMS_TEST_MODE', 'False').lower() == 'true'  # Set to False for live mode
 
 # SMS template defaults
 DEFAULT_SMS_TEMPLATES = {

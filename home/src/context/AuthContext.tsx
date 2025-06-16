@@ -133,7 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log(`Attempting login for email: ${email}`);
       
       // Use direct axios call for login to avoid potential issues with interceptors
-      const response = await axios.post(`http://localhost:8000/api/users/login/`, 
+      const response = await axios.post(`http://3.25.95.103/api/users/login/`, 
         { email, password },
         { headers: { 'Content-Type': 'application/json' } }
       );

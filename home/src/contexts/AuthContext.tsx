@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios, { AxiosRequestConfig } from 'axios';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'http://3.25.95.103/api';
 
 // Create axios instance with default config
 const api = axios.create({
