@@ -102,23 +102,47 @@ class VerifyPhoneNumberView(APIView):
         
         logger.info(f"Verification successful for {clean_phone}")
         
-        # If a user ID is provided, update the user's phone and verification status
-        if user_id and request.user.is_authenticated and str(request.user.id) == user_id:
+        # Update user by user_id if provided
+        if user_id:
             try:
-                user = User.objects.get(id=user_id)
-                user.phone = clean_phone
-                user.is_verified = True
-                user.save()
+                user = None
                 
-                # Send welcome message
-                sms_service.send_welcome_message(user)
+                # Use request.user if authenticated
+                if request.user.is_authenticated and str(request.user.id) == user_id:
+                    user = request.user
+                else:
+                    # Otherwise lookup by ID
+                    user = User.objects.get(id=user_id)
                 
-                return Response({
-                    'message': 'Phone number verified successfully',
-                    'user_updated': True
-                })
+                if user:
+                    user.phone = clean_phone
+                    user.is_verified = True
+                    user.save()
+                    
+                    # Send welcome message
+                    sms_service.send_welcome_message(user)
+                    
+                    return Response({
+                        'message': 'Phone number verified successfully',
+                        'user_updated': True
+                    })
             except User.DoesNotExist:
-                pass
+                logger.warning(f"User with ID {user_id} not found")
+        
+        # Check for and update users with this phone number (even if newly registered)
+        users_with_phone = User.objects.filter(phone=clean_phone)
+        if users_with_phone.exists():
+            logger.info(f"Found {users_with_phone.count()} users with phone {clean_phone}")
+            for user in users_with_phone:
+                if not user.is_verified:
+                    user.is_verified = True
+                    user.save()
+                    logger.info(f"Updated verification status for user {user.id}")
+            
+            return Response({
+                'message': 'Phone number verified successfully',
+                'users_updated': users_with_phone.count()
+            })
         
         return Response({'message': 'Phone number verified successfully'})
 

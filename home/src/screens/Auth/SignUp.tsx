@@ -155,15 +155,9 @@ export const SignUp = () => {
       const formattedPhone = formatPhoneNumber(phone);
       console.log(`Verifying phone ${phone} (formatted: ${formattedPhone}) with code ${verificationCode}`);
       
-      // First verify the phone number
-      const verifyResponse = await axios.post(`${API_URL}/sms/verify-phone/`, {
-        phone_number: formattedPhone,
-        code: verificationCode
-      });
+      // First register the user
+      console.log("Registering user first to ensure we can update verification status...");
       
-      console.log("Phone verification successful:", verifyResponse.data);
-        
-      // After verification succeeds, register the user
       // Create the exact data structure the backend expects
       const userData = {
         email: email,
@@ -173,12 +167,31 @@ export const SignUp = () => {
         phone: formattedPhone
       };
       
-      console.log("Registering user with data:", userData);
-      
       // Register the user with a direct request
       const registerResponse = await axios.post(`${API_URL}/users/register/`, userData);
       console.log("Registration successful:", registerResponse.data);
+      const userId = registerResponse.data.user?.id;
       
+      // Now verify the phone number with the user ID
+      console.log("Now verifying phone number...");
+      const verifyData: { 
+        phone_number: string; 
+        code: string; 
+        user_id?: number;
+      } = {
+        phone_number: formattedPhone,
+        code: verificationCode
+      };
+      
+      // If we have a user ID, include it in the verification request
+      if (userId) {
+        verifyData.user_id = userId;
+        console.log(`Including user_id ${userId} in verification request`);
+      }
+      
+      const verifyResponse = await axios.post(`${API_URL}/sms/verify-phone/`, verifyData);
+      console.log("Phone verification successful:", verifyResponse.data);
+        
       // Login after registration
       try {
         const loginResponse = await axios.post(`${API_URL}/users/login/`, {

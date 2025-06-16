@@ -62,6 +62,7 @@ class UserRegistrationView(generics.CreateAPIView):
         
         # Format phone number consistently
         phone = serializer.validated_data.get('phone')
+        formatted_phone = phone
         if phone:
             # Import the SMS service for phone formatting
             try:
@@ -75,9 +76,27 @@ class UserRegistrationView(generics.CreateAPIView):
                 logger.warning("SMS module not available for phone formatting")
             except Exception as e:
                 logger.error(f"Error formatting phone number: {str(e)}")
+                
+        # Check if this phone number has already been verified
+        is_verified = False
+        if formatted_phone:
+            # Check if we have a verified code for this phone number
+            try:
+                from sms.models import PhoneVerification
+                verified_records = PhoneVerification.objects.filter(
+                    phone_number=formatted_phone, 
+                    is_verified=True
+                ).exists()
+                if verified_records:
+                    logger.info(f"Phone number {formatted_phone} has already been verified")
+                    is_verified = True
+            except ImportError:
+                logger.warning("SMS module not available for verification check")
+            except Exception as e:
+                logger.error(f"Error checking verification status: {str(e)}")
         
-        # Create user (not verified yet)
-        user = serializer.save(is_verified=False)
+        # Create user with the appropriate verification status
+        user = serializer.save(is_verified=is_verified)
         
         # If this is a vendor registration, handle vendor-specific data
         if is_vendor:
