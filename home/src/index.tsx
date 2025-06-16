@@ -8,6 +8,7 @@ import { ElectronicsProduct } from "./screens/ElectronicsProduct/ElectronicsProd
 import { ShoppingCart } from "./screens/ShoppingCart/ShoppingCart";
 import { DeliveryInfo } from "./screens/DeliveryInfo/DeliveryInfo";
 import { ThankYou } from "./screens/ThankYou";
+import { PaymentCanceled } from "./screens/PaymentCanceled";
 import { Account, PaymentMethods, Addresses, Notifications, MyEMI } from "./screens/Account";
 import { MyReviews } from "./screens/Account/MyReviews";
 import { PersonalInfo } from "./screens/Account/PersonalInfo";
@@ -51,6 +52,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="/cart" element={<ShoppingCart />} />
           <Route path="/checkout" element={<DeliveryInfo />} />
           <Route path="/thank-you" element={<ThankYou />} />
+          <Route path="/payment-canceled" element={<PaymentCanceled />} />
           <Route path="/track-order" element={<TrackOrderLookup />} />
           <Route path="/track-order/:orderId" element={<OrderTrackingPage />} />
             

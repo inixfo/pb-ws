@@ -494,11 +494,10 @@ def payment_canceled(request):
             payment.payment_details = json.dumps(dict(payment_data))
             payment.save()
             
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Payment canceled',
-                'order_id': payment.order.id
-            })
+            # Redirect to frontend payment canceled page
+            frontend_url = settings.FRONTEND_BASE_URL
+            redirect_url = f"{frontend_url}/payment-canceled?order_id={payment.order.id}"
+            return HttpResponseRedirect(redirect_url)
         except Payment.DoesNotExist:
             return JsonResponse({
                 'status': 'error',
