@@ -5,7 +5,7 @@ from .views import (
     UserRegistrationView, UserLoginView, UserDetailView,
     ProfileUpdateView, AddressListCreateView, AddressDetailView,
     PaymentMethodListCreateView, PaymentMethodDetailView,
-    PasswordChangeView, UserLogoutView
+    PasswordChangeView, UserLogoutView, DebugRegistrationView
 )
 
 app_name = 'users'
@@ -13,6 +13,7 @@ app_name = 'users'
 urlpatterns = [
     # Authentication
     path('register/', UserRegistrationView.as_view(), name='register'),
+    path('debug-register/', DebugRegistrationView.as_view(), name='debug_register'),
     path('login/', UserLoginView.as_view(), name='login'),
     path('logout/', UserLogoutView.as_view(), name='logout'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

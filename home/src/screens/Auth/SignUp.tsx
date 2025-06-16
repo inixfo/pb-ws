@@ -7,6 +7,8 @@ import smsService from "../../services/api/smsService";
 import { HeaderByAnima } from "../ElectronicsStore/sections/HeaderByAnima/HeaderByAnima";
 import { CtaFooterByAnima } from "../ElectronicsStore/sections/CtaFooterByAnima/CtaFooterByAnima";
 import { EyeIcon, EyeOffIcon, ArrowRightIcon, ArrowLeftIcon, AlertCircleIcon } from "lucide-react";
+import axios from "axios";
+import { API_URL } from "../../config";
 
 export const SignUp = () => {
   const [fullName, setFullName] = useState("");
@@ -86,8 +88,12 @@ export const SignUp = () => {
     setError("");
 
     try {
+      // Format phone number consistently
+      const formattedPhone = formatPhoneNumber(phone);
+      console.log(`Phone number formatted: ${phone} → ${formattedPhone}`);
+      
       // Send verification code to phone number
-      await smsService.sendVerificationCode(phone);
+      await smsService.sendVerificationCode(formattedPhone);
       startResendCountdown();
       
       // Move to verification step
@@ -145,55 +151,73 @@ export const SignUp = () => {
     setError("");
 
     try {
-      console.log(`Verifying phone ${phone} with code ${verificationCode}`);
-      
-      // Format the phone number consistently with how the backend expects it
+      // Format the phone number consistently
       const formattedPhone = formatPhoneNumber(phone);
+      console.log(`Verifying phone ${phone} (formatted: ${formattedPhone}) with code ${verificationCode}`);
       
-      console.log(`Original: ${phone}, Formatted: ${formattedPhone}`);
+      // First verify the phone number
+      const verifyResponse = await axios.post(`${API_URL}/sms/verify-phone/`, {
+        phone_number: formattedPhone,
+        code: verificationCode
+      });
       
+      console.log("Phone verification successful:", verifyResponse.data);
+        
+      // After verification succeeds, register the user
+      // Create the exact data structure the backend expects
+      const userData = {
+        email: email,
+        password: password,
+        first_name: fullName.split(' ')[0], 
+        last_name: fullName.split(' ').slice(1).join(' ') || '',
+        phone: formattedPhone
+      };
+      
+      console.log("Registering user with data:", userData);
+      
+      // Register the user with a direct request
+      const registerResponse = await axios.post(`${API_URL}/users/register/`, userData);
+      console.log("Registration successful:", registerResponse.data);
+      
+      // Login after registration
       try {
-        // First verify the phone number
-        await smsService.verifyPhoneNumber(formattedPhone, verificationCode);
-        console.log("Phone verification successful");
+        const loginResponse = await axios.post(`${API_URL}/users/login/`, {
+          email: email,
+          password: password
+        });
         
-        try {
-          // If verification is successful, register the user
-          const userData = {
-            full_name: fullName,
-            email,
-            password,
-            phone: formattedPhone
-          };
-          
-          console.log("Registering user with data:", userData);
-          await authService.register(userData);
-          
-          // Auto login after registration
-          await authService.login(email, password);
-          
-          // Navigate to home or redirect URL
-          const urlParams = new URLSearchParams(window.location.search);
-          const redirectTo = urlParams.get('redirect') || '/';
-          
-          navigate(redirectTo);
-        } catch (registerError: any) {
-          console.error("Registration error:", registerError);
-          setError(registerError.response?.data?.error || 
-                  "Registration failed. Please check your information and try again.");
+        if (loginResponse.data.access) {
+          // Store tokens
+          localStorage.setItem('auth_token', loginResponse.data.access);
+          localStorage.setItem('refresh_token', loginResponse.data.refresh);
+          console.log("Login successful");
         }
-      } catch (verifyError: any) {
-        console.error("Verification failed:", verifyError);
-        
-        // Show the specific error message from the API if available
-        const errorMsg = verifyError.response?.data?.error || 
-          "Verification failed. Please check the code and try again.";
-          
-        setError(errorMsg);
+      } catch (loginError) {
+        console.error("Auto-login failed:", loginError);
       }
+      
+      // Navigate to home or redirect URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectTo = urlParams.get('redirect') || '/';
+      navigate(redirectTo);
+      
     } catch (err: any) {
-      console.error("Unexpected error:", err);
-      setError("An unexpected error occurred. Please try again.");
+      console.error("Error during verification/registration:", err);
+      
+      // Display appropriate error messages
+      if (err.response?.status === 400) {
+        // If we have detailed errors from the backend
+        if (err.response.data?.errors) {
+          const errorMessages = Object.values(err.response.data.errors).flat();
+          setError(errorMessages.join(", "));
+        } else if (err.response.data?.error) {
+          setError(err.response.data.error);
+        } else {
+          setError("Verification or registration failed. Please check your information and try again.");
+        }
+      } else {
+        setError("An error occurred. Please try again.");
+      }
     } finally {
       setVerifying(false);
     }

@@ -26,6 +26,35 @@ class UserRegistrationView(generics.CreateAPIView):
     serializer_class = UserCreateSerializer
     permission_classes = [permissions.AllowAny]
     
+    def create(self, request, *args, **kwargs):
+        # Log the raw request data for debugging
+        logger.info("=============================================")
+        logger.info("REGISTRATION REQUEST DATA")
+        logger.info(f"Request data: {request.data}")
+        
+        # Try to validate and catch errors for detailed logging
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"Validation errors: {serializer.errors}")
+            
+            # Log specific fields to debug
+            email = request.data.get('email', '')
+            password = request.data.get('password', '')
+            first_name = request.data.get('first_name', '')
+            last_name = request.data.get('last_name', '')
+            phone = request.data.get('phone', '')
+            
+            logger.error(f"Email: {email} (valid: {'@' in email})")
+            logger.error(f"Password provided: {bool(password)} (length: {len(password) if password else 0})")
+            logger.error(f"First name: {first_name}")
+            logger.error(f"Last name: {last_name}")
+            logger.error(f"Phone: {phone}")
+            
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Continue with the original implementation
+        return super().create(request, *args, **kwargs)
+        
     def perform_create(self, serializer):
         # Check if this is a vendor registration
         is_vendor = self.request.data.get('is_vendor', False)
@@ -329,3 +358,45 @@ class UserLogoutView(APIView):
                 {'error': f'Logout failed: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class DebugRegistrationView(APIView):
+    """Debug endpoint to see what's wrong with registration requests"""
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        # Log request data
+        logger.info("====== DEBUG REGISTRATION REQUEST ======")
+        logger.info(f"Request data: {request.data}")
+        
+        # Manually validate against UserCreateSerializer to see exactly what's wrong
+        serializer = UserCreateSerializer(data=request.data)
+        is_valid = serializer.is_valid()
+        
+        if not is_valid:
+            logger.info(f"Validation errors: {serializer.errors}")
+            
+            # Check specific fields
+            email = request.data.get('email', '')
+            password = request.data.get('password', '')
+            first_name = request.data.get('first_name', '')
+            last_name = request.data.get('last_name', '')
+            phone = request.data.get('phone', '')
+            
+            logger.info(f"Email: {email} (valid: {'@' in email})")
+            logger.info(f"Password provided: {bool(password)} (length: {len(password)})")
+            logger.info(f"First name: {first_name}")
+            logger.info(f"Last name: {last_name}")
+            logger.info(f"Phone: {phone}")
+            
+            # Return detailed validation errors
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        logger.info("Request data is valid according to serializer!")
+        logger.info(f"Validated data: {serializer.validated_data}")
+        
+        # Don't actually create the user, just return what would be created
+        return Response({
+            'message': 'This is a debug endpoint. User would be created with these details:',
+            'data': serializer.validated_data
+        })

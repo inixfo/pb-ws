@@ -42,10 +42,55 @@ class AuthService {
       }
 
       console.log('Sending registration data:', data);
+      
+      // Try the debug endpoint first to diagnose issues
+      try {
+        const debugResponse = await axios.post(`${API_URL}/users/debug-register/`, data);
+        console.log('Debug registration response:', debugResponse.data);
+      } catch (debugError: any) {
+        console.error('Debug registration error:', debugError.response?.data || debugError.message);
+      }
+      
       const response = await axios.post(`${API_URL}/users/register/`, data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
+      
+      // Log more detailed error info
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error status:', error.response.status);
+        console.error('Error headers:', error.response.headers);
+      }
+      
+      throw error;
+    }
+  }
+
+  // New method for testing registration
+  async debugRegister(user: any) {
+    try {
+      const data = { ...user };
+
+      // Same as register but only using debug endpoint
+      if (data.full_name) {
+        const parts = (data.full_name as string).trim().split(' ');
+        data.first_name = parts[0] || '';
+        data.last_name = parts.length > 1 ? parts.slice(1).join(' ') : '';
+        delete data.full_name;
+      }
+
+      console.log('Sending debug registration data:', data);
+      const response = await axios.post(`${API_URL}/users/debug-register/`, data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Debug registration error:', error);
+      
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error status:', error.response.status);
+      }
+      
       throw error;
     }
   }
