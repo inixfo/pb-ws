@@ -165,7 +165,7 @@ export const SignUp = () => {
         await smsService.verifyPhoneNumber(phone, verificationCode);
         
         // If verification successful, register the user
-        await authService.register(fullName, email, password);
+        await authService.register({ full_name: fullName, email, password, phone: formattedPhone });
         
         // Auto login after registration
         await authService.login(email, password);
@@ -186,7 +186,7 @@ export const SignUp = () => {
             await smsService.verifyPhoneNumber(formattedPhone, verificationCode);
             
             // If verification successful, register the user
-            await authService.register(fullName, email, password);
+            await authService.register({ full_name: fullName, email, password, phone: formattedPhone });
             
             // Auto login after registration
             await authService.login(email, password);

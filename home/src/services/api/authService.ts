@@ -27,9 +27,19 @@ class AuthService {
     }
   }
 
-  async register(userData: UserData) {
+  async register(user: any) {
     try {
-      const response = await axios.post(`${API_URL}/users/register/`, userData);
+      const data = { ...user };
+
+      // Map full_name -> first_name + last_name for backend compatibility
+      if (data.full_name && (!data.first_name || !data.last_name)) {
+        const parts = (data.full_name as string).trim().split(' ');
+        data.first_name = parts.shift();
+        data.last_name = parts.join(' ') || '';
+        delete data.full_name;
+      }
+
+      const response = await axios.post(`${API_URL}/users/register/`, data);
       return response.data;
     } catch (error) {
       console.error('Registration error:', error);
