@@ -297,12 +297,39 @@ class SMSService:
         # Clean phone number
         phone_number = self._clean_phone_number(phone_number)
         
+        # Log the verification attempt
+        logger.info(f"Verifying code for {phone_number}, code: {code}")
+        
         try:
-            verification = PhoneVerification.objects.get(
+            # First try exact match
+            verification = PhoneVerification.objects.filter(
                 phone_number=phone_number,
                 verification_code=code,
                 is_verified=False
-            )
+            ).first()
+            
+            if not verification:
+                # If no exact match, try to get the latest verification code for this number
+                latest_verification = PhoneVerification.objects.filter(
+                    phone_number=phone_number,
+                    is_verified=False
+                ).order_by('-created_at').first()
+                
+                if latest_verification:
+                    logger.info(f"Found latest verification: DB code={latest_verification.verification_code}, input code={code}")
+                    
+                    # For better UX, do case-insensitive verification and strip whitespace
+                    db_code = latest_verification.verification_code.strip()
+                    input_code = code.strip()
+                    
+                    if db_code == input_code:
+                        verification = latest_verification
+                    else:
+                        logger.warning(f"Code mismatch: expected {db_code}, got {input_code}")
+                        return False
+                else:
+                    logger.warning(f"No verification records found for {phone_number}")
+                    return False
             
             if verification.is_expired:
                 logger.info(f"Verification code expired for {phone_number}")
@@ -312,10 +339,14 @@ class SMSService:
             verification.is_verified = True
             verification.save()
             
+            logger.info(f"Successfully verified phone {phone_number}")
             return True
             
         except PhoneVerification.DoesNotExist:
             logger.info(f"Invalid verification code for {phone_number}")
+            return False
+        except Exception as e:
+            logger.exception(f"Error verifying code: {str(e)}")
             return False
     
     def send_welcome_message(self, user):

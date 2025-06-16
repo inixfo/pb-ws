@@ -5,6 +5,10 @@ from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from .services import SMSService
 from .models import PhoneVerification
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -38,7 +42,10 @@ class VerifyPhoneNumberView(APIView):
         code = request.data.get('code')
         user_id = request.data.get('user_id')
         
+        logger.info(f"Verifying phone number: {phone_number}, code: {code}")
+        
         if not phone_number or not code:
+            logger.warning(f"Missing data: phone_number={bool(phone_number)}, code={bool(code)}")
             return Response(
                 {'error': 'Phone number and code are required'}, 
                 status=status.HTTP_400_BAD_REQUEST
@@ -46,19 +53,37 @@ class VerifyPhoneNumberView(APIView):
         
         # Verify the code
         sms_service = SMSService()
-        is_verified = sms_service.verify_code(phone_number, code)
+        
+        # Clean phone number to ensure consistent format
+        clean_phone = sms_service._clean_phone_number(phone_number)
+        logger.info(f"Original phone: {phone_number}, Cleaned phone: {clean_phone}")
+        
+        # Get all verification records for this phone to debug
+        from .models import PhoneVerification
+        records = PhoneVerification.objects.filter(phone_number=clean_phone).order_by('-created_at')
+        
+        if records.exists():
+            latest = records.first()
+            logger.info(f"Found verification record: code={latest.verification_code}, expired={latest.is_expired}, verified={latest.is_verified}")
+        else:
+            logger.warning(f"No verification records found for {clean_phone}")
+        
+        is_verified = sms_service.verify_code(clean_phone, code)
         
         if not is_verified:
+            logger.warning(f"Verification failed for {clean_phone} with code {code}")
             return Response(
                 {'error': 'Invalid or expired verification code'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        logger.info(f"Verification successful for {clean_phone}")
+        
         # If a user ID is provided, update the user's phone and verification status
         if user_id and request.user.is_authenticated and str(request.user.id) == user_id:
             try:
                 user = User.objects.get(id=user_id)
-                user.phone = phone_number
+                user.phone = clean_phone
                 user.is_verified = True
                 user.save()
                 

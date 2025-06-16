@@ -10,9 +10,12 @@ class SMSService {
    */
   async sendVerificationCode(phoneNumber: string) {
     try {
+      // Format the phone number - ensure it's formatted properly
+      const formattedNumber = this.formatPhoneNumber(phoneNumber);
+      
       const response = await axios.post(
         `${API_URL}/sms/send-verification-code/`,
-        { phone_number: phoneNumber }
+        { phone_number: formattedNumber }
       );
       return response.data;
     } catch (error: any) {
@@ -30,8 +33,11 @@ class SMSService {
    */
   async verifyPhoneNumber(phoneNumber: string, code: string, userId?: number) {
     try {
+      // Format the phone number - ensure it's formatted properly
+      const formattedNumber = this.formatPhoneNumber(phoneNumber);
+      
       const payload: any = {
-        phone_number: phoneNumber,
+        phone_number: formattedNumber,
         code: code
       };
 
@@ -40,6 +46,8 @@ class SMSService {
       }
 
       const headers = userId ? getAuthHeaders() : {};
+      
+      console.log('Sending verification request with payload:', payload);
       
       const response = await axios.post(
         `${API_URL}/sms/verify-phone/`,
@@ -60,15 +68,46 @@ class SMSService {
    */
   async resendVerificationCode(phoneNumber: string) {
     try {
+      // Format the phone number - ensure it's formatted properly
+      const formattedNumber = this.formatPhoneNumber(phoneNumber);
+      
       const response = await axios.post(
         `${API_URL}/sms/resend-verification-code/`,
-        { phone_number: phoneNumber }
+        { phone_number: formattedNumber }
       );
       return response.data;
     } catch (error: any) {
       console.error('Error resending verification code:', error);
       throw error;
     }
+  }
+  
+  /**
+   * Format a phone number to ensure it's properly formatted for the API
+   * @param phoneNumber The phone number to format
+   * @returns The formatted phone number
+   */
+  private formatPhoneNumber(phoneNumber: string): string {
+    // Remove any non-digit characters
+    let cleaned = phoneNumber.replace(/\D/g, '');
+    
+    // Case 1: If the number starts with 880, it's already in international format
+    if (cleaned.startsWith('880') && cleaned.length === 13) {
+      return cleaned;
+    }
+    
+    // Case 2: If the number starts with 01, add the country code
+    if (cleaned.startsWith('01') && cleaned.length === 11) {
+      return `880${cleaned.substring(1)}`;
+    }
+    
+    // Case 3: If the number starts with 1 and is 10 digits, add country code
+    if (cleaned.startsWith('1') && cleaned.length === 10) {
+      return `880${cleaned}`;
+    }
+    
+    // Return as-is for other cases
+    return cleaned;
   }
 }
 

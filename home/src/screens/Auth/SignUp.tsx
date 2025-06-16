@@ -145,23 +145,79 @@ export const SignUp = () => {
     setError("");
 
     try {
-      // Verify the code
-      await smsService.verifyPhoneNumber(phone, verificationCode);
+      console.log(`Verifying phone ${phone} with code ${verificationCode}`);
       
-      // If verification successful, register the user
-      await authService.register(fullName, email, password);
+      // Add phone formatting debug
+      const cleanedPhone = phone.replace(/\D/g, '');
+      let formattedPhone = cleanedPhone;
       
-      // Auto login after registration
-      await authService.login(email, password);
+      if (cleanedPhone.startsWith('01') && cleanedPhone.length === 11) {
+        formattedPhone = `880${cleanedPhone.substring(1)}`;
+      } else if (cleanedPhone.startsWith('1') && cleanedPhone.length === 10) {
+        formattedPhone = `880${cleanedPhone}`;
+      }
       
-      // Navigate to home or redirect URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const redirectTo = urlParams.get('redirect') || '/';
+      console.log(`Original: ${phone}, Cleaned: ${cleanedPhone}, Formatted: ${formattedPhone}`);
       
-      navigate(redirectTo);
+      // Try verification with formatted phone number
+      try {
+        // Verify the code
+        await smsService.verifyPhoneNumber(phone, verificationCode);
+        
+        // If verification successful, register the user
+        await authService.register(fullName, email, password);
+        
+        // Auto login after registration
+        await authService.login(email, password);
+        
+        // Navigate to home or redirect URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectTo = urlParams.get('redirect') || '/';
+        
+        navigate(redirectTo);
+      } catch (verifyError: any) {
+        console.error("Verification failed:", verifyError);
+        
+        // If verification fails with original phone format, try with formatted number
+        if (phone !== formattedPhone) {
+          console.log("Trying verification with formatted phone number");
+          
+          try {
+            await smsService.verifyPhoneNumber(formattedPhone, verificationCode);
+            
+            // If verification successful, register the user
+            await authService.register(fullName, email, password);
+            
+            // Auto login after registration
+            await authService.login(email, password);
+            
+            // Navigate to home or redirect URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectTo = urlParams.get('redirect') || '/';
+            
+            navigate(redirectTo);
+          } catch (formattedError: any) {
+            console.error("Verification also failed with formatted number:", formattedError);
+            
+            // Show the specific error message from the API if available
+            const errorMsg = 
+              formattedError.response?.data?.error || 
+              verifyError.response?.data?.error || 
+              "Verification failed. Please check the code and try again.";
+              
+            setError(errorMsg);
+          }
+        } else {
+          // Show the specific error message from the API if available
+          const errorMsg = verifyError.response?.data?.error || 
+            "Verification failed. Please check the code and try again.";
+            
+          setError(errorMsg);
+        }
+      }
     } catch (err: any) {
       console.error("Registration error:", err);
-      setError(err.response?.data?.error || "Verification failed. Please check the code and try again.");
+      setError(err.response?.data?.error || "Registration failed. Please try again.");
     } finally {
       setVerifying(false);
     }
