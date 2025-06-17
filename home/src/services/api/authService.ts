@@ -30,7 +30,7 @@ class AuthService {
 
   async register(user: any) {
     try {
-      // Create a data object with exactly the fields the backend expects
+      // Make a copy of the user data to avoid modifying the original
       const data = {
         email: user.email,
         password: user.password,
@@ -39,35 +39,43 @@ class AuthService {
         phone: user.phone || ''
       };
 
-      // Handle phone number formatting consistently
+      // Validate required fields
+      if (!data.email) {
+        throw new Error('Email is required');
+      }
+      
+      if (!data.password) {
+        throw new Error('Password is required');
+      }
+      
+      if (!data.phone) {
+        throw new Error('Phone number is required');
+      }
+
+      // Handle phone number formatting
       if (data.phone) {
-        // Remove any non-digit characters
         const cleaned = data.phone.replace(/\D/g, '');
         
-        // Case 1: If already has international code
         if (cleaned.startsWith('880')) {
           data.phone = cleaned;
-        } 
-        // Case 2: If starts with 01 (Bangladesh format)
-        else if (cleaned.startsWith('01') && cleaned.length === 11) {
+        } else if (cleaned.startsWith('01') && cleaned.length === 11) {
           data.phone = `880${cleaned.substring(1)}`;
-        }
-        // Case 3: If starts with just 1 (without leading 0)
-        else if (cleaned.startsWith('1') && cleaned.length === 10) {
+        } else if (cleaned.startsWith('1') && cleaned.length === 10) {
           data.phone = `880${cleaned}`;
         }
       }
 
       console.log('Sending registration data:', data);
       
-      // Try the debug endpoint first to diagnose issues
+      // First try the debug endpoint to diagnose any issues
       try {
         const debugResponse = await axios.post(`${API_URL}/users/debug-register/`, data);
-        console.log('Debug registration response:', debugResponse.data);
+        console.log('Debug registration success:', debugResponse.data);
       } catch (debugError: any) {
         console.error('Debug registration error:', debugError.response?.data || debugError.message);
       }
       
+      // Make the actual registration API call
       const response = await axios.post(`${API_URL}/users/register/`, data);
       return response.data;
     } catch (error: any) {
@@ -88,32 +96,37 @@ class AuthService {
   async debugRegister(user: any) {
     try {
       // Use the same data preparation logic as the register method
-      const data: UserData = {
+      const data = {
         email: user.email,
         password: user.password,
-        first_name: '',
-        last_name: '',
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
         phone: user.phone || ''
       };
 
-      if (user.full_name) {
-        const nameParts = user.full_name.trim().split(' ');
-        data.first_name = nameParts[0] || '';
-        data.last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-      } else {
-        data.first_name = user.first_name || '';
-        data.last_name = user.last_name || '';
+      // Validate required fields
+      if (!data.email) {
+        throw new Error('Email is required');
+      }
+      
+      if (!data.password) {
+        throw new Error('Password is required');
+      }
+      
+      if (!data.phone) {
+        throw new Error('Phone number is required');
       }
 
+      // Handle phone number formatting
       if (data.phone) {
         const cleaned = data.phone.replace(/\D/g, '');
         
-        if (cleaned.startsWith('01') && cleaned.length === 11) {
+        if (cleaned.startsWith('880')) {
+          data.phone = cleaned;
+        } else if (cleaned.startsWith('01') && cleaned.length === 11) {
           data.phone = `880${cleaned.substring(1)}`;
         } else if (cleaned.startsWith('1') && cleaned.length === 10) {
           data.phone = `880${cleaned}`;
-        } else if (cleaned.startsWith('880') && cleaned.length >= 12) {
-          data.phone = cleaned;
         }
       }
 

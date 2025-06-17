@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { authService } from "../../services/api";
+import authService from "../../services/api/authService";
 import smsService from "../../services/api/smsService";
 import { HeaderByAnima } from "../ElectronicsStore/sections/HeaderByAnima/HeaderByAnima";
 import { CtaFooterByAnima } from "../ElectronicsStore/sections/CtaFooterByAnima/CtaFooterByAnima";
@@ -172,16 +172,16 @@ export const SignUp = () => {
       
       // Format data exactly as the backend expects it
       const userData = {
-        email: email,
-        password: password,
+        email,
+        password,
         first_name: firstName,
         last_name: lastName,
         phone: formattedPhone
       };
       
-      console.log("Sending registration data:", userData);
+      console.log("Registering with data:", userData);
       
-      // Register the user
+      // Register the user with the formatted data
       const registerResponse = await authService.register(userData);
       console.log("Registration successful:", registerResponse);
       
