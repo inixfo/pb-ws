@@ -859,11 +859,9 @@ export const DeliveryInfoContent = (): JSX.Element => {
             console.error("SSLCommerz init error:", paymentInitResponse.error);
           }
         } else if (chosenPaymentMethodKey === "cashOnDelivery") {
-          // Handle Cash on Delivery success (e.g., redirect to an order confirmation page)
-          // toast.success(`Order placed successfully with Cash on Delivery (ID: ${orderResponse.order_id})`);
-          // navigate(`/order-confirmation/${orderResponse.order_id}`); // Example redirect
-          // For now, the existing success toast for order placement is sufficient.
-          // The user is not redirected away from checkout for COD by this function.
+          // Handle Cash on Delivery success - redirect to thank you page
+          toast.success(`Order placed successfully with Cash on Delivery (ID: ${orderResponse.order_id})`);
+          navigate(`/thank-you?order_id=${orderResponse.order_id}`);
         }
 
       } else {

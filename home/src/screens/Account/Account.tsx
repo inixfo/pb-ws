@@ -12,7 +12,8 @@ import {
   XIcon,
   MapPinIcon as LocationIcon,
   TruckIcon,
-  MenuIcon
+  MenuIcon,
+  AlertCircleIcon
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -34,6 +35,8 @@ import { OrderListItem } from "../../types/order";
 import { format } from "date-fns";
 import { UserProfile } from "../../components/account/UserProfile";
 import { OrderTracking } from "../../components/order/OrderTracking";
+import { toast } from "react-hot-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../components/ui/alert-dialog";
 
 // Rename the imported component to maintain compatibility with existing code
 const Pagination = PaginationComponent;
@@ -128,48 +131,67 @@ export const Account = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [timeFilter, setTimeFilter] = useState<string>("all-time");
+  const [statusOptions, setStatusOptions] = useState<Array<{value: string, label: string}>>([
+    {value: 'all', label: 'All Orders'}
+  ]);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState<boolean>(false);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setIsLoading(true);
-        console.log('Fetching orders...');
-        const response = await orderService.getOrders();
-        console.log('Orders response:', response);
-        
-        // Handle different response formats
-        let ordersList: OrderListItem[] = [];
-        if (Array.isArray(response)) {
-          ordersList = response;
-        } else if (response && typeof response === 'object') {
-          // If response is a paginated object with results
-          const responseObj = response as any; // Type assertion to handle unknown structure
-          if (Array.isArray(responseObj.results)) {
-            ordersList = responseObj.results;
-          } else {
-            // If we have another object structure, try to find orders
-            const possibleArrays = Object.values(responseObj).filter(val => Array.isArray(val));
-            if (possibleArrays.length > 0) {
-              // Use the first array found
-              ordersList = possibleArrays[0] as OrderListItem[];
-            }
+    fetchOrders();
+    fetchStatusOptions();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      setIsLoading(true);
+      console.log('Fetching orders...');
+      const response = await orderService.getOrders();
+      console.log('Orders response:', response);
+      
+      // Handle different response formats
+      let ordersList: OrderListItem[] = [];
+      if (Array.isArray(response)) {
+        ordersList = response;
+      } else if (response && typeof response === 'object') {
+        // If response is a paginated object with results
+        const responseObj = response as any; // Type assertion to handle unknown structure
+        if (Array.isArray(responseObj.results)) {
+          ordersList = responseObj.results;
+        } else {
+          // If we have another object structure, try to find orders
+          const possibleArrays = Object.values(responseObj).filter(val => Array.isArray(val));
+          if (possibleArrays.length > 0) {
+            // Use the first array found
+            ordersList = possibleArrays[0] as OrderListItem[];
           }
         }
-        
-        console.log('Processed orders list:', ordersList);
-        setOrders(ordersList);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching orders:", err);
-        setError("Failed to load orders");
-        setOrders([]);
-      } finally {
-        setIsLoading(false);
       }
-    };
+      
+      console.log('Processed orders list:', ordersList);
+      setOrders(ordersList);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+      setError("Failed to load orders");
+      setOrders([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchOrders();
-  }, []);
+  const fetchStatusOptions = async () => {
+    try {
+      const response = await orderService.getStatusOptions();
+      if (response && response.status_options) {
+        setStatusOptions(response.status_options);
+      }
+    } catch (err) {
+      console.error("Error fetching status options:", err);
+      // Keep using the default options
+    }
+  };
 
   const openDrawer = (order: OrderListItem) => {
     setSelectedOrder(order);
@@ -192,6 +214,41 @@ export const Account = (): JSX.Element => {
   const closeTracking = () => {
     setShowTracking(false);
     setTrackingOrderId(null);
+  };
+
+  const openCancelDialog = (orderId: string) => {
+    setCancellingOrderId(orderId);
+    setCancelDialogOpen(true);
+  };
+
+  const closeCancelDialog = () => {
+    setCancelDialogOpen(false);
+    setCancellingOrderId(null);
+  };
+
+  const handleCancelOrder = async () => {
+    if (!cancellingOrderId) return;
+    
+    setIsCancelling(true);
+    try {
+      await orderService.cancelOrder(cancellingOrderId);
+      toast.success("Order cancelled successfully");
+      // Refresh orders list
+      await fetchOrders();
+      // Close dialog and drawer
+      closeCancelDialog();
+      closeDrawer();
+    } catch (err) {
+      console.error("Error cancelling order:", err);
+      toast.error("Failed to cancel order. Please try again.");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  // Check if order can be cancelled (only pending or processing orders)
+  const canCancel = (status: string): boolean => {
+    return ['pending', 'processing'].includes(status.toLowerCase());
   };
 
   // Filter orders based on status and time
@@ -466,28 +523,41 @@ export const Account = (): JSX.Element => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Orders</h2>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
-              <Select
-                options={[
-                  { value: "all", label: "Select status" },
-                  { value: "in-progress", label: "In progress" },
-                  { value: "delivered", label: "Delivered" },
-                  { value: "canceled", label: "Canceled" }
-                ]}
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full sm:w-[196px]"
-              />
-
-              <Select
-                options={[
-                  { value: "all-time", label: "For all time" },
-                  { value: "this-month", label: "This month" },
-                  { value: "last-month", label: "Last month" }
-                ]}
-                value={timeFilter}
-                onChange={(e) => setTimeFilter(e.target.value)}
-                className="w-full sm:w-[196px]"
-              />
+              {/* Status Filter */}
+              <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
+                <div className="flex-1">
+                  <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <Select
+                    id="statusFilter"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full sm:w-[196px]"
+                  >
+                    {statusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="timeFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                    Time
+                  </label>
+                  <Select
+                    id="timeFilter"
+                    value={timeFilter}
+                    onChange={(e) => setTimeFilter(e.target.value)}
+                    className="w-full sm:w-[196px]"
+                  >
+                    <option value="all-time">All time</option>
+                    <option value="this-month">This month</option>
+                    <option value="last-month">Last month</option>
+                  </Select>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -715,14 +785,28 @@ export const Account = (): JSX.Element => {
               
               {/* Actions */}
               <div className="p-6 border-t">
-                <Button 
-                  className="w-full hover:bg-blue-600 transition-colors" 
-                  variant="default"
-                  onClick={() => openTracking(selectedOrder.order_id)}
-                >
-                  <TruckIcon className="w-4 h-4 mr-2" />
-                  Track Order
-                </Button>
+                <div className="flex flex-col gap-3">
+                  <Button 
+                    className="w-full hover:bg-blue-600 transition-colors" 
+                    variant="default"
+                    onClick={() => openTracking(selectedOrder.order_id)}
+                  >
+                    <TruckIcon className="w-4 h-4 mr-2" />
+                    Track Order
+                  </Button>
+                  
+                  {/* Cancel button - only show for orders that can be cancelled */}
+                  {canCancel(selectedOrder.status) && (
+                    <Button 
+                      className="w-full hover:bg-red-600 transition-colors" 
+                      variant="destructive"
+                      onClick={() => openCancelDialog(selectedOrder.order_id)}
+                    >
+                      <AlertCircleIcon className="w-4 h-4 mr-2" />
+                      Cancel Order
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -737,6 +821,30 @@ export const Account = (): JSX.Element => {
           </div>
         </div>
       )}
+      
+      {/* Cancel Order Confirmation Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this order? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={closeCancelDialog} disabled={isCancelling}>
+              No, keep order
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCancelOrder} 
+              disabled={isCancelling}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isCancelling ? 'Cancelling...' : 'Yes, cancel order'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       <CtaFooterByAnima />
     </div>

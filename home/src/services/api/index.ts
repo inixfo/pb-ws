@@ -10,8 +10,14 @@ import promotionsService from './promotionsService';
 import categoryService from './categoryService';
 import brandService from './brandService';
 import smsService from './smsService';
+import wishlistService from './wishlistService';
+import paymentService from './paymentService';
+import emiService from './emiService';
+import contactService from './contactService';
+import { api } from './api';
 
 export {
+  api,
   productService,
   authService,
   cartService,
@@ -23,5 +29,9 @@ export {
   promotionsService,
   categoryService,
   brandService,
-  smsService
+  smsService,
+  wishlistService,
+  paymentService,
+  emiService,
+  contactService
 }; 

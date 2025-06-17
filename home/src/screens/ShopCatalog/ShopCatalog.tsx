@@ -93,6 +93,9 @@ export const ShopCatalog = (): JSX.Element => {
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 10000 });
   const [customFilterValues, setCustomFilterValues] = useState<Record<string, string[]>>({});
 
+  // Add this somewhere in the component near the start, below the existing state definitions
+  const [emptyResultsMessage, setEmptyResultsMessage] = useState<string | null>(null);
+
   // Initial data fetching
   useEffect(() => {
     fetchCategoriesWithCount();
@@ -115,6 +118,28 @@ export const ShopCatalog = (): JSX.Element => {
       }
     }
   }, [priceRange, filterTags]);
+
+  // Update the useEffect that fetches products to set an appropriate empty results message
+  useEffect(() => {
+    // Add a small delay to avoid multiple calls when multiple filters change at once
+    const debounceTimer = setTimeout(() => {
+      fetchProducts();
+    }, 300);
+    
+    // Update empty results message based on current filters
+    if (searchQuery) {
+      setEmptyResultsMessage(`No products found matching "${searchQuery}"`);
+    } else if (slug) {
+      setEmptyResultsMessage(`No products found in this category.`);
+    } else if (selectedBrands.length > 0 || selectedColors.length > 0 || 
+              Object.keys(customFilterValues).length > 0) {
+      setEmptyResultsMessage("No products match your filter criteria.");
+    } else {
+      setEmptyResultsMessage("No products found.");
+    }
+    
+    return () => clearTimeout(debounceTimer);
+  }, [currentPage, sort, selectedBrands, selectedColors, customFilterValues, minPrice, maxPrice, slug, searchQuery]);
 
   // Fetch products when filters change
   useEffect(() => {
@@ -420,6 +445,7 @@ export const ShopCatalog = (): JSX.Element => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear any previous errors
       
       // Build query parameters
       const params: Record<string, any> = {
@@ -509,21 +535,67 @@ export const ShopCatalog = (): JSX.Element => {
       } else if (sort === 'popular') {
         params.ordering = '-review_count';
       }
-      
-      const data = await productService.getAll(params);
-      console.log('Fetched products:', data);
-      
-      if (data) {
-        setProducts(data.results || []);
-        setTotalProducts(data.count || 0);
-        setTotalPages(Math.ceil((data.count || 0) / 10)); // Assuming 10 products per page
+
+      // Try different API endpoints - first the primary products endpoint
+      let data;
+      let apiSuccess = false;
+
+      try {
+        const response = await productService.getAll(params);
+        console.log('Fetched products from primary API:', response);
+        
+        if (response && response.results) {
+          data = response;
+          apiSuccess = true;
+        } else {
+          console.warn('Primary API returned invalid data format');
+        }
+      } catch (primaryError) {
+        console.error('Error with primary API call:', primaryError);
+        
+        // Try alternate API pattern
+        try {
+          console.log('Trying alternate API pattern');
+          const productsResponse = await fetch(`/api/products/products/?${new URLSearchParams(params).toString()}`);
+          if (!productsResponse.ok) {
+            throw new Error(`HTTP error ${productsResponse.status}`);
+          }
+          const altData = await productsResponse.json();
+          console.log('Alternate API response:', altData);
+          
+          if (altData && (altData.results || Array.isArray(altData))) {
+            data = altData;
+            apiSuccess = true;
+          }
+        } catch (altError) {
+          console.error('Error with alternate API call:', altError);
+        }
       }
       
-      setError(null);
+      // Process the data if any API was successful
+      if (apiSuccess && data) {
+        // Standardize the data format
+        const results = data.results || (Array.isArray(data) ? data : []);
+        const count = data.count || results.length;
+        
+        setProducts(results);
+        setTotalProducts(count);
+        setTotalPages(Math.ceil(count / 10)); // Assuming 10 products per page
+        setError(null);
+      } else {
+        // If all API calls fail, set a user-friendly error
+        console.error('All API attempts failed');
+        setError('Unable to load products. Please try again later.');
+        setProducts([]);
+        setTotalProducts(0);
+        setTotalPages(0);
+      }
     } catch (err) {
-      console.error('Failed to load products:', err);
-      setError('Failed to load products');
+      console.error('Unhandled error in fetchProducts:', err);
+      setError('Failed to load products. Please refresh the page or try again later.');
       setProducts([]);
+      setTotalProducts(0);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }
@@ -859,85 +931,119 @@ export const ShopCatalog = (): JSX.Element => {
           
           {/* Product grid */}
           <div className="flex-1">
-            {loading ? (
-              // Loading state
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-gray-100 rounded-xl h-80 animate-pulse"></div>
-                ))}
-              </div>
-            ) : error ? (
-              // Error state
-              <div className="p-6 text-center">
-                <p className="text-red-500">{error}</p>
-                <Button onClick={fetchProducts} className="mt-4">
-                  Try Again
-                </Button>
-              </div>
-            ) : products.length === 0 ? (
-              // Empty state
-              <div className="p-6 text-center">
-                <p className="text-gray-500">No products found matching your criteria.</p>
-              </div>
-            ) : (
-              // Products grid
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product) => (
-                  <Card key={product.id} className="overflow-hidden border-none rounded-xl">
-                    <div className="relative">
-                      <img
-                        src={product.primary_image || product.image || (product.images && product.images.length > 0 ? 
-                          (typeof product.images[0] === 'string' ? product.images[0] : (product.images[0] as any).image_url) 
-                          : "/placeholder-product.png")}
-                        alt={product.name}
-                        className="w-full h-[200px] object-cover"
-                      />
-                      {product.sale_price && (
-                        <Badge className="absolute top-4 left-4 bg-primarymain text-white-100 py-1 px-2 text-xs">
-                          Sale
-                        </Badge>
-                      )}
-                      <button
-                        className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white-100 flex items-center justify-center"
-                        aria-label="Add to wishlist"
+            {/* Product grid */}
+            <section className="flex-grow">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {loading ? (
+                  // Loading state - show loading indicators
+                  Array.from({ length: 6 }).map((_, index) => (
+                    <Card key={index} className="relative overflow-hidden animate-pulse">
+                      <div className="h-48 bg-gray-200"></div>
+                      <CardContent className="p-4">
+                        <div className="h-5 bg-gray-200 rounded mb-3"></div>
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : error ? (
+                  // Error state - show error message and retry button
+                  <div className="col-span-full flex flex-col items-center justify-center py-12 px-4">
+                    <div className="text-red-500 text-xl mb-4">{error}</div>
+                    <p className="text-gray-600 mb-6 text-center">
+                      We encountered an issue loading the products. 
+                      This could be due to connectivity issues or the server might be temporarily unavailable.
+                    </p>
+                    <Button 
+                      onClick={() => fetchProducts()}
+                      variant="outline"
+                      className="px-6"
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : products.length === 0 ? (
+                  // Empty state - no products found
+                  <div className="col-span-full flex flex-col items-center justify-center py-12 px-4">
+                    <div className="text-gray-800 text-xl mb-4">No Products Found</div>
+                    <p className="text-gray-600 mb-6 text-center">
+                      {emptyResultsMessage || "No products match your current filters."}
+                    </p>
+                    {filterTags.length > 0 && (
+                      <Button 
+                        onClick={handleClearAll}
+                        variant="outline"
+                        className="px-6"
                       >
-                        <img src="/icon-3.svg" alt="Heart icon" className="w-5 h-5" />
-                      </button>
-                    </div>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-1 mb-1">
-                        {renderStars(product.rating || product.average_rating || 0)}
-                        <span className="text-xs text-gray-500 ml-1">
-                          ({product.reviews_count || product.total_reviews || 0})
-                        </span>
-                      </div>
-                      <h3 className="text-sm text-gray-900 font-medium line-clamp-2 mb-1">{product.name}</h3>
-                      <div className="flex items-baseline gap-2 mb-3">
-                        <span className="text-base font-semibold text-gray-900">
-                          {CURRENCY_SYMBOL}{product.sale_price || product.price}
-                        </span>
-                        {product.sale_price && (
-                          <span className="text-sm text-gray-500 line-through">
-                            {CURRENCY_SYMBOL}{product.price}
-                          </span>
-                        )}
-                      </div>
-                      <Button
-                        className="w-full bg-primarymain text-white-100"
-                        onClick={() => handleAddToCart(product.id, product.slug)}
-                      >
-                        Buy Now
+                        Clear All Filters
                       </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                    )}
+                  </div>
+                ) : (
+                  // Product cards
+                  products.map((product) => (
+                    <Card key={product.id} className="overflow-hidden border-none rounded-xl">
+                      <div className="relative">
+                        <img
+                          src={product.primary_image || product.image || (product.images && product.images.length > 0 ? 
+                            (typeof product.images[0] === 'string' ? product.images[0] : (product.images[0] as any).image_url) 
+                            : "/placeholder-product.png")}
+                          alt={product.name}
+                          className="w-full h-[200px] object-cover"
+                        />
+                        {product.sale_price && (
+                          <Badge className="absolute top-4 left-4 bg-primarymain text-white-100 py-1 px-2 text-xs">
+                            Sale
+                          </Badge>
+                        )}
+                        <button
+                          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white-100 flex items-center justify-center"
+                          aria-label="Add to wishlist"
+                        >
+                          <img src="/icon-3.svg" alt="Heart icon" className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-1 mb-1">
+                          {renderStars(product.rating || product.average_rating || 0)}
+                          <span className="text-xs text-gray-500 ml-1">
+                            ({product.reviews_count || product.total_reviews || 0})
+                          </span>
+                        </div>
+                        <h3 className="text-sm text-gray-900 font-medium line-clamp-2 mb-1">{product.name}</h3>
+                        <div className="flex items-baseline gap-2 mb-3">
+                          <span className="text-base font-semibold text-gray-900">
+                            {CURRENCY_SYMBOL}{product.sale_price || product.price}
+                          </span>
+                          {product.sale_price && (
+                            <span className="text-sm text-gray-500 line-through">
+                              {CURRENCY_SYMBOL}{product.price}
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          className="w-full bg-primarymain text-white-100"
+                          onClick={() => handleAddToCart(product.id, product.slug)}
+                        >
+                          Buy Now
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
-            )}
-            
-            {/* Pagination */}
-            <div className="mt-8 flex justify-center">
-              <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-            </div>
+              
+              {/* Pagination - only show if we have products and no error */}
+              {!error && products.length > 0 && totalPages > 0 && (
+                <div className="mt-8 flex justify-center">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                </div>
+              )}
+            </section>
           </div>
         </div>
       </main>

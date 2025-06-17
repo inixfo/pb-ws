@@ -466,3 +466,21 @@ class OrderViewSet(viewsets.ModelViewSet):
         if lookup.isdigit():
             return get_object_or_404(qs, pk=int(lookup))
         return get_object_or_404(qs, order_id=lookup)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_status_options(request):
+    """Return available order status options for filtering."""
+    status_options = [
+        {'value': 'all', 'label': 'All Orders'},
+        {'value': 'pending', 'label': 'Pending'},
+        {'value': 'processing', 'label': 'Processing'},
+        {'value': 'shipped', 'label': 'Shipped'},
+        {'value': 'delivered', 'label': 'Delivered'},
+        {'value': 'cancelled', 'label': 'Cancelled'},
+        {'value': 'refunded', 'label': 'Refunded'}
+    ]
+    
+    return Response({
+        'status_options': status_options
+    })

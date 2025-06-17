@@ -2,6 +2,15 @@ import axios from 'axios';
 import { API_URL } from '../../config';
 import { getAuthHeaders } from './authHeaders';
 
+interface StatusOption {
+  value: string;
+  label: string;
+}
+
+interface StatusOptionsResponse {
+  status_options: StatusOption[];
+}
+
 class OrderService {
   async getOrders(params = {}) {
     try {
@@ -81,6 +90,29 @@ class OrderService {
     } catch (error) {
       console.error(`Error fetching tracking for order ${orderId}:`, error);
       return null;
+    }
+  }
+
+  async getStatusOptions(): Promise<StatusOptionsResponse> {
+    try {
+      const response = await axios.get(`${API_URL}/orders/status-options/`, {
+        headers: getAuthHeaders()
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching status options:', error);
+      // Fallback status options if API fails
+      return {
+        status_options: [
+          { value: 'all', label: 'All Orders' },
+          { value: 'pending', label: 'Pending' },
+          { value: 'processing', label: 'Processing' },
+          { value: 'shipped', label: 'Shipped' },
+          { value: 'delivered', label: 'Delivered' },
+          { value: 'cancelled', label: 'Cancelled' },
+          { value: 'refunded', label: 'Refunded' }
+        ]
+      };
     }
   }
 }
