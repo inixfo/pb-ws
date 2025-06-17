@@ -213,9 +213,7 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
 
   // Handle categories button click based on whether we're on home page
   const handleCategoriesClick = () => {
-    if (!showHeroSection) {
-      setShowCategories((v) => !v);
-    }
+    setShowCategories((prev) => !prev);
   };
 
   // Example mega menu data for 'Smartphones & Tablets'
@@ -533,11 +531,11 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
               </Link>
             ))}
             <div className="h-px w-full bg-gray-600 my-2"></div>
-            {/* Always show Categories button in mobile menu, but only make it functional when not on home page */}
+            {/* Mobile Categories button - now functional on all pages */}
             <Button
               variant="ghost"
-              className={`justify-start px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg ${showHeroSection ? 'opacity-70 cursor-not-allowed' : ''}`}
-              onClick={() => !showHeroSection && setShowCategories(!showCategories)}
+              className="justify-start px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg"
+              onClick={() => setShowCategories(!showCategories)}
             >
               <span className="flex items-center gap-2">
                 <LayoutGridIcon className="w-4 h-4" />
@@ -545,7 +543,7 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                 <ChevronDownIcon className="w-4 h-4" />
               </span>
             </Button>
-            {!showHeroSection && showCategories ? (
+            {showCategories && mobileMenuOpen ? (
               <div className="ml-4 flex flex-col gap-1 mt-1">
                 {categoriesLoading ? (
                   <div className="px-3 py-2 text-white-80">Loading categories...</div>
@@ -600,10 +598,10 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
 
         {/* Bottom navigation - desktop only */}
         <div className="w-full max-w-[1296px] h-12 hidden sm:flex items-center justify-between px-6">
-          {/* Categories dropdown - always show but only functional when not on home page */}
+          {/* Categories dropdown - always functional now */}
           <div ref={categoriesButtonRef} className="relative">
             <div
-              className={`inline-flex flex-col items-start px-6 py-3 ${!showHeroSection ? 'bg-gray-700' : 'bg-gray-600'} rounded-[8px_8px_0px_0px] cursor-pointer select-none ${showHeroSection ? 'opacity-80' : ''}`}
+              className="inline-flex flex-col items-start px-6 py-3 bg-gray-700 rounded-[8px_8px_0px_0px] cursor-pointer select-none"
               onClick={handleCategoriesClick}
             >
               <div className="inline-flex items-center gap-4">
@@ -614,7 +612,7 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                 <ChevronDownIcon className="w-4 h-4 text-gray-200" />
               </div>
             </div>
-            {showCategories && !showHeroSection && (
+            {showCategories && (
               <div
                 ref={categoriesDropdownRef}
                 className="absolute left-0 mt-2 bg-white-100 rounded-b-xl shadow-lg border border-gray-100 z-20 min-w-[260px]"
