@@ -1,46 +1,36 @@
 FROM python:3.10-slim as base
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    DJANGO_SETTINGS_MODULE=backend.settings_prod \
-    PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_DEFAULT_TIMEOUT=100 \
-    PYTHONPATH=/app
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV DJANGO_SETTINGS_MODULE=backend.settings_prod
 
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies and clean up in the same layer
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
     libjpeg-dev \
     zlib1g-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install --upgrade pip
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy only requirements file first to leverage Docker cache
-COPY backend/requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir gunicorn psycopg2-binary Pillow requests && \
-    rm -rf ~/.cache/pip
-
-# Copy SSLCommerz installation script and install it
-COPY deployment/install_sslcommerz.py .
-RUN python install_sslcommerz.py && \
-    rm -rf ~/.cache/pip
-
-# Now copy the rest of the application
+# Copy project files first
 COPY backend/ .
 
+# Install Python dependencies
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt && \
+    pip install gunicorn psycopg2-binary Pillow requests
+
+# Copy and run SSLCommerz installation script
+COPY deployment/install_sslcommerz.py .
+RUN python install_sslcommerz.py
+
 # Create a non-root user
-RUN adduser --disabled-password --gecos '' django && \
-    chown -R django:django /app
+RUN adduser --disabled-password --gecos '' django
+RUN chown -R django:django /app
 
 # Switch to non-root user
 USER django
@@ -48,18 +38,20 @@ USER django
 # Backend stage
 FROM base as backend
 # Collect static files
-RUN python manage.py collectstatic --noinput --clear
+RUN python manage.py collectstatic --noinput
 # Expose port
 EXPOSE 8000
 # Run gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "backend.wsgi:application"]
 
-# Celery stage - make slimmer by starting fresh from base
+# Celery stage
 FROM base as celery
 ENV C_FORCE_ROOT=1
+ENV DJANGO_SETTINGS_MODULE=backend.settings_prod
 CMD ["celery", "-A", "backend", "worker", "-l", "info"]
 
-# Celery beat stage - make slimmer by starting fresh from base
+# Celery beat stage
 FROM base as celery-beat
 ENV C_FORCE_ROOT=1
+ENV DJANGO_SETTINGS_MODULE=backend.settings_prod
 CMD ["celery", "-A", "backend", "beat", "-l", "info"] 

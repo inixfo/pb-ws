@@ -1,17 +1,15 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from .views import CartViewSet, OrderViewSet, OrderItemViewSet, CartItemViewSet, get_status_options
+# Import only what's actually defined in views.py
+from .views import CartViewSet, OrderViewSet
 
 app_name = 'orders'
 
 router = DefaultRouter()
-router.register(r'orders', OrderViewSet, basename='order')
-router.register(r'order-items', OrderItemViewSet, basename='order-item')
-router.register(r'carts', CartViewSet, basename='cart')
-router.register(r'cart-items', CartItemViewSet, basename='cart-item')
+router.register('cart', CartViewSet, basename='cart')
+router.register('', OrderViewSet, basename='orders')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('orders/status-options/', get_status_options, name='order-status-options'),
 ] 

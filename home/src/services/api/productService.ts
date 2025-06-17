@@ -97,17 +97,14 @@ class ProductService {
       
       console.log('Adjusted params:', adjustedParams);
       
+      // First try the products/products/ endpoint directly
       try {
-        // First try the direct API endpoint
-        console.log(`Requesting from ${API_URL}/products/products/`);
         const response = await axios.get(`${API_URL}/products/products/`, { 
           params: adjustedParams,
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
-          },
-          // Add timeout to prevent hanging requests
-          timeout: 10000
+          }
         });
         
         console.log('Products API Response:', response.data);
@@ -124,54 +121,19 @@ class ProductService {
           };
         }
         return response.data;
-      } catch (error: any) {
-        // Check if it's a network error, which could indicate CORS issues
-        if (error.message && error.message.includes('Network Error')) {
-          console.error('Network error fetching products - possible CORS issue:', error);
-          
-          // Try a fallback approach with credentials
-          try {
-            console.log('Trying fallback approach with credentials');
-            const fallbackResponse = await axios.get(`${API_URL}/products/products/`, { 
-              params: adjustedParams,
-              withCredentials: true, // Include cookies
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            console.log('Fallback API Response:', fallbackResponse.data);
-            
-            if (fallbackResponse.data && fallbackResponse.data.results) {
-              return fallbackResponse.data;
-            } else if (Array.isArray(fallbackResponse.data)) {
-              return {
-                results: fallbackResponse.data,
-                count: fallbackResponse.data.length,
-                next: null,
-                previous: null
-              };
-            }
-            return fallbackResponse.data;
-          } catch (fallbackError) {
-            console.error('Fallback approach also failed:', fallbackError);
-            // Continue to fallback data
-          }
-        } else {
-          console.error('Error fetching products:', error);
-        }
+      } catch (error) {
+        console.error('Error fetching from products/products/ endpoint:', error);
         
-        // Return fallback data when API calls fail
+        // Return fallback data when all API calls fail
         console.log('Using fallback product data');
         return { 
           results: FALLBACK_PRODUCTS,
           count: FALLBACK_PRODUCTS.length
         };
       }
-    } catch (outerError) {
-      console.error('Outer error fetching products:', outerError);
-      // Return fallback data as last resort
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      // Return fallback data when all API calls fail
       return { 
         results: FALLBACK_PRODUCTS,
         count: FALLBACK_PRODUCTS.length

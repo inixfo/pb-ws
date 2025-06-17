@@ -14,17 +14,10 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',  // Use local Django server for development
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path
-      },
-      // Fallback to production server if local isn't available
-      '/api-prod': {
         target: 'http://3.25.95.103/',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api-prod/, '/api')
+        rewrite: (path) => path
       }
     }
   },
