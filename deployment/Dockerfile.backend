@@ -25,16 +25,14 @@ RUN apt-get update && \
 # Copy only requirements file first to leverage Docker cache
 COPY backend/requirements.txt .
 
-# Install Python dependencies and clean pip cache
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir gunicorn psycopg2-binary Pillow requests && \
-    pip cache purge && \
     rm -rf ~/.cache/pip
 
 # Copy SSLCommerz installation script and install it
 COPY deployment/install_sslcommerz.py .
 RUN python install_sslcommerz.py && \
-    pip cache purge && \
     rm -rf ~/.cache/pip
 
 # Now copy the rest of the application
