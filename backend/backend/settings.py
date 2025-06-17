@@ -252,8 +252,8 @@ STORE_NAME = os.getenv('STORE_NAME', 'Phone Bay')
 SSLCOMMERZ_SANDBOX = os.getenv('SSLCOMMERZ_SANDBOX', 'True').lower() == 'true'
 
 # Payment Gateway URLs
-FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:5173')
-BACKEND_BASE_URL = os.getenv('BACKEND_BASE_URL', 'http://localhost:8000')
+FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'https://phonebay.xyz')
+BACKEND_BASE_URL = os.getenv('BACKEND_BASE_URL', 'https://phonebay.xyz/admin')
 
 # SSLCOMMERZ callback URLs
 SSLCOMMERZ_SUCCESS_URL = f'{BACKEND_BASE_URL}/api/payments/success/'

@@ -291,10 +291,9 @@ export const DeliveryInfoContent = (): JSX.Element => {
         const downpayment = cardlessItemPrice * (cardlessPlan.down_payment_percentage / 100);
         const financedAmount = cardlessItemPrice - downpayment;
         
-        // Calculate interest
+        // Calculate interest - treat interest_rate as flat rate for the entire period, not annual
         const interestRate = (cardlessPlan.interest_rate || 0) / 100;
-        const tenureYears = cardlessPlan.duration_months / 12;
-        const totalInterest = financedAmount * interestRate * tenureYears;
+        const totalInterest = financedAmount * interestRate;
         const totalPayable = financedAmount + totalInterest;
         
         // Monthly installment includes interest
@@ -947,8 +946,8 @@ export const DeliveryInfoContent = (): JSX.Element => {
       const downPayment = baseAmount * (downPaymentPercent / 100);
       const financedAmount = baseAmount - downPayment;
       
-      // Simplified interest calculation for Cardless EMI
-      const totalInterest = financedAmount * (interestPercent / 100) * (tenureMonths / 12);
+      // Use flat interest rate for entire period (not annual)
+      const totalInterest = financedAmount * (interestPercent / 100);
       const totalPayable = financedAmount + totalInterest;
       const monthlyInstallment = tenureMonths > 0 ? totalPayable / tenureMonths : totalPayable;
 
@@ -1045,10 +1044,9 @@ export const DeliveryInfoContent = (): JSX.Element => {
         // For Card EMI, interest is handled by SSLCOMMERZ/bank, so we don't add it to our total
         // totalWithInterest remains the same
       } else if (selectedCardlessEMIPlanDetails && activeCardlessEMIMonthly !== null && activeCardlessEMIFinancedAmount !== null) {
-        // Calculate interest for cardless EMI
+        // Calculate interest for cardless EMI - use flat rate, not annual
         const interestRate = selectedCardlessEMIPlanDetails.interest_rate / 100;
-        const tenureYears = selectedCardlessEMIPlanDetails.duration_months / 12;
-        emiInterest = activeCardlessEMIFinancedAmount * interestRate * tenureYears;
+        emiInterest = activeCardlessEMIFinancedAmount * interestRate;
         emiInterestDisplay = `EMI Interest (${selectedCardlessEMIPlanDetails.interest_rate}%): ${formatCurrency(emiInterest)}`;
         // For Cardless EMI, add the interest to the total
         totalWithInterest += emiInterest;
@@ -1938,9 +1936,9 @@ export const DeliveryInfoContent = (): JSX.Element => {
                          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 space-y-2 mb-4">
                             <h4 className="text-base font-semibold text-blue-800">EMI Details ({selectedCardlessEMIPlanDetails.plan_name || `${selectedCardlessEMIPlanDetails.duration_months}-month Plan`})</h4>
                             <div className="flex justify-between"><span>Product Price:</span> <span>{formatCurrency(activeCardlessEMIBasePrice)}</span></div>
-                            <div className="flex justify-between"><span>Interest Rate:</span> <span>{selectedCardlessEMIPlanDetails.interest_rate}% per annum</span></div>
-                            <div className="flex justify-between"><span>Total Interest:</span> <span>{formatCurrency(activeCardlessEMIFinancedAmount * (selectedCardlessEMIPlanDetails.interest_rate / 100) * (selectedCardlessEMIPlanDetails.duration_months / 12))}</span></div>
-                            <div className="flex justify-between font-semibold border-t pt-2"><span>Total Amount (with Interest):</span> <span>{formatCurrency(activeCardlessEMIBasePrice + (activeCardlessEMIFinancedAmount * (selectedCardlessEMIPlanDetails.interest_rate / 100) * (selectedCardlessEMIPlanDetails.duration_months / 12)))}</span></div>
+                            <div className="flex justify-between"><span>Interest Rate:</span> <span>{selectedCardlessEMIPlanDetails.interest_rate}%</span></div>
+                            <div className="flex justify-between"><span>Total Interest:</span> <span>{formatCurrency(activeCardlessEMIFinancedAmount * (selectedCardlessEMIPlanDetails.interest_rate / 100))}</span></div>
+                            <div className="flex justify-between font-semibold border-t pt-2"><span>Total Amount (with Interest):</span> <span>{formatCurrency(activeCardlessEMIBasePrice + (activeCardlessEMIFinancedAmount * (selectedCardlessEMIPlanDetails.interest_rate / 100)))}</span></div>
                             {(selectedCardlessEMIPlanDetails.down_payment_percentage || 0) > 0 && 
                               <div className="flex justify-between text-green-700"><span>Down Payment (Pay Now) ({(selectedCardlessEMIPlanDetails.down_payment_percentage || 0)}%):</span> <span className="font-semibold">{formatCurrency(activeCardlessEMIDownpayment)}</span></div>
                             }
@@ -2212,10 +2210,10 @@ export const DeliveryInfoContent = (): JSX.Element => {
                   
                   <div className="flex items-center gap-4 w-full mt-1">
                     <div className="flex-1 text-gray-600 text-xs leading-[22px]">
-                      Interest ({selectedCardlessEMIPlanDetails.interest_rate}% for {selectedCardlessEMIPlanDetails.duration_months} months):
+                      Interest ({selectedCardlessEMIPlanDetails.interest_rate}%):
                     </div>
                     <div className="w-[156px] font-navigation-nav-link-small text-gray-600 text-right">
-                      {formatCurrency(activeCardlessEMIFinancedAmount * (selectedCardlessEMIPlanDetails.interest_rate / 100) * (selectedCardlessEMIPlanDetails.duration_months / 12))}
+                      {formatCurrency(activeCardlessEMIFinancedAmount * (selectedCardlessEMIPlanDetails.interest_rate / 100))}
                     </div>
                   </div>
                   
@@ -2224,7 +2222,7 @@ export const DeliveryInfoContent = (): JSX.Element => {
                       Total with interest:
                     </div>
                     <div className="w-[156px] font-navigation-nav-link-small text-gray-700 text-right">
-                      {formatCurrency(activeCardlessEMIBasePrice + (activeCardlessEMIFinancedAmount * (selectedCardlessEMIPlanDetails.interest_rate / 100) * (selectedCardlessEMIPlanDetails.duration_months / 12)))}
+                      {formatCurrency(activeCardlessEMIBasePrice + (activeCardlessEMIFinancedAmount * (selectedCardlessEMIPlanDetails.interest_rate / 100)))}
                     </div>
                   </div>
                   

@@ -45,8 +45,8 @@ STORE_NAME = 'Phone Bay'
 SSLCOMMERZ_SANDBOX = False
 
 # Payment Gateway URLs
-FRONTEND_BASE_URL = 'http://3.25.95.103'
-BACKEND_BASE_URL = 'http://3.25.95.103/admin'
+FRONTEND_BASE_URL = 'http://phonebay.xyz'
+BACKEND_BASE_URL = 'http://phonebay.xyz/admin'
 
 # SMS Settings
 SMS_API_URL = 'https://smsplus.sslwireless.com'
