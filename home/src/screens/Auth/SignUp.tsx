@@ -157,10 +157,6 @@ export const SignUp = () => {
       
       // First verify the phone number
       console.log("Verifying phone number first...");
-      const verifyData = {
-        phone_number: formattedPhone,
-        code: verificationCode
-      };
       
       // Verify phone number
       await smsService.verifyPhoneNumber(formattedPhone, verificationCode);
@@ -168,11 +164,17 @@ export const SignUp = () => {
       
       // Now register the user with verified phone
       console.log("Now registering user with verified phone...");
+      
+      // Split the fullName into first_name and last_name
+      const nameParts = fullName.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+      
       const userData = {
         email: email,
         password: password,
-        first_name: fullName.split(' ')[0], 
-        last_name: fullName.split(' ').slice(1).join(' ') || '',
+        first_name: firstName,
+        last_name: lastName,
         phone: formattedPhone
       };
       

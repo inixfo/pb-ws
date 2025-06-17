@@ -3,9 +3,10 @@ import { API_URL } from '../../config';
 import { getAuthHeaders } from './authHeaders';
 
 interface UserData {
-  full_name: string;
   email: string;
   password: string;
+  first_name: string;
+  last_name: string;
   phone: string;
 }
 
@@ -29,16 +30,39 @@ class AuthService {
 
   async register(user: any) {
     try {
-      const data = { ...user };
+      // Create a new object with the expected properties
+      const data: UserData = {
+        email: user.email,
+        password: user.password,
+        first_name: '',
+        last_name: '',
+        phone: user.phone || ''
+      };
 
-      // Map full_name -> first_name + last_name for backend compatibility
-      if (data.full_name) {
-        const parts = (data.full_name as string).trim().split(' ');
-        data.first_name = parts[0] || '';
-        data.last_name = parts.length > 1 ? parts.slice(1).join(' ') : '';
+      // Handle name splitting
+      if (user.full_name) {
+        const nameParts = user.full_name.trim().split(' ');
+        data.first_name = nameParts[0] || '';
+        data.last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+      } else {
+        // Use provided first_name and last_name if available
+        data.first_name = user.first_name || '';
+        data.last_name = user.last_name || '';
+      }
+
+      // Make sure phone is properly formatted
+      if (data.phone) {
+        // Remove any non-digit characters
+        const cleaned = data.phone.replace(/\D/g, '');
         
-        // Delete full_name to prevent it being sent to the API
-        delete data.full_name;
+        // Format Bangladesh phone numbers consistently
+        if (cleaned.startsWith('01') && cleaned.length === 11) {
+          data.phone = `880${cleaned.substring(1)}`;
+        } else if (cleaned.startsWith('1') && cleaned.length === 10) {
+          data.phone = `880${cleaned}`;
+        } else if (cleaned.startsWith('880') && cleaned.length >= 12) {
+          data.phone = cleaned;
+        }
       }
 
       console.log('Sending registration data:', data);
@@ -70,14 +94,34 @@ class AuthService {
   // New method for testing registration
   async debugRegister(user: any) {
     try {
-      const data = { ...user };
+      // Use the same data preparation logic as the register method
+      const data: UserData = {
+        email: user.email,
+        password: user.password,
+        first_name: '',
+        last_name: '',
+        phone: user.phone || ''
+      };
 
-      // Same as register but only using debug endpoint
-      if (data.full_name) {
-        const parts = (data.full_name as string).trim().split(' ');
-        data.first_name = parts[0] || '';
-        data.last_name = parts.length > 1 ? parts.slice(1).join(' ') : '';
-        delete data.full_name;
+      if (user.full_name) {
+        const nameParts = user.full_name.trim().split(' ');
+        data.first_name = nameParts[0] || '';
+        data.last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+      } else {
+        data.first_name = user.first_name || '';
+        data.last_name = user.last_name || '';
+      }
+
+      if (data.phone) {
+        const cleaned = data.phone.replace(/\D/g, '');
+        
+        if (cleaned.startsWith('01') && cleaned.length === 11) {
+          data.phone = `880${cleaned.substring(1)}`;
+        } else if (cleaned.startsWith('1') && cleaned.length === 10) {
+          data.phone = `880${cleaned}`;
+        } else if (cleaned.startsWith('880') && cleaned.length >= 12) {
+          data.phone = cleaned;
+        }
       }
 
       console.log('Sending debug registration data:', data);
