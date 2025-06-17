@@ -518,7 +518,7 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
         </div>
 
         {/* Mobile menu */}
-        <div className={`${mobileMenuOpen ? 'flex' : 'hidden'} sm:hidden w-full flex-col bg-gray-700 p-4`}>
+        <div className={`${mobileMenuOpen ? 'flex' : 'hidden'} sm:hidden w-full flex-col bg-gray-700 p-4 z-50`}>
           <div className="flex flex-col gap-2">
             {navLinks.map((link, index) => (
               <Link
@@ -532,17 +532,16 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
             ))}
             <div className="h-px w-full bg-gray-600 my-2"></div>
             {/* Mobile Categories button - now functional on all pages */}
-            <Button
-              variant="ghost"
-              className="justify-start px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg"
+            <button
+              className="flex items-center justify-between px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg w-full"
               onClick={() => setShowCategories(!showCategories)}
             >
               <span className="flex items-center gap-2">
                 <LayoutGridIcon className="w-4 h-4" />
                 Categories
-                <ChevronDownIcon className="w-4 h-4" />
               </span>
-            </Button>
+              <ChevronDownIcon className={`w-4 h-4 transition-transform ${showCategories ? 'rotate-180' : ''}`} />
+            </button>
             {showCategories && mobileMenuOpen ? (
               <div className="ml-4 flex flex-col gap-1 mt-1">
                 {categoriesLoading ? (
@@ -551,7 +550,7 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                   <div className="px-3 py-2 text-white-80">Error: {categoriesError}</div>
                 ) : (
                   <>
-                    {categories.slice(0, 6).map((category) => (
+                    {categories.map((category) => (
                       <a
                         key={category.id}
                         href="#"
@@ -685,13 +684,13 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
           </div>
 
           {/* Navigation links */}
-          <NavigationMenu className={`${!showHeroSection ? 'ml-0' : 'ml-0 flex-1'} hidden md:block`}>
+          <NavigationMenu className="ml-0 hidden md:block">
             <NavigationMenuList className="flex gap-1">
               {navLinks.map((link, index) => (
                 <NavigationMenuItem key={index}>
                   <Link 
                     to={link.path} 
-                    className="px-5 py-3 text-white-80 font-navigation-nav-link-regular"
+                    className="px-5 py-3 text-white-80 font-navigation-nav-link-regular hover:text-white transition-colors"
                   >
                     {link.label}
                   </Link>

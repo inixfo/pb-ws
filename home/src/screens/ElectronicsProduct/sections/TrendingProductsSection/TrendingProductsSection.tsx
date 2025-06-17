@@ -13,6 +13,7 @@ import { productService } from '../../../../services/api';
 import { Product, ProductImage } from '../../../../types/products';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from "../../../../context/CartContext";
+import "./TrendingProductsSection.css";
 
 // Helper function to get image URL from product
 const getProductImageUrl = (product: Product): string => {
@@ -31,85 +32,55 @@ export const TrendingProductsSection = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const sliderRef = useRef<HTMLDivElement>(null);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [maxPages, setMaxPages] = useState(0);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [visibleProducts, setVisibleProducts] = useState(4);
 
-  // Define how many products to show per slide based on screen size
-  const getItemsPerScreen = (): number => {
-    // Using window.innerWidth directly since we need the current value
-    if (typeof window === 'undefined') {
-      return 4; // Default to desktop for SSR
-    }
-    
-    // Browser environment
-    if (window.innerWidth < 640) return 1; // mobile
-    if (window.innerWidth < 1024) return 2; // tablet
-    return 4; // desktop
-  };
-
-  const [itemsPerScreen, setItemsPerScreen] = useState(getItemsPerScreen());
-
-  // Listen for window resize to update items per screen
+  // Update visible products based on screen size
   useEffect(() => {
     const handleResize = () => {
-      setItemsPerScreen(getItemsPerScreen());
+      const width = window.innerWidth;
+      if (width < 640) {
+        setVisibleProducts(1);
+      } else if (width < 1024) {
+        setVisibleProducts(2);
+      } else {
+        setVisibleProducts(4);
+      }
     };
 
+    // Set initial value
+    handleResize();
+
+    // Add event listener
     window.addEventListener('resize', handleResize);
+    
+    // Cleanup
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Update max pages when products or items per screen changes
-  useEffect(() => {
-    const maxPages = Math.ceil(products.length / itemsPerScreen) - 1;
-    setMaxPages(maxPages < 0 ? 0 : maxPages);
-    // Reset to first page when items per screen changes
-    setCurrentPage(0);
-  }, [products.length, itemsPerScreen]);
-
-  // Handle next and prev buttons
-  const handleNext = () => {
-    if (currentPage < maxPages) {
-      setCurrentPage(currentPage + 1);
+  const scrollToNext = () => {
+    if (currentIndex + visibleProducts < products.length) {
+      setCurrentIndex(currentIndex + 1);
+      scrollToIndex(currentIndex + 1);
     }
   };
 
-  const handlePrev = () => {
-    if (currentPage > 0) {
-      setCurrentPage(currentPage - 1);
+  const scrollToPrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+      scrollToIndex(currentIndex - 1);
     }
   };
 
-  // Handle touch events for swiping on mobile
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const distance = touchStart - touchEnd;
-    const isSignificantSwipe = Math.abs(distance) > 50;
-    
-    if (isSignificantSwipe) {
-      if (distance > 0 && currentPage < maxPages) {
-        // Swipe left, go next
-        handleNext();
-      } else if (distance < 0 && currentPage > 0) {
-        // Swipe right, go prev
-        handlePrev();
-      }
+  const scrollToIndex = (index: number) => {
+    if (scrollContainerRef.current) {
+      const cardWidth = scrollContainerRef.current.offsetWidth / visibleProducts;
+      scrollContainerRef.current.scrollTo({
+        left: index * cardWidth,
+        behavior: 'smooth'
+      });
     }
-    
-    setTouchStart(null);
-    setTouchEnd(null);
   };
 
   useEffect(() => {
@@ -173,6 +144,9 @@ export const TrendingProductsSection = (): JSX.Element => {
     );
   }
 
+  const canScrollPrev = currentIndex > 0;
+  const canScrollNext = currentIndex + visibleProducts < products.length;
+
   return (
     <section className="flex flex-col w-full items-start gap-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
@@ -185,8 +159,8 @@ export const TrendingProductsSection = (): JSX.Element => {
             variant="outline"
             size="icon"
             className="rounded-full bg-white-100 border-[#e0e5eb] disabled:opacity-50"
-            onClick={handlePrev}
-            disabled={currentPage === 0}
+            onClick={scrollToPrev}
+            disabled={!canScrollPrev}
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </Button>
@@ -195,8 +169,8 @@ export const TrendingProductsSection = (): JSX.Element => {
             variant="outline"
             size="icon"
             className="rounded-full bg-white-100 border-[#e0e5eb] disabled:opacity-50"
-            onClick={handleNext}
-            disabled={currentPage === maxPages}
+            onClick={scrollToNext}
+            disabled={!canScrollNext}
           >
             <ChevronRightIcon className="h-4 w-4" />
           </Button>
@@ -205,25 +179,39 @@ export const TrendingProductsSection = (): JSX.Element => {
       
       <Separator className="w-full" />
       
-      <div 
-        className="relative w-full overflow-hidden"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
+      <div className="w-full relative">
+        {/* Mobile navigation buttons */}
+        <div className="flex sm:hidden justify-between w-full absolute top-1/2 transform -translate-y-1/2 z-10 px-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full bg-white shadow-md border-[#e0e5eb] disabled:opacity-50 h-8 w-8"
+            onClick={scrollToPrev}
+            disabled={!canScrollPrev}
+          >
+            <ChevronLeftIcon className="h-4 w-4" />
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full bg-white shadow-md border-[#e0e5eb] disabled:opacity-50 h-8 w-8"
+            onClick={scrollToNext}
+            disabled={!canScrollNext}
+          >
+            <ChevronRightIcon className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        {/* Slider container */}
         <div 
-          ref={sliderRef}
-          className="flex transition-transform duration-300 ease-out"
-          style={{ 
-            transform: `translateX(-${currentPage * 100 / itemsPerScreen}%)`,
-            width: `${products.length * 100 / itemsPerScreen}%`
-          }}
+          ref={scrollContainerRef}
+          className="trending-products-slider flex overflow-x-auto gap-4 pb-4 snap-x"
         >
           {products.map((product) => (
             <div 
               key={product.id}
-              className="px-2"
-              style={{ width: `${100 / products.length * itemsPerScreen}%` }}
+              className="trending-product-card flex-shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/4 px-2 snap-start"
             >
               <Card
                 className="h-full rounded-lg overflow-hidden bg-white-100 cursor-pointer border border-gray-100"
@@ -275,12 +263,15 @@ export const TrendingProductsSection = (): JSX.Element => {
         
         {/* Mobile pagination dots */}
         <div className="flex sm:hidden justify-center mt-4 gap-2">
-          {Array.from({ length: maxPages + 1 }).map((_, i) => (
+          {Array.from({ length: Math.ceil(products.length / visibleProducts) }).map((_, i) => (
             <button
               key={i}
-              onClick={() => setCurrentPage(i)}
+              onClick={() => {
+                setCurrentIndex(i * visibleProducts);
+                scrollToIndex(i * visibleProducts);
+              }}
               className={`w-2 h-2 rounded-full ${
-                i === currentPage ? 'bg-primarymain' : 'bg-gray-300'
+                i === Math.floor(currentIndex / visibleProducts) ? 'bg-primarymain' : 'bg-gray-300'
               }`}
               aria-label={`Go to slide ${i + 1}`}
             />

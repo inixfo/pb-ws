@@ -1,0 +1,36 @@
+/* Hide scrollbars but keep functionality */
+.trending-products-slider {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+.trending-products-slider::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.trending-product-card {
+  transition: transform 0.3s ease;
+}
+
+.trending-product-card:hover {
+  transform: translateY(-5px);
+}
+
+@media (max-width: 640px) {
+  .trending-product-card {
+    width: 85vw !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1023px) {
+  .trending-product-card {
+    width: 45% !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .trending-product-card {
+    width: 24% !important;
+  }
+} 
