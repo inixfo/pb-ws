@@ -493,7 +493,7 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
             )}
             <div className="h-px w-full bg-gray-600 my-2"></div>
             <a
-              href="#"
+              href="/account"
               className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2"
             >
               <UserIcon className="w-4 h-4" />
