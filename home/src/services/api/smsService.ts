@@ -106,7 +106,21 @@ class SMSService {
       return `880${cleaned}`;
     }
     
-    // Return as-is for other cases - the backend also has validation
+    // Handle other cases with logging
+    console.warn(`Phone number ${cleaned} doesn't match expected Bangladesh format`);
+    
+    // For safety, try to standardize other formats
+    if (cleaned.length === 11 && !cleaned.startsWith('01')) {
+      console.warn(`Converting ${cleaned} to standard Bangladesh format`);
+      return `880${cleaned.substring(1)}`;
+    }
+    
+    if (cleaned.length === 10 && !cleaned.startsWith('1')) {
+      console.warn(`Converting ${cleaned} to standard Bangladesh format`);
+      return `880${cleaned}`;
+    }
+    
+    // Return best attempt at international format
     return cleaned;
   }
 }

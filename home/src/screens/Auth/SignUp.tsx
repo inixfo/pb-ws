@@ -88,7 +88,7 @@ export const SignUp = () => {
     setError("");
 
     try {
-      // Format phone number consistently
+      // Format phone number consistently - use the SMS service for consistency
       const formattedPhone = formatPhoneNumber(phone);
       console.log(`Phone number formatted: ${phone} → ${formattedPhone}`);
       
@@ -155,10 +155,19 @@ export const SignUp = () => {
       const formattedPhone = formatPhoneNumber(phone);
       console.log(`Verifying phone ${phone} (formatted: ${formattedPhone}) with code ${verificationCode}`);
       
-      // First register the user
-      console.log("Registering user first to ensure we can update verification status...");
+      // First verify the phone number
+      console.log("Verifying phone number first...");
+      const verifyData = {
+        phone_number: formattedPhone,
+        code: verificationCode
+      };
       
-      // Create the exact data structure the backend expects
+      // Verify phone number
+      await smsService.verifyPhoneNumber(formattedPhone, verificationCode);
+      console.log("Phone verification successful");
+      
+      // Now register the user with verified phone
+      console.log("Now registering user with verified phone...");
       const userData = {
         email: email,
         password: password,
@@ -167,44 +176,14 @@ export const SignUp = () => {
         phone: formattedPhone
       };
       
-      // Register the user with a direct request
-      const registerResponse = await axios.post(`${API_URL}/users/register/`, userData);
-      console.log("Registration successful:", registerResponse.data);
-      const userId = registerResponse.data.user?.id;
+      // Register the user
+      const registerResponse = await authService.register(userData);
+      console.log("Registration successful:", registerResponse);
       
-      // Now verify the phone number with the user ID
-      console.log("Now verifying phone number...");
-      const verifyData: { 
-        phone_number: string; 
-        code: string; 
-        user_id?: number;
-      } = {
-        phone_number: formattedPhone,
-        code: verificationCode
-      };
-      
-      // If we have a user ID, include it in the verification request
-      if (userId) {
-        verifyData.user_id = userId;
-        console.log(`Including user_id ${userId} in verification request`);
-      }
-      
-      const verifyResponse = await axios.post(`${API_URL}/sms/verify-phone/`, verifyData);
-      console.log("Phone verification successful:", verifyResponse.data);
-        
       // Login after registration
       try {
-        const loginResponse = await axios.post(`${API_URL}/users/login/`, {
-          email: email,
-          password: password
-        });
-        
-        if (loginResponse.data.access) {
-          // Store tokens
-          localStorage.setItem('auth_token', loginResponse.data.access);
-          localStorage.setItem('refresh_token', loginResponse.data.refresh);
-          console.log("Login successful");
-        }
+        const loginResponse = await authService.login(email, password);
+        console.log("Login successful");
       } catch (loginError) {
         console.error("Auto-login failed:", loginError);
       }
@@ -266,6 +245,46 @@ export const SignUp = () => {
 
   const toggleConfirmPasswordVisibility = () => {
     setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  // Add debugging function to help troubleshoot
+  const debugVerificationStatus = async () => {
+    try {
+      if (!phone || !verificationCode) {
+        console.error("Missing phone or verification code for debugging");
+        return;
+      }
+      
+      const formattedPhone = formatPhoneNumber(phone);
+      console.log("Debugging verification status:");
+      console.log(`Phone: ${phone} (formatted: ${formattedPhone})`);
+      console.log(`Verification code: ${verificationCode}`);
+      
+      // Check verification status directly
+      try {
+        const response = await fetch(`${API_URL}/sms/verify-phone/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            phone_number: formattedPhone,
+            code: verificationCode,
+          }),
+        });
+        
+        const data = await response.json();
+        console.log("Verification status check response:", response.status, data);
+        
+        if (response.status === 400) {
+          console.error("Verification failed. Server says:", data);
+        }
+      } catch (err) {
+        console.error("Error checking verification status:", err);
+      }
+    } catch (err) {
+      console.error("Debug function error:", err);
+    }
   };
 
   return (
@@ -544,6 +563,21 @@ export const SignUp = () => {
               >
                 {verifying ? "Verifying..." : "Verify & Create Account"}
               </Button>
+              
+              {error && (
+                <div className="mt-2 text-xs text-gray-500">
+                  <p>Having trouble? Make sure you've entered the exact code sent to your phone.</p>
+                  <p className="text-gray-400 mt-1">Verification code: {verificationCode}</p>
+                  <p className="text-gray-400">Phone format: {formatPhoneNumber(phone)}</p>
+                  <button 
+                    type="button"
+                    onClick={debugVerificationStatus}
+                    className="text-primarymain hover:underline text-xs mt-2"
+                  >
+                    Check verification status
+                  </button>
+                </div>
+              )}
             </form>
           )}
         </div>
