@@ -30,38 +30,31 @@ class AuthService {
 
   async register(user: any) {
     try {
-      // Create a new object with the expected properties
-      const data: UserData = {
+      // Create a data object with exactly the fields the backend expects
+      const data = {
         email: user.email,
         password: user.password,
-        first_name: '',
-        last_name: '',
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
         phone: user.phone || ''
       };
 
-      // Handle name splitting
-      if (user.full_name) {
-        const nameParts = user.full_name.trim().split(' ');
-        data.first_name = nameParts[0] || '';
-        data.last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-      } else {
-        // Use provided first_name and last_name if available
-        data.first_name = user.first_name || '';
-        data.last_name = user.last_name || '';
-      }
-
-      // Make sure phone is properly formatted
+      // Handle phone number formatting consistently
       if (data.phone) {
         // Remove any non-digit characters
         const cleaned = data.phone.replace(/\D/g, '');
         
-        // Format Bangladesh phone numbers consistently
-        if (cleaned.startsWith('01') && cleaned.length === 11) {
-          data.phone = `880${cleaned.substring(1)}`;
-        } else if (cleaned.startsWith('1') && cleaned.length === 10) {
-          data.phone = `880${cleaned}`;
-        } else if (cleaned.startsWith('880') && cleaned.length >= 12) {
+        // Case 1: If already has international code
+        if (cleaned.startsWith('880')) {
           data.phone = cleaned;
+        } 
+        // Case 2: If starts with 01 (Bangladesh format)
+        else if (cleaned.startsWith('01') && cleaned.length === 11) {
+          data.phone = `880${cleaned.substring(1)}`;
+        }
+        // Case 3: If starts with just 1 (without leading 0)
+        else if (cleaned.startsWith('1') && cleaned.length === 10) {
+          data.phone = `880${cleaned}`;
         }
       }
 

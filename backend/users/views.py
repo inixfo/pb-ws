@@ -52,8 +52,25 @@ class UserRegistrationView(generics.CreateAPIView):
             
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Continue with the original implementation
-        return super().create(request, *args, **kwargs)
+        self.perform_create(serializer)
+        
+        # Get user data for the response
+        user_data = UserSerializer(serializer.instance).data
+        
+        # Add info about verification
+        verification_sent = getattr(serializer.instance, '_verification_sent', False)
+        verification_phone = getattr(serializer.instance, '_verification_phone', None)
+        
+        response_data = {
+            'user': user_data,
+            'verification_required': True,
+            'verification_sent': verification_sent,
+            'verification_phone': verification_phone,
+            'message': 'Please verify your phone number with the code sent via SMS',
+        }
+        
+        headers = self.get_success_headers(serializer.data)
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
         
     def perform_create(self, serializer):
         # Check if this is a vendor registration
@@ -134,29 +151,6 @@ class UserRegistrationView(generics.CreateAPIView):
         # Store these for the response
         user._verification_sent = verification_sent
         user._verification_phone = verification_phone
-    
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        
-        # Get user data for the response
-        user_data = UserSerializer(serializer.instance).data
-        
-        # Add info about verification
-        verification_sent = getattr(serializer.instance, '_verification_sent', False)
-        verification_phone = getattr(serializer.instance, '_verification_phone', None)
-        
-        response_data = {
-            'user': user_data,
-            'verification_required': True,
-            'verification_sent': verification_sent,
-            'verification_phone': verification_phone,
-            'message': 'Please verify your phone number with the code sent via SMS',
-        }
-        
-        headers = self.get_success_headers(serializer.data)
-        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class UserLoginView(APIView):

@@ -170,6 +170,7 @@ export const SignUp = () => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
       
+      // Format data exactly as the backend expects it
       const userData = {
         email: email,
         password: password,
@@ -177,6 +178,8 @@ export const SignUp = () => {
         last_name: lastName,
         phone: formattedPhone
       };
+      
+      console.log("Sending registration data:", userData);
       
       // Register the user
       const registerResponse = await authService.register(userData);
@@ -223,7 +226,7 @@ export const SignUp = () => {
     const cleaned = phoneNumber.replace(/\D/g, '');
     
     // Case 1: If the number starts with 880, it's already in international format
-    if (cleaned.startsWith('880') && cleaned.length === 13) {
+    if (cleaned.startsWith('880')) {
       return cleaned;
     }
     
@@ -237,7 +240,8 @@ export const SignUp = () => {
       return `880${cleaned}`;
     }
     
-    // Return as-is for other cases
+    // Return as-is for other cases, though this shouldn't happen with our validation
+    console.warn(`Phone number ${cleaned} doesn't match expected Bangladesh format`);
     return cleaned;
   };
 
