@@ -407,10 +407,6 @@ class ProductImage(models.Model):
     is_primary = models.BooleanField(default=False)
     display_order = models.PositiveIntegerField(default=0)
     
-    # Thumbnail versions for responsive images
-    thumbnail_small = models.ImageField(upload_to=product_image_path, blank=True, null=True)
-    thumbnail_medium = models.ImageField(upload_to=product_image_path, blank=True, null=True)
-    
     class Meta:
         ordering = ['display_order']
     
@@ -421,92 +417,12 @@ class ProductImage(models.Model):
         # If this image is being set as primary, unset any other primary image
         if self.is_primary:
             ProductImage.objects.filter(product=self.product, is_primary=True).update(is_primary=False)
-        
-        # Generate responsive image versions if this is a new image
-        if self.pk is None and self.image:
-            self.create_thumbnails()
-            
         super().save(*args, **kwargs)
     
-    def create_thumbnails(self):
-        """Create compressed and resized versions of the image"""
-        if not self.image:
-            return
-            
-        # Open the original image
-        img = Image.open(self.image)
-        img_format = img.format  # Store original format (JPEG, PNG, etc.)
-        
-        # Create small thumbnail (300px width)
-        small_size = (300, 0)  # 0 height means maintain aspect ratio
-        small_img = self.resize_and_compress(img, small_size, img_format)
-        small_name = f"small_{os.path.basename(self.image.name)}"
-        self.thumbnail_small.save(small_name, small_img, save=False)
-        
-        # Create medium thumbnail (600px width)
-        medium_size = (600, 0)  # 0 height means maintain aspect ratio
-        medium_img = self.resize_and_compress(img, medium_size, img_format)
-        medium_name = f"medium_{os.path.basename(self.image.name)}"
-        self.thumbnail_medium.save(medium_name, medium_img, save=False)
-        
-        # Compress the original image if it's too large (> 1MB)
-        if self.image.size > 1024 * 1024:
-            # Maintain original size but compress
-            original_size = img.size
-            compressed_img = self.resize_and_compress(img, original_size, img_format, quality=85)
-            # Replace the original image with the compressed version
-            self.image.save(self.image.name, compressed_img, save=False)
-    
-    def resize_and_compress(self, img, size, img_format, quality=90):
-        """Resize and compress an image"""
-        # Make a copy to avoid modifying the original
-        img_copy = img.copy()
-        
-        # Calculate new height to maintain aspect ratio if height is 0
-        if size[1] == 0:
-            width_percent = size[0] / float(img_copy.size[0])
-            new_height = int(float(img_copy.size[1]) * float(width_percent))
-            size = (size[0], new_height)
-            
-        # Resize the image
-        img_copy = img_copy.resize(size, Image.LANCZOS)
-        
-        # Save to BytesIO buffer
-        buffer = BytesIO()
-        
-        # Convert to RGB if RGBA (remove alpha channel for JPEG)
-        if img_copy.mode == 'RGBA' and img_format == 'JPEG':
-            img_copy = img_copy.convert('RGB')
-            
-        # Save with appropriate format and compression
-        if img_format == 'JPEG':
-            img_copy.save(buffer, format='JPEG', quality=quality, optimize=True)
-        elif img_format == 'PNG':
-            img_copy.save(buffer, format='PNG', optimize=True)
-        else:
-            # Default to JPEG for other formats
-            if img_copy.mode == 'RGBA':
-                img_copy = img_copy.convert('RGB')
-            img_copy.save(buffer, format='JPEG', quality=quality, optimize=True)
-            
-        buffer.seek(0)
-        return ContentFile(buffer.read())
-    
     def delete(self, *args, **kwargs):
-        # Delete the actual image files when the model instance is deleted
+        # Delete the actual image file when the model instance is deleted
         if self.image:
             storage = self.image.storage
             if storage.exists(self.image.name):
                 storage.delete(self.image.name)
-                
-        if self.thumbnail_small:
-            storage = self.thumbnail_small.storage
-            if storage.exists(self.thumbnail_small.name):
-                storage.delete(self.thumbnail_small.name)
-                
-        if self.thumbnail_medium:
-            storage = self.thumbnail_medium.storage
-            if storage.exists(self.thumbnail_medium.name):
-                storage.delete(self.thumbnail_medium.name)
-                
         super().delete(*args, **kwargs)
