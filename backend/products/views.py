@@ -772,7 +772,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                 max_price = max(max_price, 1000)
                 
                 # Add 10% buffer to max_price for better UX
-                max_price = max_price * 1.1
+                max_price = float(max_price) * 1.1
                 
                 response_data['price_range'] = {
                     'min': int(min_price),

@@ -1,6 +1,31 @@
 import axios from 'axios';
 import { API_URL } from '../../config';
 
+// Default fallback banners
+export const DEFAULT_HEADER_PROMO = {
+  id: 1,
+  title: "Welcome to Phone Bay",
+  subtitle: "Discover the latest smartphones and accessories",
+  button_text: "Shop Now",
+  button_link: "/catalog",
+  image: "/banner-header.jpg",
+  is_active: true,
+  created_at: "2023-01-01T00:00:00Z",
+  updated_at: "2023-01-01T00:00:00Z"
+};
+
+export const DEFAULT_NEW_ARRIVALS_BANNER = {
+  id: 2,
+  title: "New Arrivals",
+  subtitle: "Check out our latest products",
+  button_text: "Shop Now",
+  button_link: "/catalog?sort=new",
+  image: "/banner-new-arrivals.jpg",
+  is_active: true,
+  created_at: "2023-01-01T00:00:00Z", 
+  updated_at: "2023-01-01T00:00:00Z"
+};
+
 class PromotionsService {
   async getHeaderPromoBanners() {
     try {
@@ -8,7 +33,8 @@ class PromotionsService {
       return response.data;
     } catch (error) {
       console.error('Error fetching header promo banners:', error);
-      return null;
+      // Return default banner instead of null
+      return DEFAULT_HEADER_PROMO;
     }
   }
 
@@ -28,7 +54,8 @@ class PromotionsService {
       return response.data;
     } catch (error) {
       console.error('Error fetching new arrivals banner:', error);
-      return null;
+      // Return default banner instead of null
+      return DEFAULT_NEW_ARRIVALS_BANNER;
     }
   }
 
@@ -38,6 +65,7 @@ class PromotionsService {
       return response.data;
     } catch (error) {
       console.error('Error fetching sale banner:', error);
+      // Return null but could add a default here if needed
       return null;
     }
   }
@@ -48,6 +76,7 @@ class PromotionsService {
       return response.data;
     } catch (error) {
       console.error('Error fetching catalog top banner:', error);
+      // Return null but could add a default here if needed
       return null;
     }
   }
@@ -58,6 +87,7 @@ class PromotionsService {
       return response.data;
     } catch (error) {
       console.error('Error fetching catalog bottom banner:', error);
+      // Return null but could add a default here if needed
       return null;
     }
   }
