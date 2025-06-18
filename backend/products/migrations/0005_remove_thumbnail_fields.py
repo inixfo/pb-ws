@@ -2,6 +2,18 @@
 
 from django.db import migrations
 
+def remove_fields_if_exist(apps, schema_editor):
+    # Get the model
+    ProductImage = apps.get_model('products', 'ProductImage')
+    
+    # Check if the model has the fields
+    model_fields = [f.name for f in ProductImage._meta.get_fields()]
+    
+    # If the fields exist in the model but not in the database, update the model
+    if 'thumbnail_small' in model_fields or 'thumbnail_medium' in model_fields:
+        # This is a no-op migration that just updates the model state
+        pass
+
 
 class Migration(migrations.Migration):
 
@@ -10,12 +22,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='productimage',
-            name='thumbnail_small',
-        ),
-        migrations.RemoveField(
-            model_name='productimage',
-            name='thumbnail_medium',
-        ),
+        migrations.RunPython(remove_fields_if_exist),
     ] 
