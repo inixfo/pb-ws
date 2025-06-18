@@ -194,9 +194,10 @@ export const TrendingProductsByAnima = (): JSX.Element => {
                 </Badge>
               )}
               <img
-                src={getProductImageUrl(product)}
+                src={getProductImageUrl(product, 'medium')}
                 alt={product.name}
-                className="w-full h-[100px] sm:w-[258px] sm:h-60 object-contain"
+                className="w-full h-auto max-h-[150px] sm:max-h-[240px] object-contain transition-transform hover:scale-105"
+                loading="lazy"
               />
             </div>
             <CardContent className="flex flex-col gap-2 sm:gap-3 p-2 sm:p-4 bg-white-100">

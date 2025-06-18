@@ -185,9 +185,10 @@ export const SpecialOffersByAnima = (): JSX.Element => {
             <div className="flex flex-col md:flex-row w-full h-full">
               <div className="md:w-1/2 bg-white-100 flex items-center justify-center py-6 px-8">
                 <img
-                  src={getProductImageUrl(product)}
+                  src={getProductImageUrl(product, 'medium')}
                   alt={product.name}
-                  className="w-full max-w-[200px] md:max-w-[240px] h-auto object-contain"
+                  className="w-full max-w-[200px] md:max-w-[240px] h-auto object-contain transition-transform hover:scale-105"
+                  loading="lazy"
                 />
               </div>
               <div className="md:w-1/2 p-4 md:p-6 flex flex-col justify-between bg-white-100">

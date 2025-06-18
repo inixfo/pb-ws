@@ -48,11 +48,12 @@ export const getResponsiveImageUrl = (image: ProductImage | string | null | unde
   // If image is a string, it's a direct URL
   if (typeof image === 'string') {
     const baseUrl = ensureAbsoluteUrl(image);
-    // Add size parameter if needed
+    
+    // Add size parameter for responsive loading
     if (size === 'small') {
-      return `${baseUrl}?size=small&width=300`;
+      return `${baseUrl}?size=small&width=300&quality=80`;
     } else if (size === 'medium') {
-      return `${baseUrl}?size=medium&width=600`;
+      return `${baseUrl}?size=medium&width=600&quality=85`;
     }
     return baseUrl;
   }
@@ -71,9 +72,9 @@ export const getResponsiveImageUrl = (image: ProductImage | string | null | unde
     // If thumbnail fields don't exist, use query parameters
     const baseUrl = ensureAbsoluteUrl(image.image);
     if (size === 'small') {
-      return `${baseUrl}?size=small&width=300`;
+      return `${baseUrl}?size=small&width=300&quality=80`;
     } else if (size === 'medium') {
-      return `${baseUrl}?size=medium&width=600`;
+      return `${baseUrl}?size=medium&width=600&quality=85`;
     }
     
     // Fall back to full image

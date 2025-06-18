@@ -68,9 +68,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onWishlistUpdate, cl
         {/* Image container with fixed height */}
         <div className="relative h-48 overflow-hidden rounded-t-lg">
           <img
-            src={imageUrl}
+            src={getProductImageUrl(product, 'medium')}
             alt={product.name}
-            className="h-full w-full object-contain p-4"
+            className="h-full w-full object-contain p-4 transition-transform hover:scale-105"
             loading="lazy"
             onLoad={handleImageLoad}
           />

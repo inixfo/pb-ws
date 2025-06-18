@@ -152,14 +152,14 @@ export const NewArrivalsByAnima = (): JSX.Element => {
     >
       <CardContent className="p-0">
         <div className="flex items-center gap-4 w-full">
-          <div
-            className="w-[80px] h-[80px] sm:w-[110px] sm:h-[110px] rounded"
-            style={{
-              backgroundImage: `url(${getProductImageUrl(product)})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          />
+          <div className="w-[80px] h-[80px] sm:w-[110px] sm:h-[110px] rounded flex items-center justify-center bg-white-100 overflow-hidden">
+            <img
+              src={getProductImageUrl(product, 'small')}
+              alt={product.name}
+              className="w-full h-full object-contain p-1"
+              loading="lazy"
+            />
+          </div>
           <div className="flex flex-col items-start gap-1 sm:gap-2 flex-1">
             <div className="flex items-center gap-2 w-full">
               <StarRating
