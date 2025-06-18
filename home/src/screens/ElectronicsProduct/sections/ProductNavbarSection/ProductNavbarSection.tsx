@@ -11,8 +11,9 @@ import {
   ShoppingCartIcon,
   Loader2Icon,
   AlertCircleIcon,
+  XIcon,
 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -83,7 +84,12 @@ export const ProductNavbarSection = (): JSX.Element => {
   const [selectedEmiPlan, setSelectedEmiPlan] = useState<number | null>(null);
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
   const [cartItemCount, setCartItemCount] = useState<number>(0);
-  
+  const [showZoomModal, setShowZoomModal] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(2.5);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const zoomedImageRef = useRef<HTMLImageElement>(null);
+  const zoomContainerRef = useRef<HTMLDivElement>(null);
+
   // Initialize cart item count from localStorage on component mount
   useEffect(() => {
     const cart = localStorage.getItem('cart');
@@ -389,6 +395,25 @@ export const ProductNavbarSection = (): JSX.Element => {
     setSelectedVariation(variation);
   };
 
+  const handleZoomMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (zoomContainerRef.current) {
+      const rect = zoomContainerRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      setZoomPosition({ x, y });
+    }
+  };
+
+  const handleZoomTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (zoomContainerRef.current) {
+      const touch = e.touches[0];
+      const rect = zoomContainerRef.current.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      setZoomPosition({ x, y });
+    }
+  };
+
   if (loading) {
     return (
       <div className="container max-w-[1296px] px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center py-16">
@@ -473,33 +498,108 @@ export const ProductNavbarSection = (): JSX.Element => {
                 {/* Product Images */}
                 <div className="w-full lg:w-1/2 xl:w-[636px]">
                   {/* Main Product Image */}
-                  <div 
-                    className="w-full aspect-square lg:h-[500px] xl:h-[600px] rounded-lg bg-cover bg-center relative mb-2" 
-                    style={{ backgroundImage: `url(${productImages[currentImageIndex]?.src})` }}
-                  >
+                  <div className="relative w-full aspect-square lg:h-[500px] xl:h-[600px] rounded-lg bg-cover bg-center mb-2">
+                    {/* Zoom container */}
+                    <div 
+                      className="w-full h-full rounded-lg overflow-hidden cursor-zoom-in"
+                      onClick={() => setShowZoomModal(true)}
+                    >
+                      <img 
+                        src={productImages[currentImageIndex]?.src} 
+                        alt={productImages[currentImageIndex]?.alt || "Product image"} 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    
                     {productImages.length > 1 && (
                       <>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="absolute top-1/2 -translate-y-1/2 right-4 p-3 rounded-full"
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="absolute top-1/2 -translate-y-1/2 right-4 p-3 rounded-full"
                           onClick={handleNextImage}
                           aria-label="Next image"
-                    >
-                      <ChevronRightIcon className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="absolute top-1/2 -translate-y-1/2 left-4 p-3 rounded-full"
+                        >
+                          <ChevronRightIcon className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="absolute top-1/2 -translate-y-1/2 left-4 p-3 rounded-full"
                           onClick={handlePrevImage}
                           aria-label="Previous image"
-                    >
-                      <ChevronLeftIcon className="w-4 h-4" />
-                    </Button>
+                        >
+                          <ChevronLeftIcon className="w-4 h-4" />
+                        </Button>
                       </>
                     )}
                   </div>
+
+                  {/* Image Zoom Modal */}
+                  {showZoomModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
+                      <div className="relative w-full max-w-4xl h-full max-h-[80vh] bg-white rounded-lg overflow-hidden">
+                        <div 
+                          className="w-full h-full overflow-auto"
+                          ref={zoomContainerRef}
+                          onMouseMove={handleZoomMouseMove}
+                          onTouchMove={handleZoomTouchMove}
+                          style={{ cursor: 'zoom-out' }}
+                          onClick={() => setShowZoomModal(false)}
+                        >
+                          <img 
+                            src={productImages[currentImageIndex]?.src} 
+                            alt={productImages[currentImageIndex]?.alt || "Product image"} 
+                            className="w-auto h-auto max-w-none transform-gpu transition-transform"
+                            ref={zoomedImageRef}
+                            style={{ 
+                              transformOrigin: zoomPosition.x + 'px ' + zoomPosition.y + 'px',
+                              transform: `scale(${zoomLevel})`,
+                            }}
+                          />
+                        </div>
+                        
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="absolute top-4 right-4 rounded-full bg-white"
+                          onClick={() => setShowZoomModal(false)}
+                          aria-label="Close zoom"
+                        >
+                          <XIcon className="w-4 h-4" />
+                        </Button>
+                        
+                        {productImages.length > 1 && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="absolute top-1/2 -translate-y-1/2 right-4 p-3 rounded-full bg-white"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNextImage();
+                              }}
+                              aria-label="Next image"
+                            >
+                              <ChevronRightIcon className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="absolute top-1/2 -translate-y-1/2 left-4 p-3 rounded-full bg-white"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePrevImage();
+                              }}
+                              aria-label="Previous image"
+                            >
+                              <ChevronLeftIcon className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Thumbnail Images */}
                   <div className="flex items-start gap-2 mt-2 flex-wrap justify-center sm:justify-start">

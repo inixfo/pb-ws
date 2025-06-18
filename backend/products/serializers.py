@@ -51,10 +51,12 @@ class ProductImageSerializer(serializers.ModelSerializer):
     """Serializer for ProductImage model."""
     
     image = serializers.SerializerMethodField()
+    thumbnail_small = serializers.SerializerMethodField()
+    thumbnail_medium = serializers.SerializerMethodField()
     
     class Meta:
         model = ProductImage
-        fields = ['id', 'image', 'alt_text', 'is_primary', 'display_order']
+        fields = ['id', 'image', 'thumbnail_small', 'thumbnail_medium', 'alt_text', 'is_primary', 'display_order']
     
     def get_image(self, obj):
         """Return absolute URL for image."""
@@ -69,6 +71,34 @@ class ProductImageSerializer(serializers.ModelSerializer):
         domain = settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost:8000'
         protocol = 'https' if not settings.DEBUG else 'http'
         return f"{protocol}://{domain}{obj.image.url}"
+        
+    def get_thumbnail_small(self, obj):
+        """Return absolute URL for small thumbnail."""
+        if not obj.thumbnail_small:
+            return None
+            
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.thumbnail_small.url)
+        
+        # Fallback to constructing URL manually
+        domain = settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost:8000'
+        protocol = 'https' if not settings.DEBUG else 'http'
+        return f"{protocol}://{domain}{obj.thumbnail_small.url}"
+        
+    def get_thumbnail_medium(self, obj):
+        """Return absolute URL for medium thumbnail."""
+        if not obj.thumbnail_medium:
+            return None
+            
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.thumbnail_medium.url)
+        
+        # Fallback to constructing URL manually
+        domain = settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost:8000'
+        protocol = 'https' if not settings.DEBUG else 'http'
+        return f"{protocol}://{domain}{obj.thumbnail_medium.url}"
 
 
 class SKUSerializer(serializers.ModelSerializer):

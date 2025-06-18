@@ -2,9 +2,12 @@
 
 export interface ProductImage {
   id: number;
-  image_url: string;
-  is_primary: boolean;
+  image: string;
+  thumbnail_small?: string;
+  thumbnail_medium?: string;
   alt_text?: string;
+  is_primary?: boolean;
+  display_order?: number;
 }
 
 export interface ProductVariation {

@@ -37,29 +37,51 @@ const ensureAbsoluteUrl = (url: string | null | undefined): string => {
 };
 
 /**
+ * Get the appropriate image URL based on viewport width
+ * This helps with responsive images
+ */
+export const getResponsiveImageUrl = (image: ProductImage | string | null | undefined, size: 'small' | 'medium' | 'full' = 'full'): string => {
+  if (!image) {
+    return '/placeholder-product.png';
+  }
+  
+  // If image is a string, it's a direct URL
+  if (typeof image === 'string') {
+    return ensureAbsoluteUrl(image);
+  }
+  
+  // If image is an object with thumbnails
+  if (typeof image === 'object') {
+    if (size === 'small' && image.thumbnail_small) {
+      return ensureAbsoluteUrl(image.thumbnail_small);
+    }
+    
+    if (size === 'medium' && image.thumbnail_medium) {
+      return ensureAbsoluteUrl(image.thumbnail_medium);
+    }
+    
+    // Fall back to full image
+    return ensureAbsoluteUrl(image.image);
+  }
+  
+  return '/placeholder-product.png';
+};
+
+/**
  * Get the primary image URL from a product
  * Handles different image formats returned from the API
  */
-export const getProductImageUrl = (product: Product): string => {
+export const getProductImageUrl = (product: Product, size: 'small' | 'medium' | 'full' = 'full'): string => {
   // Safety check for null or undefined product
   if (!product) {
     console.error('getProductImageUrl called with null or undefined product');
     return '/placeholder-product.png';
   }
   
-  // Debug log
-  console.log('Product image data:', {
-    product_id: product.id,
-    name: product.name,
-    primary_image: product.primary_image,
-    images: product.images,
-    product_images: product.product_images
-  });
-
   try {
     // Case 1: If product has primary_image as an object with image property
     if (product.primary_image && typeof product.primary_image === 'object' && product.primary_image.image) {
-      return ensureAbsoluteUrl(product.primary_image.image);
+      return getResponsiveImageUrl(product.primary_image, size);
     }
     
     // Case 2: If product has primary_image as a string
@@ -71,21 +93,19 @@ export const getProductImageUrl = (product: Product): string => {
     if (product.product_images && Array.isArray(product.product_images) && product.product_images.length > 0) {
       // Try to find primary image first
       const primaryImage = product.product_images.find(img => img.is_primary);
-      if (primaryImage && primaryImage.image) {
-        return ensureAbsoluteUrl(primaryImage.image);
+      if (primaryImage) {
+        return getResponsiveImageUrl(primaryImage, size);
       }
       // Otherwise use the first image
-      if (product.product_images[0] && product.product_images[0].image) {
-        return ensureAbsoluteUrl(product.product_images[0].image);
-      }
+      return getResponsiveImageUrl(product.product_images[0], size);
     }
     
     // Case 4: If product has images array with at least one image object
     if (product.images && Array.isArray(product.images) && product.images.length > 0) {
       // Check if the first item is an object with image property
       const firstImage = product.images[0];
-      if (typeof firstImage === 'object' && firstImage !== null && (firstImage as ProductImage).image) {
-        return ensureAbsoluteUrl((firstImage as ProductImage).image);
+      if (typeof firstImage === 'object' && firstImage !== null) {
+        return getResponsiveImageUrl(firstImage as ProductImage, size);
       }
       // Otherwise treat it as a string
       if (typeof firstImage === 'string') {
@@ -109,7 +129,7 @@ export const getProductImageUrl = (product: Product): string => {
 /**
  * Get all image URLs from a product
  */
-export const getProductImageUrls = (product: Product): string[] => {
+export const getProductImageUrls = (product: Product, size: 'small' | 'medium' | 'full' = 'full'): string[] => {
   // Safety check for null or undefined product
   if (!product) {
     console.error('getProductImageUrls called with null or undefined product');
@@ -122,8 +142,8 @@ export const getProductImageUrls = (product: Product): string[] => {
     // Add product_images if available
     if (product.product_images && Array.isArray(product.product_images) && product.product_images.length > 0) {
       product.product_images.forEach(img => {
-        if (img && img.image) {
-          images.push(ensureAbsoluteUrl(img.image));
+        if (img) {
+          images.push(getResponsiveImageUrl(img, size));
         }
       });
     }
@@ -131,8 +151,8 @@ export const getProductImageUrls = (product: Product): string[] => {
     // Add images array if available
     if (product.images && Array.isArray(product.images) && product.images.length > 0) {
       product.images.forEach(img => {
-        if (typeof img === 'object' && img !== null && (img as ProductImage).image) {
-          const imageUrl = ensureAbsoluteUrl((img as ProductImage).image);
+        if (typeof img === 'object' && img !== null) {
+          const imageUrl = getResponsiveImageUrl(img as ProductImage, size);
           if (!images.includes(imageUrl)) {
             images.push(imageUrl);
           }
@@ -148,8 +168,8 @@ export const getProductImageUrls = (product: Product): string[] => {
     // Add primary_image if available and not already included
     if (product.primary_image) {
       let primaryImageUrl: string;
-      if (typeof product.primary_image === 'object' && product.primary_image !== null && product.primary_image.image) {
-        primaryImageUrl = ensureAbsoluteUrl(product.primary_image.image);
+      if (typeof product.primary_image === 'object' && product.primary_image !== null) {
+        primaryImageUrl = getResponsiveImageUrl(product.primary_image, size);
       } else if (typeof product.primary_image === 'string') {
         primaryImageUrl = ensureAbsoluteUrl(product.primary_image);
       } else {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '../../types/product';
 import { wishlistService } from '../../services/wishlist';
+import { getProductImageUrl } from '../../utils/imageUtils';
 import './ProductCard.css';
 
 interface ProductCardProps {
@@ -12,7 +13,13 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product, onWishlistUpdate }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const navigate = useNavigate();
+
+  // Get appropriate image URLs for different screen sizes
+  const smallImageUrl = getProductImageUrl(product, 'small');
+  const mediumImageUrl = getProductImageUrl(product, 'medium');
+  const fullImageUrl = getProductImageUrl(product, 'full');
 
   const handleProductClick = () => {
     navigate(`/product/${product.slug}`);
@@ -38,10 +45,32 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onWishlistUpdate }) 
     }
   };
 
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
   return (
     <div className="product-card" onClick={handleProductClick}>
-      <div className="product-image">
-        <img src={product.image} alt={product.name} />
+      <div className={`product-image ${!imageLoaded ? 'loading' : ''}`}>
+        {/* Placeholder shown while image is loading */}
+        {!imageLoaded && (
+          <div className="image-placeholder">
+            <div className="spinner"></div>
+          </div>
+        )}
+        
+        {/* Responsive image with lazy loading */}
+        <img 
+          src={smallImageUrl} 
+          data-src={fullImageUrl}
+          srcSet={`${smallImageUrl} 300w, ${mediumImageUrl || smallImageUrl} 600w, ${fullImageUrl} 1200w`}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          alt={product.name}
+          loading="lazy"
+          onLoad={handleImageLoad}
+          className={imageLoaded ? 'loaded' : ''}
+        />
+        
         <button
           className={`wishlist-btn ${isWishlisted ? 'active' : ''}`}
           onClick={handleWishlistClick}
