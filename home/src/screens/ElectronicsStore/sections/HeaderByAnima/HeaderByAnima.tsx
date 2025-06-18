@@ -24,6 +24,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { categoryService, promotionsService } from '../../../../services/api';
 import { useCart } from "../../../../context/CartContext";
+import { SearchBar } from '../../../../components/SearchBar/SearchBar';
 
 // Define an interface for the header promo banner
 interface HeaderPromo {
@@ -164,9 +165,6 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
   // Replace the static hero slides with dynamic state
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
   const [heroSlidesLoading, setHeroSlidesLoading] = useState(false);
-
-  // Add state for search query
-  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Auto slide for hero section
   useEffect(() => {
@@ -380,17 +378,6 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
     }
   }, [isAuthenticated, fetchCart]);
 
-  // Handle search submission
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      console.log('Searching for:', searchQuery.trim());
-      navigate(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchOpen(false);
-      setSearchQuery('');
-    }
-  };
-
   return (
     <header className="flex flex-col items-center w-full">
       {/* Top navigation bar */}
@@ -436,32 +423,14 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
             )}
           </Button>
 
-          {/* SearchIcon bar - desktop */}
-          <div className="hidden sm:flex items-center relative ml-6">
-            <form onSubmit={handleSearch} className="flex items-center gap-2.5 px-4 py-3 rounded-[100px] border border-solid border-white w-[490px]">
-              <SearchIcon className="w-[18px] h-[18px] text-gray-500" />
-              <Input
-                className="flex-1 border-none bg-transparent text-gray-500 font-body-regular placeholder:text-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
-                placeholder="Search the products"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <button type="submit" className="sr-only">Search</button>
-            </form>
+          {/* SearchBar - desktop */}
+          <div className="hidden sm:flex items-center relative ml-6 w-[490px]">
+            <SearchBar />
           </div>
 
-          {/* SearchIcon bar - mobile (shown when search is toggled) */}
+          {/* SearchBar - mobile (shown when search is toggled) */}
           <div className={`${searchOpen ? 'flex' : 'hidden'} w-full sm:hidden items-center my-3`}>
-            <form onSubmit={handleSearch} className="flex items-center gap-2.5 px-4 py-3 rounded-[100px] border border-solid border-white w-full">
-              <SearchIcon className="w-[18px] h-[18px] text-gray-500" />
-              <Input
-                className="flex-1 border-none bg-transparent text-gray-500 font-body-regular placeholder:text-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
-                placeholder="Search the products"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <button type="submit" className="sr-only">Search</button>
-            </form>
+            <SearchBar isMobile={true} />
           </div>
 
           {/* Promotion - desktop only - Dynamic from backend */}

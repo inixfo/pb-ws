@@ -1,9 +1,9 @@
 from django.shortcuts import render
 from rest_framework import viewsets, generics, permissions, status, filters
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from django.db.models import Avg, Count, Q, ProtectedError
+from django.db.models import Avg, Count, Q, ProtectedError, Case, When, Value, IntegerField, F
 from django.shortcuts import get_object_or_404
 from django.utils.text import slugify
 import pandas as pd
@@ -12,6 +12,8 @@ from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db import models
 from django.http import HttpResponse
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
+from fuzzywuzzy import process
 
 from .models import Category, Brand, ProductField, Product, ProductImage, SKU, ProductVariation
 from .serializers import (
@@ -902,3 +904,138 @@ class SKUViewSet(viewsets.ModelViewSet):
             sku_code = generate_sku()
         
         return Response({'code': sku_code}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def advanced_search(request):
+    """
+    Advanced search endpoint with features like:
+    - Exact match prioritization
+    - Fuzzy matching for typo correction
+    - Did you mean suggestions
+    - Search analytics tracking
+    """
+    search_term = request.query_params.get('q', '')
+    category = request.query_params.get('category', None)
+    page = int(request.query_params.get('page', 1))
+    page_size = int(request.query_params.get('page_size', 12))
+    
+    if not search_term:
+        return Response({
+            'results': [],
+            'count': 0,
+            'suggestions': [],
+            'did_you_mean': None
+        })
+    
+    # Start with base queryset
+    queryset = Product.objects.filter(is_approved=True)
+    
+    # Apply category filter if provided
+    if category:
+        try:
+            category_obj = Category.objects.get(slug=category)
+            queryset = queryset.filter(category=category_obj)
+        except Category.DoesNotExist:
+            # Try to match by name if slug doesn't work
+            queryset = queryset.filter(category__name__icontains=category)
+    
+    # Prioritize exact matches over partial matches
+    exact_matches = queryset.filter(
+        Q(name__iexact=search_term) | 
+        Q(name__istartswith=search_term)
+    )
+    
+    partial_matches = queryset.filter(
+        Q(name__icontains=search_term) | 
+        Q(description__icontains=search_term) |
+        Q(specifications__icontains=search_term) |
+        Q(category__name__icontains=search_term) |
+        Q(brand__name__icontains=search_term)
+    ).exclude(id__in=exact_matches.values_list('id', flat=True))
+    
+    # Combine results, preserving the priority order
+    results = list(exact_matches) + list(partial_matches)
+    total_count = len(results)
+    
+    # Handle pagination
+    start = (page - 1) * page_size
+    end = start + page_size
+    paginated_results = results[start:end]
+    
+    # Generate "Did you mean" suggestions if no exact matches were found
+    did_you_mean = None
+    if not exact_matches and search_term:
+        # Get all product names for fuzzy matching
+        all_product_names = list(Product.objects.values_list('name', flat=True))
+        # Find the closest match using fuzzywuzzy
+        matches = process.extract(search_term, all_product_names, limit=1)
+        if matches and matches[0][1] > 70:  # Only suggest if similarity > 70%
+            did_you_mean = matches[0][0]
+    
+    # Track search analytics
+    try:
+        from analytics.models import SearchQuery
+        
+        # Create search record with session or user info
+        session_id = request.session.session_key
+        if not session_id:
+            request.session.create()
+            session_id = request.session.session_key
+            
+        SearchQuery.objects.create(
+            query=search_term,
+            user=request.user if request.user.is_authenticated else None,
+            session_id=session_id,
+            results_count=total_count,
+            category_filter=Category.objects.get(slug=category) if category else None,
+        )
+    except Exception as e:
+        print(f"Error recording search analytics: {str(e)}")
+    
+    # Serialize the results
+    from .serializers import ProductListSerializer
+    serializer = ProductListSerializer(paginated_results, many=True)
+    
+    return Response({
+        'results': serializer.data,
+        'count': total_count,
+        'did_you_mean': did_you_mean,
+        'suggestions': [],  # Will be populated by autocomplete endpoint
+    })
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def autocomplete(request):
+    """
+    Endpoint for search autocomplete suggestions
+    """
+    query = request.query_params.get('q', '')
+    limit = int(request.query_params.get('limit', 5))
+    
+    if not query or len(query) < 2:
+        return Response({'suggestions': []})
+    
+    # Get products matching the query prefix
+    products = Product.objects.filter(
+        Q(name__istartswith=query) | 
+        Q(name__icontains=f" {query}")
+    ).filter(is_approved=True).distinct()[:limit]
+    
+    # Get categories matching the query prefix
+    categories = Category.objects.filter(name__icontains=query)[:3]
+    
+    # Get brands matching the query prefix
+    brands = Brand.objects.filter(name__icontains=query)[:3]
+    
+    # Format suggestions
+    product_suggestions = [{'type': 'product', 'name': p.name, 'slug': p.slug} for p in products]
+    category_suggestions = [{'type': 'category', 'name': c.name, 'slug': c.slug} for c in categories]
+    brand_suggestions = [{'type': 'brand', 'name': b.name, 'slug': b.slug} for b in brands]
+    
+    # Combine suggestions with priority to products
+    all_suggestions = product_suggestions + category_suggestions + brand_suggestions
+    
+    return Response({
+        'suggestions': all_suggestions[:limit]
+    })

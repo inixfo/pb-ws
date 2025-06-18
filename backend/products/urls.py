@@ -6,7 +6,8 @@ from rest_framework.permissions import AllowAny
 # Import directly from views.py 
 from .views import (
     CategoryViewSet, BrandViewSet, ProductFieldViewSet,
-    ProductViewSet, SKUViewSet
+    ProductViewSet, SKUViewSet,
+    advanced_search, autocomplete
 )
 from .bulk_upload import BulkUploadTemplateView, BulkUploadProcessView
 
@@ -30,6 +31,10 @@ urlpatterns = [
     path('bulk_upload/', BulkUploadProcessView.as_view(), name='product-bulk-upload'),
     path('products/template/', BulkUploadTemplateView.as_view(), name='product-template-alt'),
     path('products/bulk_upload/', BulkUploadProcessView.as_view(), name='product-bulk-upload-alt'),
+
+    # Advanced search and autocomplete endpoints
+    path('search/', advanced_search, name='advanced-search'),
+    path('autocomplete/', autocomplete, name='autocomplete'),
 
     # Router and other endpoints
     path('', include(router.urls)),

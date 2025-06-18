@@ -3,12 +3,13 @@ from django.db.models import Count, Sum, Avg, F, Q, ExpressionWrapper, DecimalFi
 from django.db.models.functions import TruncDate, TruncWeek, TruncMonth, TruncYear
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status, filters
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 from datetime import timedelta, datetime
 import pandas as pd
+from django.http import HttpResponse
 
 from .models import PageView, ProductView, SearchQuery, CartEvent, SalesMetric
 from .serializers import (
@@ -214,6 +215,81 @@ class SearchQueryViewSet(viewsets.ModelViewSet):
         ).order_by('-count')[:20]
         
         return Response(zero_results)
+
+    @action(detail=False, methods=['get'])
+    def export_search_data(self, request):
+        """Export search data as CSV."""
+        # Get date range
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=30)  # Default to last 30 days
+        
+        if request.query_params.get('start_date'):
+            start_date = datetime.fromisoformat(request.query_params.get('start_date'))
+        if request.query_params.get('end_date'):
+            end_date = datetime.fromisoformat(request.query_params.get('end_date'))
+        
+        # Get search queries in date range
+        queryset = SearchQuery.objects.filter(timestamp__gte=start_date, timestamp__lte=end_date)
+        
+        # Create DataFrame from queryset
+        data = []
+        for query in queryset:
+            data.append({
+                'query': query.query,
+                'timestamp': query.timestamp,
+                'results_count': query.results_count,
+                'user': str(query.user) if query.user else 'Anonymous',
+                'category': str(query.category_filter) if query.category_filter else 'None',
+                'clicked_product': str(query.clicked_product) if query.clicked_product else 'None'
+            })
+        
+        if not data:
+            return Response({'error': 'No search data found for the specified period'}, 
+                           status=status.HTTP_404_NOT_FOUND)
+        
+        df = pd.DataFrame(data)
+        
+        # Create CSV response
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="search_data.csv"'
+        df.to_csv(path_or_buf=response, index=False)
+        
+        return response
+    
+    @action(detail=False, methods=['get'])
+    def search_trends(self, request):
+        """Get search trends over time."""
+        # Get date range
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=30)  # Default to last 30 days
+        
+        if request.query_params.get('start_date'):
+            start_date = datetime.fromisoformat(request.query_params.get('start_date'))
+        if request.query_params.get('end_date'):
+            end_date = datetime.fromisoformat(request.query_params.get('end_date'))
+        
+        # Get time period
+        period = request.query_params.get('period', 'day')
+        if period == 'week':
+            trunc_func = TruncWeek('timestamp')
+        elif period == 'month':
+            trunc_func = TruncMonth('timestamp')
+        else:  # default to day
+            trunc_func = TruncDate('timestamp')
+        
+        # Get search queries in date range
+        queryset = SearchQuery.objects.filter(timestamp__gte=start_date, timestamp__lte=end_date)
+        
+        # Group by time period
+        trends = queryset.annotate(
+            period=trunc_func
+        ).values('period').annotate(
+            count=Count('id'),
+            avg_results=Avg('results_count'),
+            zero_results=Count('id', filter=Q(results_count=0))
+        ).order_by('period')
+        
+        return Response(trends)
 
 
 class CartEventViewSet(viewsets.ModelViewSet):
@@ -709,3 +785,27 @@ class DashboardView(APIView):
             'unique_customers': unique_customers,
             'top_customers': top_customers_enriched
         }
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def record_search_click(request):
+    """Record when a user clicks on a search result."""
+    try:
+        search_id = request.data.get('search_id')
+        product_id = request.data.get('product_id')
+        
+        if not search_id or not product_id:
+            return Response({'error': 'Missing required parameters'}, 
+                           status=status.HTTP_400_BAD_REQUEST)
+            
+        query = SearchQuery.objects.get(id=search_id)
+        product = Product.objects.get(id=product_id)
+        
+        query.clicked_product = product
+        query.save()
+        
+        return Response({'success': True})
+    except (SearchQuery.DoesNotExist, Product.DoesNotExist) as e:
+        return Response({'error': str(e)}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

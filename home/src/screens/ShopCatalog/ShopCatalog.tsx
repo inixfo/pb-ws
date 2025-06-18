@@ -15,6 +15,7 @@ import { Product, Category, Brand } from "../../types/products";
 import productService, { FALLBACK_PRODUCTS } from "../../services/api/productService";
 import categoryService from "../../services/api/categoryService";
 import brandService from "../../services/api/brandService";
+import searchService from "../../services/api/searchService";
 
 // Rename the imported component to maintain compatibility with existing code
 const Pagination = PaginationComponent;
@@ -92,6 +93,10 @@ export const ShopCatalog = (): JSX.Element => {
   const [availableColors, setAvailableColors] = useState<{ name: string; color: string }[]>([]);
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 10000 });
   const [customFilterValues, setCustomFilterValues] = useState<Record<string, string[]>>({});
+
+  // Add state for search results and suggestions
+  const [didYouMean, setDidYouMean] = useState<string | null>(null);
+  const [searchId, setSearchId] = useState<number | null>(null);
 
   // Initial data fetching
   useEffect(() => {
@@ -427,6 +432,48 @@ export const ShopCatalog = (): JSX.Element => {
         page_size: 12, // Ensure we're requesting a reasonable number of products
       };
       
+      // If there's a search query, use advanced search endpoint
+      if (searchQuery) {
+        try {
+          const advancedSearchParams = {
+            q: searchQuery,
+            page: currentPage,
+            page_size: 12,
+            category: slug || undefined
+          };
+          
+          // Use advanced search
+          const searchResults = await searchService.search(searchQuery, advancedSearchParams);
+          
+          if (searchResults) {
+            console.log(`Advanced search results:`, searchResults);
+            
+            // Check for "did you mean" suggestion
+            if (searchResults.did_you_mean && searchResults.results.length === 0) {
+              setDidYouMean(searchResults.did_you_mean);
+            } else {
+              setDidYouMean(null);
+            }
+            
+            // Store search ID if available for analytics tracking
+            if (searchResults.search_id) {
+              setSearchId(searchResults.search_id);
+            }
+            
+            // Set products and pagination info
+            setProducts(searchResults.results || []);
+            setTotalProducts(searchResults.count || searchResults.results.length);
+            setTotalPages(Math.ceil((searchResults.count || searchResults.results.length) / 12));
+            
+            return; // Exit early since we've handled the search results
+          }
+        } catch (err) {
+          console.error('Advanced search failed, falling back to regular API:', err);
+          // Continue with regular API if advanced search fails
+        }
+      }
+      
+      // Original code for non-search queries or fallback
       // Add search parameter if provided
       if (searchQuery) {
         params.search = searchQuery;
@@ -672,6 +719,25 @@ export const ShopCatalog = (): JSX.Element => {
     }
   };
 
+  // Add function to handle clicking on product from search results for analytics
+  const handleProductClick = (product: Product) => {
+    // Record search click for analytics if we have a search ID
+    if (searchId !== null) {
+      searchService.recordSearchClick(searchId, product.id);
+    }
+    
+    // Navigate to product page
+    navigate(`/product/${product.slug || product.id}`);
+  };
+  
+  // Add handler for "Did you mean" suggestion
+  const handleDidYouMeanClick = () => {
+    if (didYouMean) {
+      // Update the URL with the suggested search term
+      navigate(`/catalog?search=${encodeURIComponent(didYouMean)}`);
+    }
+  };
+
   return (
     <div className="flex flex-col w-full bg-white-100 min-h-screen">
       <HeaderByAnima showHeroSection={false} />
@@ -766,6 +832,21 @@ export const ShopCatalog = (): JSX.Element => {
             <button className="text-xs text-gray-700 underline" onClick={handleClearAll}>Clear all</button>
           )}
         </div>
+        
+        {/* Add "Did you mean" section */}
+        {didYouMean && (
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg text-center">
+            <p>
+              No results found for "<span className="font-medium">{searchQuery}</span>".
+              Did you mean: <button 
+                className="text-blue-600 hover:underline font-medium"
+                onClick={handleDidYouMeanClick}
+              >
+                {didYouMean}
+              </button>?
+            </p>
+          </div>
+        )}
         
         {/* Main grid */}
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
