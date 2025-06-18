@@ -165,7 +165,8 @@ class ProductService {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
-          }
+          },
+          timeout: 10000 // 10 seconds timeout
         });
         
         console.log('Products API Response status:', response.status);
@@ -208,10 +209,33 @@ class ProductService {
         console.log('Using response data as-is and hoping for the best');
         return response.data;
       } catch (error) {
+        // Log the error details
         console.error('Error fetching from products/products/ endpoint:', error);
         
+        // Try an alternative endpoint before falling back to sample data
+        try {
+          // Try a simpler request to the base products endpoint
+          console.log('Trying alternative products endpoint...');
+          const altResponse = await axios.get(`${API_URL}/products/`, {
+            timeout: 10000
+          });
+          
+          if (altResponse.data && (altResponse.data.results || Array.isArray(altResponse.data))) {
+            const results = altResponse.data.results || altResponse.data;
+            console.log(`Found ${results.length} products from alternative endpoint`);
+            return {
+              results,
+              count: results.length,
+              next: null,
+              previous: null
+            };
+          }
+        } catch (altError) {
+          console.error('Alternative endpoint also failed:', altError);
+        }
+        
         // Return fallback data when all API calls fail
-        console.log('Using fallback product data');
+        console.log('Using fallback product data as last resort');
         
         // Check if FALLBACK_PRODUCTS has data
         if (FALLBACK_PRODUCTS && FALLBACK_PRODUCTS.length > 0) {

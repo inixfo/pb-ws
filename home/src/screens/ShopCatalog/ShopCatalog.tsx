@@ -511,24 +511,17 @@ export const ShopCatalog = (): JSX.Element => {
         params.ordering = '-review_count';
       }
       
+      // Attempt to fetch real products
       const data = await productService.getAll(params);
-      console.log('Fetched products response details:', {
-        dataExists: !!data,
-        results: data?.results ? `Array with ${data.results.length} items` : 'No results array',
-        count: data?.count || 'No count found',
-        firstProductSample: data?.results?.[0] ? JSON.stringify(data.results[0]) : 'No product sample'
-      });
       
       if (data && data.results && data.results.length > 0) {
-        // We have valid data with products
+        console.log(`Successfully fetched ${data.results.length} products from API`);
         setProducts(data.results);
         setTotalProducts(data.count || data.results.length);
         setTotalPages(Math.ceil((data.count || data.results.length) / 12));
       } else {
-        console.error('No product data found in API response, trying to use fallback');
-        
-        // Use the imported fallback products directly
-        console.log(`Using ${FALLBACK_PRODUCTS.length} fallback products due to error`);
+        console.error('No products found in API response');
+        // Only if API returns no products, we use fallback
         setProducts(FALLBACK_PRODUCTS);
         setTotalProducts(FALLBACK_PRODUCTS.length);
         setTotalPages(Math.ceil(FALLBACK_PRODUCTS.length / 12));
@@ -539,8 +532,7 @@ export const ShopCatalog = (): JSX.Element => {
       console.error('Failed to load products:', err);
       setError('Failed to load products');
       
-      // Even on error, try to show the fallback products
-      console.log(`Using ${FALLBACK_PRODUCTS.length} fallback products due to error`);
+      // Only use fallback products if API call fails completely
       setProducts(FALLBACK_PRODUCTS);
       setTotalProducts(FALLBACK_PRODUCTS.length);
       setTotalPages(Math.ceil(FALLBACK_PRODUCTS.length / 12));
