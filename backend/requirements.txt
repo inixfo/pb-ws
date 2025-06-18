@@ -3,8 +3,8 @@ djangorestframework>=3.14.0,<3.15.0
 djangorestframework-simplejwt>=5.3.0,<5.4.0
 numpy==1.26.4
 openpyxl==3.1.5
-pandas==2.1.4
-Requests==2.32.4
+pandas==2.2.2
+requests>=2.22.0
 celery==5.3.6
 redis==5.0.1
 django-cors-headers>=4.2.0,<4.3.0
@@ -24,7 +24,7 @@ wrapt==1.11.2
 python-decouple>=3.8,<3.9
 psycopg2-binary>=2.9.6,<2.10.0
 drf-nested-routers>=0.93.4,<0.94.0
-sslcommerz-python>=0.0.7,<0.1.0
+# sslcommerz-python>=0.0.7,<0.1.0  # Removed to avoid dependency conflict
 django-storages>=1.13.2,<1.14.0
 boto3>=1.28.25,<1.29.0
 phonenumbers>=8.13.18,<8.14.0
@@ -33,3 +33,6 @@ fuzzywuzzy>=0.18.0,<0.19.0
 python-Levenshtein>=0.21.0,<0.22.0
 # For django development server
 django-extensions>=3.2.3,<3.3.0
+Pillow==10.2.0
+pyarrow==15.0.1
+tzdata==2024.1
