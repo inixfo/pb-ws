@@ -541,9 +541,19 @@ export const ProductNavbarSection = (): JSX.Element => {
                       <div className="relative w-full max-w-4xl h-full max-h-[80vh] bg-white rounded-lg overflow-hidden">
                         <div 
                           className="w-full h-full overflow-auto"
-                          ref={zoomContainerRef}
-                          onMouseMove={handleZoomMouseMove}
-                          onTouchMove={handleZoomTouchMove}
+                          onMouseMove={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const y = e.clientY - rect.top;
+                            setZoomPosition({ x, y });
+                          }}
+                          onTouchMove={(e) => {
+                            const touch = e.touches[0];
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const x = touch.clientX - rect.left;
+                            const y = touch.clientY - rect.top;
+                            setZoomPosition({ x, y });
+                          }}
                           style={{ cursor: 'zoom-out' }}
                           onClick={() => setShowZoomModal(false)}
                         >
@@ -551,10 +561,9 @@ export const ProductNavbarSection = (): JSX.Element => {
                             src={productImages[currentImageIndex]?.src} 
                             alt={productImages[currentImageIndex]?.alt || "Product image"} 
                             className="w-auto h-auto max-w-none transform-gpu transition-transform"
-                            ref={zoomedImageRef}
                             style={{ 
-                              transformOrigin: zoomPosition.x + 'px ' + zoomPosition.y + 'px',
-                              transform: `scale(${zoomLevel})`,
+                              transformOrigin: `${zoomPosition.x}px ${zoomPosition.y}px`,
+                              transform: `scale(2.5)`,
                             }}
                           />
                         </div>

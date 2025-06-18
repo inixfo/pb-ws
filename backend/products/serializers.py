@@ -73,32 +73,26 @@ class ProductImageSerializer(serializers.ModelSerializer):
         return f"{protocol}://{domain}{obj.image.url}"
         
     def get_thumbnail_small(self, obj):
-        """Return absolute URL for small thumbnail."""
-        if not obj.thumbnail_small:
+        """Return URL for small thumbnail (virtual field)."""
+        if not obj.image:
             return None
             
-        request = self.context.get('request')
-        if request:
-            return request.build_absolute_uri(obj.thumbnail_small.url)
-        
-        # Fallback to constructing URL manually
-        domain = settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost:8000'
-        protocol = 'https' if not settings.DEBUG else 'http'
-        return f"{protocol}://{domain}{obj.thumbnail_small.url}"
+        # Use the same URL but add query parameters for resizing
+        image_url = self.get_image(obj)
+        if image_url:
+            return f"{image_url}?size=small&width=300"
+        return None
         
     def get_thumbnail_medium(self, obj):
-        """Return absolute URL for medium thumbnail."""
-        if not obj.thumbnail_medium:
+        """Return URL for medium thumbnail (virtual field)."""
+        if not obj.image:
             return None
             
-        request = self.context.get('request')
-        if request:
-            return request.build_absolute_uri(obj.thumbnail_medium.url)
-        
-        # Fallback to constructing URL manually
-        domain = settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost:8000'
-        protocol = 'https' if not settings.DEBUG else 'http'
-        return f"{protocol}://{domain}{obj.thumbnail_medium.url}"
+        # Use the same URL but add query parameters for resizing
+        image_url = self.get_image(obj)
+        if image_url:
+            return f"{image_url}?size=medium&width=600"
+        return None
 
 
 class SKUSerializer(serializers.ModelSerializer):

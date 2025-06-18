@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '../../types/product';
 import { wishlistService } from '../../services/wishlist';
-import { getProductImageUrl } from '../../utils/imageUtils';
 import './ProductCard.css';
 
 interface ProductCardProps {
@@ -15,11 +14,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onWishlistUpdate }) 
   const [isLoading, setIsLoading] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const navigate = useNavigate();
-
-  // Get appropriate image URLs for different screen sizes
-  const smallImageUrl = getProductImageUrl(product, 'small');
-  const mediumImageUrl = getProductImageUrl(product, 'medium');
-  const fullImageUrl = getProductImageUrl(product, 'full');
 
   const handleProductClick = () => {
     navigate(`/product/${product.slug}`);
@@ -59,12 +53,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onWishlistUpdate }) 
           </div>
         )}
         
-        {/* Responsive image with lazy loading */}
+        {/* Image with lazy loading */}
         <img 
-          src={smallImageUrl} 
-          data-src={fullImageUrl}
-          srcSet={`${smallImageUrl} 300w, ${mediumImageUrl || smallImageUrl} 600w, ${fullImageUrl} 1200w`}
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          src={product.image} 
           alt={product.name}
           loading="lazy"
           onLoad={handleImageLoad}
