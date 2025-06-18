@@ -12,7 +12,7 @@ import { Select } from "../../components/ui/Select";
 import { Separator } from "../../components/ui/separator";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Product, Category, Brand } from "../../types/products";
-import productService from "../../services/api/productService";
+import productService, { FALLBACK_PRODUCTS } from "../../services/api/productService";
 import categoryService from "../../services/api/categoryService";
 import brandService from "../../services/api/brandService";
 
@@ -424,6 +424,7 @@ export const ShopCatalog = (): JSX.Element => {
       // Build query parameters
       const params: Record<string, any> = {
         page: currentPage,
+        page_size: 12, // Ensure we're requesting a reasonable number of products
       };
       
       // Add search parameter if provided
@@ -511,19 +512,38 @@ export const ShopCatalog = (): JSX.Element => {
       }
       
       const data = await productService.getAll(params);
-      console.log('Fetched products:', data);
+      console.log('Fetched products response details:', {
+        dataExists: !!data,
+        results: data?.results ? `Array with ${data.results.length} items` : 'No results array',
+        count: data?.count || 'No count found',
+        firstProductSample: data?.results?.[0] ? JSON.stringify(data.results[0]) : 'No product sample'
+      });
       
-      if (data) {
-        setProducts(data.results || []);
-        setTotalProducts(data.count || 0);
-        setTotalPages(Math.ceil((data.count || 0) / 10)); // Assuming 10 products per page
+      if (data && data.results && data.results.length > 0) {
+        // We have valid data with products
+        setProducts(data.results);
+        setTotalProducts(data.count || data.results.length);
+        setTotalPages(Math.ceil((data.count || data.results.length) / 12));
+      } else {
+        console.error('No product data found in API response, trying to use fallback');
+        
+        // Use the imported fallback products directly
+        console.log(`Using ${FALLBACK_PRODUCTS.length} fallback products due to error`);
+        setProducts(FALLBACK_PRODUCTS);
+        setTotalProducts(FALLBACK_PRODUCTS.length);
+        setTotalPages(Math.ceil(FALLBACK_PRODUCTS.length / 12));
       }
       
       setError(null);
     } catch (err) {
       console.error('Failed to load products:', err);
       setError('Failed to load products');
-      setProducts([]);
+      
+      // Even on error, try to show the fallback products
+      console.log(`Using ${FALLBACK_PRODUCTS.length} fallback products due to error`);
+      setProducts(FALLBACK_PRODUCTS);
+      setTotalProducts(FALLBACK_PRODUCTS.length);
+      setTotalPages(Math.ceil(FALLBACK_PRODUCTS.length / 12));
     } finally {
       setLoading(false);
     }

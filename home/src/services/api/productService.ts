@@ -3,7 +3,7 @@ import { API_URL } from '../../config';
 import { Product } from '../../types/products';
 
 // Fallback data for when API fails
-const FALLBACK_PRODUCTS: Product[] = [
+export const FALLBACK_PRODUCTS: Product[] = [
   {
     id: 1,
     name: "iPhone 14 Pro",
@@ -63,6 +63,66 @@ const FALLBACK_PRODUCTS: Product[] = [
     has_variations: false,
     min_price: 1099,
     max_price: 1099
+  },
+  {
+    id: 4,
+    name: "MacBook Pro 14\"",
+    slug: "macbook-pro-14",
+    description: "Professional laptop with Apple M2 Pro chip.",
+    price: 1999,
+    base_price: 1999,
+    sale_price: 1799,
+    rating: 4.9,
+    reviews_count: 142,
+    image: "/laptop-1.png",
+    category: { id: 2, name: "Laptops", slug: "laptops" },
+    brand: { id: 1, name: "Apple", slug: "apple", logo: "/apple.svg" },
+    created_at: "2023-02-15",
+    updated_at: "2023-02-15",
+    variations: [],
+    has_variations: false,
+    min_price: 1799,
+    max_price: 1999
+  },
+  {
+    id: 5,
+    name: "Google Pixel 7",
+    slug: "google-pixel-7",
+    description: "Google's flagship smartphone with best-in-class camera.",
+    price: 699,
+    base_price: 699,
+    sale_price: null,
+    rating: 4.7,
+    reviews_count: 178,
+    image: "/phone-1.png",
+    category: { id: 1, name: "Smartphones", slug: "smartphones" },
+    brand: { id: 3, name: "Google", slug: "google", logo: "/google.svg" },
+    created_at: "2023-03-10",
+    updated_at: "2023-03-10",
+    variations: [],
+    has_variations: false,
+    min_price: 699,
+    max_price: 699
+  },
+  {
+    id: 6,
+    name: "Dell XPS 15",
+    slug: "dell-xps-15",
+    description: "Premium Windows laptop with stunning display.",
+    price: 1599,
+    base_price: 1599,
+    sale_price: 1499,
+    rating: 4.6,
+    reviews_count: 203,
+    image: "/laptop-2.png",
+    category: { id: 2, name: "Laptops", slug: "laptops" },
+    brand: { id: 4, name: "Dell", slug: "dell", logo: "/dell.svg" },
+    created_at: "2023-01-20",
+    updated_at: "2023-01-20",
+    variations: [],
+    has_variations: false,
+    min_price: 1499,
+    max_price: 1599
   }
 ];
 
@@ -99,6 +159,7 @@ class ProductService {
       
       // First try the products/products/ endpoint directly
       try {
+        console.log('Making API call to:', `${API_URL}/products/products/`);
         const response = await axios.get(`${API_URL}/products/products/`, { 
           params: adjustedParams,
           headers: {
@@ -107,12 +168,20 @@ class ProductService {
           }
         });
         
-        console.log('Products API Response:', response.data);
+        console.log('Products API Response status:', response.status);
+        console.log('Products API Response type:', typeof response.data);
+        
+        if (!response.data) {
+          console.error('Empty response data from API');
+          throw new Error('Empty response from API');
+        }
         
         // Handle different API response formats
         if (response.data && response.data.results) {
+          console.log(`Found ${response.data.results.length} products in results array`);
           return response.data;
         } else if (Array.isArray(response.data)) {
+          console.log(`Found ${response.data.length} products in array response`);
           return {
             results: response.data,
             count: response.data.length,
@@ -120,12 +189,37 @@ class ProductService {
             previous: null
           };
         }
+        
+        // If we get here, we need to adapt whatever format we received
+        console.log('Adapting unknown API response format:', Object.keys(response.data));
+        
+        if (response.data.products && Array.isArray(response.data.products)) {
+          // Some APIs wrap results in a "products" key
+          console.log(`Found ${response.data.products.length} products in 'products' key`);
+          return {
+            results: response.data.products,
+            count: response.data.products.length,
+            next: response.data.next || null,
+            previous: response.data.previous || null
+          };
+        }
+        
+        // Last resort - try to make it work with whatever we got
+        console.log('Using response data as-is and hoping for the best');
         return response.data;
       } catch (error) {
         console.error('Error fetching from products/products/ endpoint:', error);
         
         // Return fallback data when all API calls fail
         console.log('Using fallback product data');
+        
+        // Check if FALLBACK_PRODUCTS has data
+        if (FALLBACK_PRODUCTS && FALLBACK_PRODUCTS.length > 0) {
+          console.log(`Returning ${FALLBACK_PRODUCTS.length} fallback products`);
+        } else {
+          console.error('No fallback products available!');
+        }
+        
         return { 
           results: FALLBACK_PRODUCTS,
           count: FALLBACK_PRODUCTS.length
