@@ -47,11 +47,19 @@ export const getResponsiveImageUrl = (image: ProductImage | string | null | unde
   
   // If image is a string, it's a direct URL
   if (typeof image === 'string') {
-    return ensureAbsoluteUrl(image);
+    const baseUrl = ensureAbsoluteUrl(image);
+    // Add size parameter if needed
+    if (size === 'small') {
+      return `${baseUrl}?size=small&width=300`;
+    } else if (size === 'medium') {
+      return `${baseUrl}?size=medium&width=600`;
+    }
+    return baseUrl;
   }
   
   // If image is an object with thumbnails
   if (typeof image === 'object') {
+    // First try to use the thumbnail fields if they exist
     if (size === 'small' && image.thumbnail_small) {
       return ensureAbsoluteUrl(image.thumbnail_small);
     }
@@ -60,8 +68,16 @@ export const getResponsiveImageUrl = (image: ProductImage | string | null | unde
       return ensureAbsoluteUrl(image.thumbnail_medium);
     }
     
+    // If thumbnail fields don't exist, use query parameters
+    const baseUrl = ensureAbsoluteUrl(image.image);
+    if (size === 'small') {
+      return `${baseUrl}?size=small&width=300`;
+    } else if (size === 'medium') {
+      return `${baseUrl}?size=medium&width=600`;
+    }
+    
     // Fall back to full image
-    return ensureAbsoluteUrl(image.image);
+    return baseUrl;
   }
   
   return '/placeholder-product.png';
@@ -86,7 +102,7 @@ export const getProductImageUrl = (product: Product, size: 'small' | 'medium' | 
     
     // Case 2: If product has primary_image as a string
     if (product.primary_image && typeof product.primary_image === 'string') {
-      return ensureAbsoluteUrl(product.primary_image);
+      return getResponsiveImageUrl(product.primary_image, size);
     }
     
     // Case 3: If product has product_images array with at least one image
@@ -109,13 +125,13 @@ export const getProductImageUrl = (product: Product, size: 'small' | 'medium' | 
       }
       // Otherwise treat it as a string
       if (typeof firstImage === 'string') {
-        return ensureAbsoluteUrl(firstImage);
+        return getResponsiveImageUrl(firstImage, size);
       }
     }
     
     // Case 5: If product has image property
     if (product.image) {
-      return ensureAbsoluteUrl(product.image);
+      return getResponsiveImageUrl(product.image, size);
     }
   } catch (error) {
     console.error(`Error processing image for product ${product.id} (${product.name}):`, error);
@@ -157,7 +173,7 @@ export const getProductImageUrls = (product: Product, size: 'small' | 'medium' |
             images.push(imageUrl);
           }
         } else if (typeof img === 'string') {
-          const imageUrl = ensureAbsoluteUrl(img);
+          const imageUrl = getResponsiveImageUrl(img, size);
           if (!images.includes(imageUrl)) {
             images.push(imageUrl);
           }
@@ -171,7 +187,7 @@ export const getProductImageUrls = (product: Product, size: 'small' | 'medium' |
       if (typeof product.primary_image === 'object' && product.primary_image !== null) {
         primaryImageUrl = getResponsiveImageUrl(product.primary_image, size);
       } else if (typeof product.primary_image === 'string') {
-        primaryImageUrl = ensureAbsoluteUrl(product.primary_image);
+        primaryImageUrl = getResponsiveImageUrl(product.primary_image, size);
       } else {
         primaryImageUrl = '';
       }
@@ -183,7 +199,7 @@ export const getProductImageUrls = (product: Product, size: 'small' | 'medium' |
     
     // Add image if available and not already included
     if (product.image) {
-      const imageUrl = ensureAbsoluteUrl(product.image);
+      const imageUrl = getResponsiveImageUrl(product.image, size);
       if (!images.includes(imageUrl)) {
         images.push(imageUrl);
       }
