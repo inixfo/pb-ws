@@ -386,37 +386,35 @@ export const SignUp = () => {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <div className="mb-4">
+                <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-700">
                   Password
                 </label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="The Password must be minimum 8 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="pr-10"
+                    placeholder="Create a strong password"
                     required
-                    autoComplete="new-password"
-                    className="w-full h-12 border-gray-300 rounded-lg pr-10"
                   />
                   <button
                     type="button"
                     onClick={togglePasswordVisibility}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
                   >
-                    {showPassword ? (
-                      <EyeOffIcon className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <EyeIcon className="h-5 w-5 text-gray-400" />
-                    )}
+                    {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
                   </button>
                 </div>
+                <p className="mt-1 text-sm text-gray-500">
+                  Password must be at least 8 characters long. For a stronger password, include uppercase letters, numbers, and special characters.
+                </p>
               </div>
               
-              <div className="space-y-2">
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+              <div className="mb-4">
+                <label htmlFor="confirmPassword" className="block mb-2 text-sm font-medium text-gray-700">
                   Confirm Password
                 </label>
                 <div className="relative">
@@ -427,19 +425,14 @@ export const SignUp = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    autoComplete="new-password"
-                    className="w-full h-12 border-gray-300 rounded-lg pr-10"
+                    className="pr-10"
                   />
                   <button
                     type="button"
                     onClick={toggleConfirmPasswordVisibility}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
                   >
-                    {showConfirmPassword ? (
-                      <EyeOffIcon className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <EyeIcon className="h-5 w-5 text-gray-400" />
-                    )}
+                    {showConfirmPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
                   </button>
                 </div>
               </div>
