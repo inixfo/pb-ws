@@ -394,7 +394,7 @@ export const SignUp = () => {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Password"
+                    placeholder="The Password must be minimum 8 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
