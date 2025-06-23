@@ -80,7 +80,7 @@ except Exception as e:
     print(f"Error calling API: {str(e)}")
 
 # Test with production URL if available
-prod_url = "http://3.25.95.103/api/users/register/"
+prod_url = "http://52.62.201.84/api/users/register/"
 
 try:
     print("\n----- Testing PRODUCTION endpoint -----")

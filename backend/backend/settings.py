@@ -63,7 +63,7 @@ AUTH_USER_MODEL = 'users.User'
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
-    'http://3.25.95.103',
+    'http://52.62.201.84',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5174',
@@ -132,7 +132,7 @@ DATABASES = {
         'NAME': os.getenv('DB_NAME', 'pbws'),
         'USER': os.getenv('DB_USER', 'pbws'),
         'PASSWORD': os.getenv('DB_PASSWORD', 'PbWs2025'),
-        'HOST': os.getenv('DB_HOST', '3.25.95.103'),
+        'HOST': os.getenv('DB_HOST', '52.62.201.84'),
         'PORT': os.getenv('DB_PORT', '5432'),
     }
 }

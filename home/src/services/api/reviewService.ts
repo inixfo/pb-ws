@@ -2,7 +2,7 @@ import axios, { AxiosRequestConfig } from 'axios';
 
 // If we don't have an apiClient module, we'll create a simple version inline
 const apiClient = axios.create({
-  baseURL: 'http://3.25.95.103/',
+  baseURL: 'http://52.62.201.84/',
   headers: {
     'Content-Type': 'application/json',
   },

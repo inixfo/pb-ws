@@ -2,7 +2,7 @@ import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 
 // Create an axios instance with default config
 const apiClient = axios.create({
-  baseURL: 'http://3.25.95.103/', // Default to localhost for development
+  baseURL: 'http://52.62.201.84/', // Default to localhost for development
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

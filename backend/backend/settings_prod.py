@@ -9,7 +9,7 @@ from .settings import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['3.25.95.103', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['52.62.201.84', 'localhost', '127.0.0.1']
 
 # Database
 DATABASES = {
@@ -18,7 +18,7 @@ DATABASES = {
         'NAME': 'pbws',
         'USER': 'pbws',
         'PASSWORD': 'PbWs2025',
-        'HOST': '3.25.95.103',
+        'HOST': '52.62.201.84',
         'PORT': '5432',
     }
 }
@@ -33,9 +33,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
-    'http://3.25.95.103',
+    'http://52.62.201.84',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://phonebay.xyz',
 ]
 
 # SSLCOMMERZ Payment Gateway Settings
