@@ -27,7 +27,7 @@ import { Select } from "../../components/ui/Select";
 import { Link, useNavigate } from "react-router-dom";
 import { LogoutButton } from "../../components/auth/LogoutButton";
 import { wishlistService, WishlistItem } from "../../services/wishlist";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { Product } from '../../types/product';
 import './Wishlist.css';
 

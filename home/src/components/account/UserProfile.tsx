@@ -1,6 +1,6 @@
 import React from 'react';
 import { Avatar, AvatarFallback } from "../ui/avatar/Avatar";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 export const UserProfile = () => {
   const { user } = useAuth();

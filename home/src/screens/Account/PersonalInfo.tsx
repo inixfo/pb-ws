@@ -25,7 +25,7 @@ import { CtaFooterByAnima } from "../ElectronicsStore/sections/CtaFooterByAnima/
 import { LogoutButton } from "../../components/auth/LogoutButton";
 import { UserProfile } from "../../components/account/UserProfile";
 import { userService } from "../../services/api";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { format } from "date-fns";
 
 // Sidebar menu items

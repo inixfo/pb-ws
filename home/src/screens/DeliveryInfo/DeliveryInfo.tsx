@@ -4,7 +4,7 @@ import { CtaFooterByAnima } from "../ElectronicsStore/sections/CtaFooterByAnima/
 import { DeliveryInfoContent } from "./sections/DeliveryInfoContent/DeliveryInfoContent";
 import { CheckoutProvider } from "../../contexts/CheckoutContext";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 export const DeliveryInfo = (): JSX.Element => {
   const navigate = useNavigate();

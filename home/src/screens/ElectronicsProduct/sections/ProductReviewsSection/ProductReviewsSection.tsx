@@ -29,7 +29,7 @@ import { useProduct } from "../../../../contexts/ProductContext";
 import { useCart } from "../../../../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { reviewService } from "../../../../services/api/reviewService";
-import { useAuth } from "../../../../context/AuthContext";
+import { useAuth } from "../../../../contexts/AuthContext";
 
 // Properly import dialog components from our UI library
 import {

@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOutIcon } from 'lucide-react';
 import { Button } from '../ui/button';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface LogoutButtonProps {
   onLogoutStart?: () => void;

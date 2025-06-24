@@ -15,7 +15,7 @@ import { PersonalInfo } from "./screens/Account/PersonalInfo";
 import { CartProvider } from "./context/CartContext";
 import { SignIn, SignUp, ForgotPassword } from "./screens/Auth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { BestSellers } from "./screens/BestSellers/BestSellers";
 import { TodaysDeals } from "./screens/TodaysDeals/TodaysDeals";
 import { NewArrivals } from "./screens/NewArrivals/NewArrivals";
