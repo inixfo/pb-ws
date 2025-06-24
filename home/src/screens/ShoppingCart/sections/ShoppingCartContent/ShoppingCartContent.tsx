@@ -221,9 +221,13 @@ export const ShoppingCartContent = (): JSX.Element => {
 
   // Handle checkout
   const handleCheckout = () => {
+    console.log('Checkout button clicked, auth status:', isAuthenticated);
+    
     if (!isAuthenticated) {
-      // Redirect to login if not authenticated
-      navigate('/login?redirect=/checkout');
+      // Store the current URL to return after login
+      const currentPath = '/checkout';
+      // Redirect to login with return path
+      navigate(`/login?redirect=${encodeURIComponent(currentPath)}`);
       return;
     }
     

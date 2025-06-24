@@ -31,7 +31,7 @@ export const authenticatedApi = axios.create({
 export const getToken = () => localStorage.getItem('auth_token');
 
 export const isAuthenticated = (): boolean => {
-  return !!localStorage.getItem('token');
+  return !!localStorage.getItem('auth_token');
 };
 
 export const isNumeric = (value: string | number): boolean => {
@@ -74,7 +74,7 @@ publicApi.interceptors.response.use(
 authenticatedApi.interceptors.request.use(
   (config: AxiosRequestConfig): AxiosRequestConfig => {
     // Get token from localStorage
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
     
     // Add token to headers if it exists
     if (token && config.headers) {
@@ -104,7 +104,7 @@ authenticatedApi.interceptors.response.use(
       if (error.response.status === 401) {
         console.error('[Auth API Response Error] Unauthorized - Token may be invalid or expired');
         // Clear token and redirect to login
-        localStorage.removeItem('token');
+        localStorage.removeItem('auth_token');
         // You might want to dispatch an action or use a context to handle logout
       }
       
@@ -129,7 +129,7 @@ export const getCurrentUser = () => {
 export const makeDirectApiCall = async (endpoint: string, params = {}): Promise<any> => {
   try {
     console.log(`[Direct API Call] GET ${endpoint}`, params);
-    const response = await axios.get(`http://52.62.201.84/api${endpoint}`, { params });
+    const response = await axios.get(`${API_URL}${endpoint}`, { params });
     console.log(`[Direct API Call] Success from ${endpoint}`);
     return response.data;
   } catch (error) {
@@ -142,4 +142,4 @@ export const makeDirectApiCall = async (endpoint: string, params = {}): Promise<
 export const handleError = (error: any) => {
   console.error('API Error:', error);
   return Promise.reject(error);
-}; 
+};
