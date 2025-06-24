@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { API_URL } from '../config'; // Import from config.js to ensure consistency
+import authService from '../services/api/authService'; // Import the authService
 
 // Type for axios error
 interface AxiosError {
@@ -106,7 +107,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check authentication status
     checkAuth();
+    
+    // Setup token refresh mechanism
+    if (localStorage.getItem('auth_token')) {
+      authService.setupTokenRefresh();
+    }
   }, []);
 
   const checkAuth = async () => {

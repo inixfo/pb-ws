@@ -18,8 +18,20 @@ class AuthService {
         password,
       });
       if (response.data.access) {
+        // Store the tokens in localStorage with expiration time
         localStorage.setItem('auth_token', response.data.access);
         localStorage.setItem('refresh_token', response.data.refresh);
+        
+        // Store the expiration time (30 days from now)
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30);
+        localStorage.setItem('token_expires_at', expiresAt.toISOString());
+        
+        // Also store user email for convenience
+        localStorage.setItem('user_email', email);
+        
+        // Setup automatic token refresh
+        this.setupTokenRefresh();
       }
       return response.data;
     } catch (error) {
@@ -175,7 +187,25 @@ class AuthService {
   }
 
   isAuthenticated() {
-    return !!localStorage.getItem('auth_token');
+    const token = localStorage.getItem('auth_token');
+    const expiresAtStr = localStorage.getItem('token_expires_at');
+    
+    if (!token) return false;
+    
+    // If we have an expiration time, check if the token is still valid
+    if (expiresAtStr) {
+      const expiresAt = new Date(expiresAtStr);
+      const now = new Date();
+      
+      // If token is expired, clear it and return false
+      if (now > expiresAt) {
+        console.log('Token expired, clearing...');
+        this.logout();
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   async refreshToken() {
@@ -191,6 +221,13 @@ class AuthService {
 
       if (response.data.access) {
         localStorage.setItem('auth_token', response.data.access);
+        
+        // Update expiration time (30 days from now)
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30);
+        localStorage.setItem('token_expires_at', expiresAt.toISOString());
+        
+        console.log('Token refreshed successfully');
       }
 
       return response.data;
@@ -199,6 +236,34 @@ class AuthService {
       this.logout();
       throw error;
     }
+  }
+  
+  setupTokenRefresh() {
+    // Check if token needs refresh
+    const checkTokenExpiry = () => {
+      const expiresAtStr = localStorage.getItem('token_expires_at');
+      const token = localStorage.getItem('auth_token');
+      
+      if (!token || !expiresAtStr) return;
+      
+      const expiresAt = new Date(expiresAtStr);
+      const now = new Date();
+      
+      // If token expires in less than 1 day, refresh it
+      const oneDayInMs = 24 * 60 * 60 * 1000;
+      if (expiresAt.getTime() - now.getTime() < oneDayInMs) {
+        console.log('Token expiring soon, refreshing...');
+        this.refreshToken().catch(err => {
+          console.error('Failed to refresh token:', err);
+        });
+      }
+    };
+    
+    // Check token expiry now
+    checkTokenExpiry();
+    
+    // Set up interval to check token expiry every hour
+    setInterval(checkTokenExpiry, 60 * 60 * 1000);
   }
 }
 
