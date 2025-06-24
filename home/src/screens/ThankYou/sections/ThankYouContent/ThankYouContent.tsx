@@ -42,6 +42,7 @@ interface OrderData {
   total: number;
   created_at: string;
   items: OrderItem[];
+  is_emi_payment?: boolean;
 }
 
 interface OrderItem {
@@ -83,6 +84,8 @@ export const ThankYouContent = (): JSX.Element => {
         // Get order ID from URL query params
         const queryParams = new URLSearchParams(location.search);
         const orderId = queryParams.get('order_id');
+        const paymentStatus = queryParams.get('payment_status');
+        const isEmiPayment = queryParams.get('emi') === 'true';
         
         if (!orderId) {
           setError('No order ID provided');
@@ -93,6 +96,13 @@ export const ThankYouContent = (): JSX.Element => {
         // Fetch order details
         const orderData = await orderService.getOrderById(orderId);
         console.log('Order data:', orderData);
+        
+        // Add EMI payment info if applicable
+        if (isEmiPayment) {
+          orderData.is_emi_payment = true;
+          orderData.payment_status = paymentStatus || orderData.payment_status;
+        }
+        
         setOrder(orderData);
         
         // Fetch recommended products (best sellers)
@@ -217,6 +227,12 @@ export const ThankYouContent = (): JSX.Element => {
               <h4 className="w-full font-semibold text-gray-900 text-2xl leading-8">
                 Thank you for your order!
               </h4>
+              
+              {order.is_emi_payment && (
+                <p className="w-full text-blue-600 text-sm leading-[22px] font-medium mt-1">
+                  Your EMI down payment has been processed successfully!
+                </p>
+              )}
             </div>
           </div>
           <Button
@@ -255,12 +271,30 @@ export const ThankYouContent = (): JSX.Element => {
             {/* Payment method */}
             <div className="flex flex-col items-start gap-2 w-full">
               <h6 className="w-full font-semibold text-gray-900 text-base leading-6">
-                Payment
+                Payment Method
               </h6>
               <p className="w-full text-gray-600 text-sm leading-[22px] font-normal">
                 {getPaymentMethodName(order.payment_method)}
+                {order.is_emi_payment && " (EMI Down Payment)"}
               </p>
             </div>
+            
+            {/* EMI Payment Details - show only for EMI payments */}
+            {order.is_emi_payment && (
+              <div className="flex flex-col items-start gap-2 w-full">
+                <h6 className="w-full font-semibold text-gray-900 text-base leading-6">
+                  EMI Details
+                </h6>
+                <div className="w-full bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-gray-700 text-sm leading-[22px] font-medium mb-2">
+                    Your EMI application has been processed successfully.
+                  </p>
+                  <p className="text-gray-600 text-sm leading-[22px]">
+                    You will receive further instructions about your EMI installments via email and SMS.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Order Items */}
             <div className="flex flex-col items-start gap-2 w-full">
