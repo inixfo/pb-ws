@@ -7,7 +7,7 @@ import products.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('products', '0005_auto_20240605_1100'),
+        ('products', '0005_remove_thumbnail_fields'),
     ]
 
     operations = [

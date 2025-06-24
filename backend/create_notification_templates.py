@@ -35,19 +35,22 @@ def create_notification_templates():
     
     # Create default templates
     for template_key, template_data in default_sms_templates.items():
-        template, created = NotificationTemplate.objects.get_or_create(
-            name=template_data['name'],
-            defaults={
-                'type': template_data['type'],
-                'body': template_data['body'],
-                'is_active': True
-            }
-        )
-        
-        if created:
-            print(f"Created notification template: {template.name}")
-        else:
-            print(f"Template already exists: {template.name}")
+        try:
+            template, created = NotificationTemplate.objects.get_or_create(
+                name=template_data['name'],
+                defaults={
+                    'type': template_data['type'],
+                    'body': template_data['body'],
+                    'is_active': True
+                }
+            )
+            
+            if created:
+                print(f"Created notification template: {template.name}")
+            else:
+                print(f"Template already exists: {template.name}")
+        except Exception as e:
+            print(f"Error creating notification template {template_data['name']}: {str(e)}")
 
 def create_sms_templates():
     """Create SMS templates if they don't exist"""
@@ -59,20 +62,23 @@ def create_sms_templates():
     }
     
     for template_type, template_text in default_templates.items():
-        # Skip if template of this type already exists
-        if SMSTemplate.objects.filter(type=template_type).exists():
-            print(f"SMS template already exists: {template_type}")
-            continue
-            
-        # Create the template
-        template_name = template_type.replace('_', ' ').title()
-        SMSTemplate.objects.create(
-            name=f"{template_name} Template",
-            type=template_type,
-            template_text=template_text,
-            is_active=True
-        )
-        print(f"Created SMS template: {template_name}")
+        try:
+            # Skip if template of this type already exists
+            if SMSTemplate.objects.filter(type=template_type).exists():
+                print(f"SMS template already exists: {template_type}")
+                continue
+                
+            # Create the template
+            template_name = template_type.replace('_', ' ').title()
+            SMSTemplate.objects.create(
+                name=f"{template_name} Template",
+                type=template_type,
+                template_text=template_text,
+                is_active=True
+            )
+            print(f"Created SMS template: {template_name}")
+        except Exception as e:
+            print(f"Error creating SMS template {template_type}: {str(e)}")
 
 def create_notification_events():
     """Create notification events if they don't exist"""
@@ -93,42 +99,49 @@ def create_notification_events():
     }
     
     for event_key, event_data in default_events.items():
-        # Find the template
-        sms_template = None
-        if event_data.get('sms_template_name'):
-            try:
-                sms_template = NotificationTemplate.objects.get(
-                    name=event_data['sms_template_name'],
-                    type='sms'
-                )
-            except NotificationTemplate.DoesNotExist:
-                print(f"Warning: SMS template not found: {event_data['sms_template_name']}")
-                pass
-        
-        # Create the event
-        event, created = NotificationEvent.objects.get_or_create(
-            event_type=event_data['event_type'],
-            defaults={
-                'name': event_data['name'],
-                'sms_template': sms_template,
-                'is_active': True
-            }
-        )
-        
-        if created:
-            print(f"Created notification event: {event.name}")
-        else:
-            # Update the event with the template if it exists
-            if sms_template and not event.sms_template:
-                event.sms_template = sms_template
-                event.save()
-                print(f"Updated notification event: {event.name} with SMS template")
+        try:
+            # Find the template
+            sms_template = None
+            if event_data.get('sms_template_name'):
+                try:
+                    sms_template = NotificationTemplate.objects.get(
+                        name=event_data['sms_template_name'],
+                        type='sms'
+                    )
+                except NotificationTemplate.DoesNotExist:
+                    print(f"Warning: SMS template not found: {event_data['sms_template_name']}")
+                    pass
+            
+            # Create the event
+            event, created = NotificationEvent.objects.get_or_create(
+                event_type=event_data['event_type'],
+                defaults={
+                    'name': event_data['name'],
+                    'sms_template': sms_template,
+                    'is_active': True
+                }
+            )
+            
+            if created:
+                print(f"Created notification event: {event.name}")
             else:
-                print(f"Event already exists: {event.name}")
+                # Update the event with the template if it exists
+                if sms_template and not event.sms_template:
+                    event.sms_template = sms_template
+                    event.save()
+                    print(f"Updated notification event: {event.name} with SMS template")
+                else:
+                    print(f"Event already exists: {event.name}")
+        except Exception as e:
+            print(f"Error creating notification event {event_data['name']}: {str(e)}")
 
 if __name__ == "__main__":
     print("Creating missing notification templates and events...")
-    create_notification_templates()
-    create_sms_templates()
-    create_notification_events()
-    print("Done!") 
+    try:
+        create_notification_templates()
+        create_sms_templates()
+        create_notification_events()
+        print("Done!")
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        sys.exit(1) 
