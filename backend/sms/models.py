@@ -19,7 +19,7 @@ class SMSTemplate(models.Model):
     )
     
     name = models.CharField(max_length=100)
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    type = models.CharField(max_length=50, choices=TYPE_CHOICES)
     template_text = models.TextField(help_text="Use {variables} for dynamic content")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
