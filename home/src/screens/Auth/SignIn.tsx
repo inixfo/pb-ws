@@ -47,7 +47,7 @@ export const SignIn = () => {
     script.onload = () => {
       if (window.google) {
         window.google.accounts.id.initialize({
-          client_id: "1075587028998-u8no2hgm541gbodc6sqhe57cni77qkj0.apps.googleusercontent.com",
+          client_id: config.GOOGLE_CLIENT_ID,
           callback: handleGoogleResponse,
         });
 

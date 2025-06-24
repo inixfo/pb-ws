@@ -10,6 +10,9 @@ redis==5.0.1
 django-cors-headers>=4.2.0,<4.3.0
 django-filter>=23.2,<23.3
 python-dotenv==1.0.1
+# For Google Authentication
+social-auth-app-django>=5.2.0,<5.3.0
+django-allauth>=0.54.0,<0.55.0
 # For SSLCOMMERZ payment gateway
 # Change from SSLCommerz-python==0.0.7 to a custom install approach
 # SSLCommerz-python==0.0.7
