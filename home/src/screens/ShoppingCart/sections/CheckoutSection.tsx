@@ -307,6 +307,54 @@ export const CheckoutSection: React.FC<CheckoutSectionProps> = ({
       {/* Payment Method */}
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-4">Payment Method</h3>
+        
+        {/* EMI Details - Show if any cart item has EMI */}
+        {cartItems.some(item => item.emi_selected) && (
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <h4 className="text-md font-semibold mb-3 text-blue-800">EMI Details</h4>
+            
+            {cartItems.filter(item => item.emi_selected).map((item, index) => (
+              <div key={`checkout-emi-${index}`} className="mb-3 last:mb-0">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium text-gray-700">Product:</span>
+                  <span className="text-sm text-gray-900">{item.product.name}</span>
+                </div>
+                
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium text-gray-700">EMI Type:</span>
+                  <span className="text-sm text-gray-900">
+                    {item.emi_type === 'card_emi' ? 'Card EMI' : 
+                     item.emi_type === 'cardless_emi' ? 'Cardless EMI' : 
+                     'EMI'}
+                  </span>
+                </div>
+                
+                {item.emi_bank && (
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium text-gray-700">Bank:</span>
+                    <span className="text-sm text-gray-900">{item.emi_bank}</span>
+                  </div>
+                )}
+                
+                {item.emi_period && (
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium text-gray-700">Duration:</span>
+                    <span className="text-sm text-gray-900">{item.emi_period} months</span>
+                  </div>
+                )}
+                
+                {index < cartItems.filter(i => i.emi_selected).length - 1 && (
+                  <hr className="my-2 border-blue-200" />
+                )}
+              </div>
+            ))}
+            
+            <p className="text-xs text-blue-700 mt-2">
+              Note: EMI payment details have been selected on the product page and cannot be changed here.
+            </p>
+          </div>
+        )}
+        
         <div className="space-y-2">
           <label className="flex items-center">
             <input

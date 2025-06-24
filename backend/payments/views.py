@@ -71,6 +71,9 @@ def initiate_sslcommerz_payment(request):
         order_id = request.data.get('order_id')
         amount = request.data.get('amount')
         transaction_type = request.data.get('transaction_type', 'REGULAR_FULL_AMOUNT')
+        emi_type = request.data.get('emi_type')
+        emi_bank = request.data.get('emi_bank')
+        emi_period = request.data.get('emi_period')
         
         if not order_id:
             return Response({
@@ -137,19 +140,29 @@ def initiate_sslcommerz_payment(request):
             for item in order.items.all():
                 if item.has_emi and item.emi_plan:
                     emi_plan = item.emi_plan
+                    # Use the emi_type and emi_bank from the item if available
+                    if hasattr(item, 'emi_type') and not emi_type:
+                        emi_type = item.emi_type
+                    if hasattr(item, 'emi_bank') and not emi_bank:
+                        emi_bank = item.emi_bank
+                    if hasattr(item, 'emi_period') and not emi_period and item.emi_period:
+                        emi_period = item.emi_period
                     break
                     
             if emi_plan and emi_plan.is_sslcommerz_emi:
                 # Set EMI parameters according to SSLCOMMERZ documentation
                 payment_data.update({
                     'emi_option': 1,  # Enable EMI
-                    'emi_max_inst_option': emi_plan.duration_months,
-                    'emi_selected_inst': emi_plan.duration_months,
+                    'emi_max_inst_option': emi_period or emi_plan.duration_months,
+                    'emi_selected_inst': emi_period or emi_plan.duration_months,
                     'emi_allow_only': 0  # Allow both EMI and non-EMI payments for flexibility
                 })
                 
-                # Add bank list if available
-                if emi_plan.sslcommerz_bank_list:
+                # Add bank selection if provided
+                if emi_bank:
+                    payment_data['emi_issuer_id'] = emi_bank
+                # Otherwise, add bank list if available in the plan
+                elif emi_plan.sslcommerz_bank_list:
                     # If bank list is a comma-separated string or list
                     if isinstance(emi_plan.sslcommerz_bank_list, list):
                         banks = ','.join(str(bank) for bank in emi_plan.sslcommerz_bank_list)
@@ -268,6 +281,9 @@ def initiate_sslcommerz_payment(request):
                 # Store complete payment details for reference
                 payment_details={
                     'transaction_type': transaction_type,
+                    'emi_type': emi_type,
+                    'emi_bank': emi_bank,
+                    'emi_period': emi_period,
                     'sslcommerz_params': payment_data,
                     'sslcommerz_response': response
                 }

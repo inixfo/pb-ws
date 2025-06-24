@@ -446,9 +446,40 @@ export const CheckoutProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Initiate SSLCommerz payment
   const initiateSSLCommerzPayment = async (orderId: number, paymentDetails: any): Promise<SSLCommerzInitResponse> => {
     try {
+      // Check if any cart items have EMI selected
+      const hasEmiItems = cart && cart.items && cart.items.some((item: any) => item.emi_selected);
+      
+      // Find the first EMI item to get EMI details
+      const emiItem = hasEmiItems ? 
+        cart.items.find((item: any) => item.emi_selected) : null;
+      
+      // Prepare payment details with EMI information
+      const paymentPayload = {
+        ...paymentDetails,
+        order_id: orderId,
+        // Set transaction type based on EMI selection
+        transactionType: hasEmiItems ? 'EMI_FULL_AMOUNT' : 'REGULAR_FULL_AMOUNT',
+      };
+      
+      // Add EMI details if available
+      if (emiItem) {
+        paymentPayload.emi_type = (emiItem as any).emi_type || 
+          ((emiItem as any).emi_plan && (emiItem as any).emi_plan.plan_type === 'cardless_emi' ? 'cardless_emi' : 'card_emi');
+        
+        if ((emiItem as any).emi_bank) {
+          paymentPayload.emi_bank = (emiItem as any).emi_bank;
+        }
+        
+        if ((emiItem as any).emi_period) {
+          paymentPayload.emi_period = (emiItem as any).emi_period;
+        }
+      }
+      
+      console.log('Initiating payment with EMI details:', paymentPayload);
+      
       const response = await paymentService.initiateSslcommerzPayment(
         orderId,
-        paymentDetails  // Pass the entire payment details object
+        paymentPayload
       );
       
       if (response.status === 'success') {

@@ -195,4 +195,23 @@ SSLCOMMERZ_SANDBOX=False
 
 **Status**: ✅ **READY FOR TESTING**
 
-All critical issues have been resolved. The e-commerce platform now has a complete order placement and payment processing system. 
+All critical issues have been resolved. The e-commerce platform now has a complete order placement and payment processing system.
+
+## EMI Type Persistence Fix
+
+We fixed an issue where the EMI type (card_emi or cardless_emi) and bank information wasn't being properly stored and displayed throughout the checkout flow. The main changes were:
+
+1. Added `emi_type` and `emi_bank` fields to the `CartItem` and `OrderItem` models
+2. Updated the `CartItemSerializer` to include these new fields
+3. Updated the cart API views to handle these fields when adding/updating items
+4. Updated the `CartManager` on the frontend to store and pass these fields
+5. Added an EMI details card to the shopping cart to display the selected EMI options
+6. Added an EMI details section to the checkout page to show the selected EMI options
+7. Updated the payment service to pass the EMI type and bank to the payment gateway
+8. Updated the payment views to handle these parameters when initiating a payment
+
+This ensures that when a user selects card EMI on the product page, the correct EMI type is maintained throughout the checkout flow and displayed to the user.
+
+## Previous Fixes
+
+// ... existing content ... 
