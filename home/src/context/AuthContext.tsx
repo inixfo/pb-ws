@@ -17,8 +17,8 @@ export const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
-  },
-  withCredentials: true, // Ensure cookies are sent with every request
+  }
+  // Removed withCredentials: true as it causes CORS issues with wildcard origin
 });
 
 // Add request interceptor to include auth token when available
@@ -120,7 +120,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const token = localStorage.getItem('auth_token');
       if (token) {
-        const response = await api.get('/users/me/');
+        // Use direct axios call with authorization header but without withCredentials
+        const response = await axios.get(`${API_URL}/users/me/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         setUser(response.data);
       }
     } catch (err) {
@@ -140,9 +146,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log(`Attempting login for email: ${email}`);
       
       // Use direct axios call for login to avoid potential issues with interceptors
-      const response = await axios.post(`http://52.62.201.84/api/users/login/`, 
+      const response = await axios.post(`${API_URL}/users/login/`, 
         { email, password },
-        { headers: { 'Content-Type': 'application/json' } }
+        { 
+          headers: { 'Content-Type': 'application/json' },
+        }
       );
       
       const { access, user } = response.data;

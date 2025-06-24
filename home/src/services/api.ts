@@ -464,7 +464,11 @@ export const authService = {
   // Login
   login: async (email: string, password: string) => {
     try {
-      const response = await publicApi.post('/users/login/', { email, password });
+      const response = await publicApi.post('/users/login/', 
+      { email, password },
+      { 
+        headers: { 'Content-Type': 'application/json' }
+      });
       // Store the token in localStorage
       if (response.data.access) {
         localStorage.setItem('auth_token', response.data.access);
