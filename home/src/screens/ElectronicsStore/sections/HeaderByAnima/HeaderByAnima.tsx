@@ -21,7 +21,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from "../../../../components/ui/navigation-menu";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { categoryService, promotionsService } from '../../../../services/api';
 import { useCart } from "../../../../context/CartContext";
 import { SearchBar } from '../../../../components/SearchBar/SearchBar';
@@ -52,6 +52,7 @@ interface HeroSlide {
 
 export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: boolean } = {}): JSX.Element => {
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Navigation links data
   const navLinks = [
@@ -101,6 +102,7 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
   
   const categoriesButtonRef = useRef<HTMLDivElement>(null);
   const categoriesDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const [categories, setCategories] = useState<any[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState<boolean>(true);
@@ -176,6 +178,21 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
     }
   }, [showHeroSection, heroSlides.length]);
 
+  // Close mobile menu when location changes
+  useEffect(() => {
+    // Store the current location to compare with future changes
+    const currentPath = location.pathname;
+    
+    // Only close the menu if the location actually changes
+    return () => {
+      if (location.pathname !== currentPath && mobileMenuOpen) {
+        console.log('[HeaderByAnima sections] Location changed from', currentPath, 'to', location.pathname, 'closing mobile menu.');
+        setMobileMenuOpen(false);
+        setShowCategories(false);
+      }
+    };
+  }, [location.pathname, mobileMenuOpen]);
+
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -183,7 +200,9 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
         categoriesDropdownRef.current &&
         !categoriesDropdownRef.current.contains(event.target as Node) &&
         categoriesButtonRef.current &&
-        !categoriesButtonRef.current.contains(event.target as Node)
+        !categoriesButtonRef.current.contains(event.target as Node) &&
+        mobileMenuRef.current && 
+        !mobileMenuRef.current.contains(event.target as Node)
       ) {
         setShowCategories(false);
         setHoveredCategory(null);
@@ -387,8 +406,15 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full p-3 sm:hidden text-white"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="rounded-full p-3 sm:hidden text-white z-[100]"
+            onClick={() => {
+              console.log(`[DEBUG] Hamburger menu clicked. Current state: ${mobileMenuOpen ? 'open' : 'closed'}, toggling to ${!mobileMenuOpen ? 'open' : 'closed'}`);
+              setMobileMenuOpen(!mobileMenuOpen);
+              // When closing the menu, also close categories
+              if (mobileMenuOpen) {
+                setShowCategories(false);
+              }
+            }}
           >
             {mobileMenuOpen ? <XIcon className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
           </Button>
@@ -413,7 +439,11 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
             variant="ghost"
             size="icon"
             className="rounded-full p-3 sm:hidden relative text-white ml-1"
-            onClick={() => navigate('/cart')}
+            onClick={(e) => {
+              e.preventDefault();
+              console.log(`[DEBUG] Mobile cart button clicked, navigating to: /cart`);
+              window.location.href = '/cart';
+            }}
           >
             <ShoppingCartIcon className="w-6 h-6" />
             {cartItemCount > 0 && (
@@ -464,22 +494,28 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
               variant="ghost"
               size="icon"
               className="rounded-full p-[15px] relative"
-              onClick={() => navigate('/cart')}
+              onClick={(e) => {
+                e.preventDefault();
+                console.log(`[DEBUG] Desktop cart button clicked, navigating to: /cart`);
+                window.location.href = '/cart';
+              }}
             >
               <ShoppingCartIcon className="w-[18px] h-[18px] text-white-80" />
-              {cartItemCount > 0 && (
-                <Badge className="absolute w-6 h-6 top-0 right-0 bg-successmain rounded-xl border-[3px] border-solid border-[#222934] flex items-center justify-center">
-                  <span className="text-white-100 text-xs font-body-extra-small">
-                    {cartItemCount}
-                  </span>
-                </Badge>
-              )}
+              <Badge className="absolute w-6 h-6 top-0 right-0 bg-successmain rounded-xl border-[3px] border-solid border-[#222934] flex items-center justify-center">
+                <span className="text-white-100 text-xs font-body-extra-small">
+                  {cartItemCount}
+                </span>
+              </Badge>
             </Button>
             <Button
               variant="default"
               size="icon"
               className="rounded-full p-[15px] bg-gray-700"
-              onClick={() => navigate('/account')}
+              onClick={(e) => {
+                e.preventDefault();
+                console.log(`[DEBUG] Account button clicked, navigating to: /account`);
+                window.location.href = '/account';
+              }}
             >
               <UserIcon className="w-[18px] h-[18px] text-white-80" />
             </Button>
@@ -487,23 +523,35 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
         </div>
 
         {/* Mobile menu */}
-        <div className={`${mobileMenuOpen ? 'flex' : 'hidden'} sm:hidden w-full flex-col bg-gray-700 p-4 z-50`}>
+        <div ref={mobileMenuRef} className={`${mobileMenuOpen ? 'flex' : 'hidden'} sm:hidden w-full flex-col bg-gray-700 p-4 z-[90] absolute top-[60px] left-0 right-0`}>
           <div className="flex flex-col gap-2">
             {navLinks.map((link, index) => (
-              <Link
+              <a
                 key={index}
-                to={link.path}
-                className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg"
-                onClick={() => setMobileMenuOpen(false)}
+                href={link.path}
+                className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log(`[DEBUG] Mobile navLink '${link.label}' clicked, navigating to: ${link.path}`);
+                  // Close the mobile menu
+                  setMobileMenuOpen(false);
+                  // Use direct browser navigation for more reliable routing
+                  window.location.href = link.path;
+                }}
               >
                 {link.label}
-              </Link>
+              </a>
             ))}
             <div className="h-px w-full bg-gray-600 my-2"></div>
-            {/* Mobile Categories button - now functional on all pages */}
+            {/* Mobile Categories button - toggles visibility, does not navigate directly */}
             <button
               className="flex items-center justify-between px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg w-full"
-              onClick={() => setShowCategories(!showCategories)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(`[DEBUG] Mobile categories button clicked. Current state: ${showCategories ? 'open' : 'closed'}`);
+                setShowCategories(!showCategories);
+              }}
             >
               <span className="flex items-center gap-2">
                 <LayoutGridIcon className="w-4 h-4" />
@@ -511,7 +559,8 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
               </span>
               <ChevronDownIcon className={`w-4 h-4 transition-transform ${showCategories ? 'rotate-180' : ''}`} />
             </button>
-            {showCategories && mobileMenuOpen ? (
+            {/* Categories Dropdown in Mobile Menu */}
+            {showCategories && mobileMenuOpen && (
               <div className="ml-4 flex flex-col gap-1 mt-1">
                 {categoriesLoading ? (
                   <div className="px-3 py-2 text-white-80">Loading categories...</div>
@@ -522,12 +571,15 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                     {categories.map((category) => (
                       <a
                         key={category.id}
-                        href="#"
-                        className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2"
+                        href={`/catalog/${category.slug}`}
+                        className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2 cursor-pointer"
                         onClick={(e) => {
                           e.preventDefault();
+                          console.log(`[DEBUG] Mobile category clicked: ${category.name}, navigating to: /catalog/${category.slug}`);
+                          // Close the mobile menu
                           setMobileMenuOpen(false);
-                          navigate(`/catalog/${category.slug}`);
+                          // Use direct browser navigation for more reliable routing
+                          window.location.href = `/catalog/${category.slug}`;
                         }}
                       >
                         <img 
@@ -539,12 +591,15 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                       </a>
                     ))}
                     <a
-                      href="#"
-                      className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg font-medium"
+                      href="/catalog"
+                      className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg font-medium cursor-pointer"
                       onClick={(e) => {
                         e.preventDefault();
+                        console.log(`[DEBUG] See All Products clicked, navigating to: /catalog`);
+                        // Close the mobile menu
                         setMobileMenuOpen(false);
-                        navigate('/catalog');
+                        // Use direct browser navigation for more reliable routing
+                        window.location.href = '/catalog';
                       }}
                     >
                       See All Products
@@ -552,11 +607,20 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                   </>
                 )}
               </div>
-            ) : null}
+            )}
             <div className="h-px w-full bg-gray-600 my-2"></div>
+            {/* SIMPLIFIED My Account link for testing */}
             <a
               href="/account"
-              className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2"
+              className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2 cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault();
+                console.log(`[DEBUG] Mobile 'My Account' clicked, navigating to: /account`);
+                // Close the mobile menu
+                setMobileMenuOpen(false);
+                // Use direct browser navigation for more reliable routing
+                window.location.href = '/account';
+              }}
             >
               <UserIcon className="w-4 h-4" />
               My Account
@@ -570,7 +634,10 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
           <div ref={categoriesButtonRef} className="relative">
             <div
               className="inline-flex flex-col items-start px-6 py-3 bg-gray-700 rounded-[8px_8px_0px_0px] cursor-pointer select-none"
-              onClick={handleCategoriesClick}
+              onClick={() => {
+                console.log(`[DEBUG] Desktop categories button clicked. Current state: ${showCategories ? 'open' : 'closed'}`);
+                setShowCategories(!showCategories);
+              }}
             >
               <div className="inline-flex items-center gap-4">
                 <div className="inline-flex items-center gap-2">
@@ -588,24 +655,35 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
               >
                 <div className="flex flex-col p-3 gap-1.5">
                   {categories.map((item, index) => (
-                    <div
+                    <a
                       key={index}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 cursor-pointer w-full"
-                      onClick={() => navigate(`/catalog/${item.slug}`)}
+                      href={`/catalog/${item.slug}`}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg w-full cursor-pointer hover:bg-gray-100"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        console.log(`[DEBUG] Sidebar category clicked: ${item.name}, navigating to: /catalog/${item.slug}`);
+                        // Close the categories dropdown
+                        setShowCategories(false);
+                        // Use direct browser navigation for more reliable routing
+                        window.location.href = `/catalog/${item.slug}`;
+                      }}
                       onMouseEnter={() => setHoveredCategory(item.name)}
-                      onMouseLeave={() => setHoveredCategory(null)}
                     >
                       <img className="w-5 h-5" alt={item.name} src={item.image || item.icon || '/default-category.svg'} />
-                      <span className="font-medium text-gray-700 text-sm w-[198px]">{item.name}</span>
+                      <span className="font-medium text-gray-700 text-sm w-[198px]">
+                        {item.name}
+                      </span>
                       <ChevronRightIcon className="w-4 h-4 text-gray-500" />
-                    </div>
+                    </a>
                   ))}
                   <a
-                    href="#"
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 cursor-pointer w-full mt-1 border-t border-gray-100 pt-3"
+                    href="/catalog"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg w-full cursor-pointer hover:bg-gray-100 mt-1 border-t border-gray-100 pt-3"
                     onClick={(e) => {
                       e.preventDefault();
-                      navigate('/catalog');
+                      console.log(`[DEBUG] Sidebar See All Products clicked, navigating to: /catalog`);
+                      // Use direct browser navigation for more reliable routing
+                      window.location.href = '/catalog';
                     }}
                   >
                     <span className="font-medium text-primarymain text-sm w-full">See All Products</span>
@@ -624,13 +702,21 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                         <div key={idx} className="flex flex-col gap-2 min-w-[160px]">
                           <div className="font-semibold text-gray-900 mb-2">{col.title}</div>
                           {col.items.map((item, i) => (
-                            <button
+                            <a
                               key={i}
+                              href={`/catalog/${item.toLowerCase().replace(/\s+/g, '-')}`}
                               className="text-left text-gray-700 hover:text-primarymain text-sm py-1 block"
-                              onClick={() => navigate(`/catalog/${item.toLowerCase().replace(/\s+/g, '-')}`)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                console.log(`[DEBUG] Mega menu item clicked: ${item}, navigating to: /catalog/${item.toLowerCase().replace(/\s+/g, '-')}`);
+                                // Close the categories dropdown
+                                setShowCategories(false);
+                                // Use direct browser navigation for more reliable routing
+                                window.location.href = `/catalog/${item.toLowerCase().replace(/\s+/g, '-')}`;
+                              }}
                             >
                               {item}
-                            </button>
+                            </a>
                           ))}
                         </div>
                       ))}
@@ -653,16 +739,22 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
           </div>
 
           {/* Navigation links */}
-          <NavigationMenu className="ml-0 hidden md:block">
-            <NavigationMenuList className="flex gap-1">
+          <NavigationMenu className="hidden sm:flex">
+            <NavigationMenuList>
               {navLinks.map((link, index) => (
                 <NavigationMenuItem key={index}>
-                  <Link 
-                    to={link.path} 
-                    className="px-5 py-3 text-white-80 font-navigation-nav-link-regular hover:text-white transition-colors"
+                  <a
+                    href={link.path}
+                    className="px-5 py-3 text-white-80 font-navigation-nav-link-regular"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      console.log(`[DEBUG] Navigation link clicked: ${link.label}, navigating to: ${link.path}`);
+                      // Use direct browser navigation for more reliable routing
+                      window.location.href = link.path;
+                    }}
                   >
                     {link.label}
-                  </Link>
+                  </a>
                 </NavigationMenuItem>
               ))}
             </NavigationMenuList>
@@ -677,10 +769,18 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
           <div className="hidden md:inline-flex items-start p-3 bg-white-100 rounded-[0px_0px_16px_16px] border border-solid border-[#eef1f6] shadow-shadow-light-mode-medium z-10 relative">
             <div className="flex flex-col items-start gap-1.5">
               {categories.map((item, index) => (
-                <div
+                <a
                   key={index}
+                  href={`/catalog/${item.slug}`}
                   className="flex items-center gap-3 px-3 py-2 rounded-lg w-full cursor-pointer hover:bg-gray-100"
-                  onClick={() => navigate(`/catalog/${item.slug}`)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    console.log(`[DEBUG] Sidebar category clicked: ${item.name}, navigating to: /catalog/${item.slug}`);
+                    // Close the categories dropdown
+                    setShowCategories(false);
+                    // Use direct browser navigation for more reliable routing
+                    window.location.href = `/catalog/${item.slug}`;
+                  }}
                   onMouseEnter={() => setHoveredCategory(item.name)}
                 >
                   <img className="w-5 h-5" alt={item.name} src={item.image || item.icon || '/default-category.svg'} />
@@ -688,16 +788,18 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                     {item.name}
                   </span>
                   <ChevronRightIcon className="w-4 h-4 text-gray-500" />
-                </div>
+                </a>
               ))}
               
               {/* See All Categories link in hero section */}
               <a
-                href="#"
+                href="/catalog"
                 className="flex items-center gap-3 px-3 py-2 rounded-lg w-full cursor-pointer hover:bg-gray-100 mt-1 border-t border-gray-100 pt-3"
                 onClick={(e) => {
                   e.preventDefault();
-                  navigate('/catalog');
+                  console.log(`[DEBUG] Sidebar See All Products clicked, navigating to: /catalog`);
+                  // Use direct browser navigation for more reliable routing
+                  window.location.href = '/catalog';
                 }}
               >
                 <span className="font-medium text-primarymain text-sm w-full">See All Products</span>
@@ -716,13 +818,21 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                       <div key={idx} className="flex flex-col gap-2 min-w-[160px]">
                         <div className="font-semibold text-gray-900 mb-2">{col.title}</div>
                         {col.items.map((item, i) => (
-                          <button
+                          <a
                             key={i}
+                            href={`/catalog/${item.toLowerCase().replace(/\s+/g, '-')}`}
                             className="text-left text-gray-700 hover:text-primarymain text-sm py-1 block"
-                            onClick={() => navigate(`/catalog/${item.toLowerCase().replace(/\s+/g, '-')}`)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              console.log(`[DEBUG] Mega menu item clicked: ${item}, navigating to: /catalog/${item.toLowerCase().replace(/\s+/g, '-')}`);
+                              // Close the categories dropdown
+                              setShowCategories(false);
+                              // Use direct browser navigation for more reliable routing
+                              window.location.href = `/catalog/${item.toLowerCase().replace(/\s+/g, '-')}`;
+                            }}
                           >
                             {item}
-                          </button>
+                          </a>
                         ))}
                       </div>
                     ))}

@@ -64,6 +64,7 @@ interface LocalCartItem {
   emiSelected: boolean;
   emiPeriod: number;
   emiPlan?: number;
+  emiBank?: string;
   shippingMethod?: string;
   addedAt: string;
 }
@@ -73,6 +74,7 @@ interface CartOptions {
   emiSelected?: boolean;
   emiPeriod?: number;
   emiPlan?: number;
+  emiBank?: string;
   shippingMethod?: string;
 }
 

@@ -1,8 +1,9 @@
 import axios, { AxiosRequestConfig } from 'axios';
+import { API_URL } from '../../config';
 
-// If we don't have an apiClient module, we'll create a simple version inline
+// Create apiClient with the correct baseURL from config
 const apiClient = axios.create({
-  baseURL: 'http://52.62.201.84/',
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -32,7 +33,7 @@ apiClient.interceptors.request.use(
 const reviewService = {
   getReviews: async (productId: string, page = 1, pageSize = 10, ordering = '-created_at') => {
     try {
-      const response = await apiClient.get(`/api/reviews/reviews/`, {
+      const response = await apiClient.get(`/reviews/reviews/`, {
         params: {
           product: productId,
           page,
@@ -56,7 +57,7 @@ const reviewService = {
 
   getReviewSummary: async (productId: string) => {
     try {
-      const response = await apiClient.get(`/api/reviews/reviews/summary/`, {
+      const response = await apiClient.get(`/reviews/reviews/summary/`, {
         params: { product: productId }
       });
       return response.data;
@@ -96,7 +97,7 @@ const reviewService = {
         }
         
         // Send FormData with appropriate headers
-        const response = await apiClient.post(`/api/reviews/reviews/`, formData, {
+        const response = await apiClient.post(`/reviews/reviews/`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -105,7 +106,7 @@ const reviewService = {
         return response.data;
       } else {
         // No images, use regular JSON request
-        const response = await apiClient.post(`/api/reviews/reviews/`, reviewData);
+        const response = await apiClient.post(`/reviews/reviews/`, reviewData);
         return response.data;
       }
     } catch (error) {
@@ -131,7 +132,7 @@ const reviewService = {
         }
         
         // Send FormData with appropriate headers
-        const response = await apiClient.put(`/api/reviews/reviews/${reviewId}/`, formData, {
+        const response = await apiClient.put(`/reviews/reviews/${reviewId}/`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -140,7 +141,7 @@ const reviewService = {
         return response.data;
       } else {
         // No images, use regular JSON request
-        const response = await apiClient.put(`/api/reviews/reviews/${reviewId}/`, reviewData);
+        const response = await apiClient.put(`/reviews/reviews/${reviewId}/`, reviewData);
         return response.data;
       }
     } catch (error) {
@@ -151,7 +152,7 @@ const reviewService = {
 
   deleteReview: async (reviewId: string) => {
     try {
-      const response = await apiClient.delete(`/api/reviews/reviews/${reviewId}/`);
+      const response = await apiClient.delete(`/reviews/reviews/${reviewId}/`);
       return response.data;
     } catch (error) {
       console.error("Error deleting review:", error);
@@ -161,7 +162,7 @@ const reviewService = {
 
   getMyReviews: async () => {
     try {
-      const response = await apiClient.get('/api/reviews/reviews/my_reviews/');
+      const response = await apiClient.get('/reviews/reviews/my_reviews/');
       return response.data.results || [];
     } catch (error) {
       console.error("Error fetching user reviews:", error);
@@ -171,7 +172,7 @@ const reviewService = {
 
   canReviewProduct: async (productId: string) => {
     try {
-      const response = await apiClient.get(`/api/reviews/can-review/`, {
+      const response = await apiClient.get(`/reviews/can-review/`, {
         params: { product: productId }
       });
       return response.data;
@@ -187,7 +188,7 @@ const reviewService = {
 
   voteReview: async (reviewId: string, vote: 'helpful' | 'unhelpful') => {
     try {
-      const response = await apiClient.post(`/api/reviews/reviews/${reviewId}/vote/`, { vote });
+      const response = await apiClient.post(`/reviews/reviews/${reviewId}/vote/`, { vote });
       return response.data;
     } catch (error) {
       console.error(`Error voting on review:`, error);
@@ -197,7 +198,7 @@ const reviewService = {
 
   replyToReview: async (reviewId: string, comment: string) => {
     try {
-      const response = await apiClient.post(`/api/reviews/reviews/${reviewId}/reply/`, { comment });
+      const response = await apiClient.post(`/reviews/reviews/${reviewId}/reply/`, { comment });
       return response.data;
     } catch (error) {
       console.error("Error replying to review:", error);

@@ -8,7 +8,8 @@ import {
   SearchIcon,
   ShoppingCartIcon,
   UserIcon,
-  XIcon
+  XIcon,
+  LayoutGridIcon
 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { Badge } from "../../../components/ui/badge";
@@ -20,89 +21,79 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from "../../../components/ui/navigation-menu";
-import { useCategories } from "../../../hooks/useCategories";
-import { Category } from "../../../types/products";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
-// Hardcoded backend categories - guaranteed to work
-const backendCategories: Category[] = [
-  {"id":5,"name":"AC","slug":"ac","description":"Air conditioners","image":"/computer.svg","is_active":true},
-  {"id":1,"name":"Bikes","slug":"bikes","description":"","image":"/smartphone-2.svg","is_active":true},
-  {"id":2,"name":"Laptops","slug":"laptops","description":"","image":"/monitor-2.svg","is_active":true},
-  {"id":4,"name":"Mobiles","slug":"mobiles","description":"","image":"/speaker-2.svg","is_active":true},
-  {"id":3,"name":"Monitors","slug":"monitors","description":"","image":"/camera-2.svg","is_active":true},
-  {"id":6,"name":"TV","slug":"tv","description":"","image":"/printer-2.svg","is_active":true}
-];
+// Define an interface for the header promo banner
+interface HeaderPromo {
+  id: number;
+  title: string;
+  subtitle: string;
+  icon: string;
+  bg_color: string;
+  is_active: boolean;
+  priority: number;
+}
+
+// Define an interface for the hero slides
+interface HeroSlide {
+  id: number;
+  title: string;
+  subtitle: string;
+  image: string;
+  bg_color: string;
+  button_text: string;
+  button_link: string;
+  is_active: boolean;
+  priority: number;
+}
 
 export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: boolean } = {}): JSX.Element => {
   const navigate = useNavigate();
+  const location = useLocation();
   
-  // Try to get categories from our custom hook, but fallback to hardcoded if it fails
-  const { categories: hookCategories, loading: hookLoading, error: hookError } = useCategories();
-  
-  // Force use the categories from the hook if available, otherwise use the hardcoded backend categories
-  const [categories, setCategories] = useState<Category[]>(backendCategories);
-  const [loadingCategories, setLoadingCategories] = useState<boolean>(false);
-  const [categoryError, setCategoryError] = useState<string | null>(null);
-  
-  // Update categories when the hook resolves
-  useEffect(() => {
-    if (!hookLoading) {
-      if (hookError) {
-        console.warn('Hook error, using hardcoded categories:', hookError);
-        setCategoryError(hookError);
-      } else if (hookCategories && hookCategories.length > 0) {
-        console.log('Using categories from hook:', hookCategories.length);
-        setCategories(hookCategories);
-        setCategoryError(null);
-      } else {
-        console.log('Hook returned no categories, using hardcoded backup');
-      }
-      setLoadingCategories(false);
-    } else {
-      setLoadingCategories(true);
-    }
-  }, [hookLoading, hookError, hookCategories]);
-  
-  console.log('HeaderByAnima rendered with categories:', categories.length);
-
   // Navigation links data
   const navLinks = [
-    "Best Sellers",
-    "Today's Deals",
-    "New Arrivals",
-    "Gift Cards",
-    "Help Center",
+    { label: "Best Sellers", path: "/best-sellers" },
+    { label: "Today's Deals", path: "/todays-deals" },
+    { label: "New Arrivals", path: "/new-arrivals" },
+    { label: "Help Center", path: "/help-center" },
+    { label: "Track Order", path: "/track-order" },
   ];
 
-  // Hero slider data
-  const heroSlides = [
+  // Hero slider data - This will be replaced with data from API
+  const defaultHeroSlides = [
     {
       id: 1,
       title: "Headphones ProMax",
       subtitle: "Feel the real quality sound",
       image: "/image.png",
-      bgColor: "bg-blue-100",
-      buttonText: "Shop now",
-      buttonLink: "#"
+      bg_color: "bg-blue-100",
+      button_text: "Shop now",
+      button_link: "#",
+      is_active: true,
+      priority: 1
     },
     {
       id: 2,
       title: "iPhone 14 Pro",
       subtitle: "The ultimate smartphone experience",
       image: "/image-1.png",
-      bgColor: "bg-gray-100",
-      buttonText: "Learn more",
-      buttonLink: "#"
+      bg_color: "bg-gray-100",
+      button_text: "Learn more",
+      button_link: "#",
+      is_active: true,
+      priority: 2
     },
     {
       id: 3,
       title: "MacBook Pro M2",
       subtitle: "Power to change everything",
       image: "/image-2.png",
-      bgColor: "bg-indigo-100",
-      buttonText: "Buy now",
-      buttonLink: "#"
+      bg_color: "bg-indigo-100",
+      button_text: "Buy now",
+      button_link: "#",
+      is_active: true,
+      priority: 3
     }
   ];
 
@@ -114,10 +105,67 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
   
   const categoriesButtonRef = useRef<HTMLDivElement>(null);
   const categoriesDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState<boolean>(true);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+
+  // Default categories to use when API call fails
+  const defaultCategories = [
+    {
+      id: 1,
+      name: "Smartphones & Tablets",
+      slug: "smartphones-tablets",
+      icon: "/smartphone.svg"
+    },
+    {
+      id: 2,
+      name: "Computers & Laptops",
+      slug: "computers-laptops",
+      icon: "/computer.svg"
+    },
+    {
+      id: 3,
+      name: "Audio & Headphones",
+      slug: "audio-headphones",
+      icon: "/headphones.svg"
+    },
+    {
+      id: 4,
+      name: "Cameras & Photography",
+      slug: "cameras-photography",
+      icon: "/camera.svg"
+    },
+    {
+      id: 5,
+      name: "Smart Home & IoT",
+      slug: "smart-home",
+      icon: "/smart-home.svg"
+    },
+    {
+      id: 6,
+      name: "Gaming & Consoles",
+      slug: "gaming-consoles",
+      icon: "/gaming.svg"
+    }
+  ];
+
+  // Add state for the header promo
+  const [headerPromo, setHeaderPromo] = useState<HeaderPromo | null>(null);
+  const [headerPromoLoading, setHeaderPromoLoading] = useState(false);
+
+  // Replace the static hero slides with dynamic state
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
+  const [heroSlidesLoading, setHeroSlidesLoading] = useState(false);
+  
+  // Cart state
+  const [cartItemCount, setCartItemCount] = useState(0);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Auto slide for hero section
   useEffect(() => {
-    if (showHeroSection) {
+    if (showHeroSection && heroSlides.length > 0) {
       const interval = setInterval(() => {
         setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
       }, 5000);
@@ -132,7 +180,9 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
         categoriesDropdownRef.current &&
         !categoriesDropdownRef.current.contains(event.target as Node) &&
         categoriesButtonRef.current &&
-        !categoriesButtonRef.current.contains(event.target as Node)
+        !categoriesButtonRef.current.contains(event.target as Node) &&
+        mobileMenuRef.current && 
+        !mobileMenuRef.current.contains(event.target as Node)
       ) {
         setShowCategories(false);
         setHoveredCategory(null);
@@ -148,158 +198,55 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
     };
   }, [showCategories]);
 
-  // Navigate to previous slide
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
   };
 
-  // Navigate to next slide
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
   };
-
-  // Example mega menu data for categories
-  const megaMenuData: Record<string, { title: string; columns: { title: string; items: string[] }[]; banner?: { img: string; title: string; subtitle: string; cta: string } }> = {
-    "AC": {
-      title: "Air Conditioners",
-      columns: [
-        {
-          title: "By Type",
-          items: ["Split AC", "Window AC", "Portable AC", "Inverter AC", "Central AC"],
-        },
-        {
-          title: "By Brand",
-          items: ["Daikin", "Carrier", "LG", "Samsung", "Voltas", "Hitachi"],
-        },
-        {
-          title: "By Capacity",
-          items: ["1 Ton", "1.5 Ton", "2 Ton", "3 Ton"],
-        },
-      ],
-      banner: {
-        img: "/image-2.png",
-        title: "Summer Sale",
-        subtitle: "Up to 30% off",
-        cta: "Shop now",
-      },
-    },
-    "Bikes": {
-      title: "Bikes",
-      columns: [
-        {
-          title: "By Type",
-          items: ["Mountain Bikes", "Road Bikes", "Hybrid Bikes", "Electric Bikes", "BMX"],
-        },
-        {
-          title: "By Brand",
-          items: ["Hero", "Trek", "Giant", "Specialized", "Cannondale"],
-        },
-        {
-          title: "Accessories",
-          items: ["Helmets", "Lights", "Locks", "Pumps", "Repair Tools"],
-        },
-      ],
-      banner: {
-        img: "/image.png",
-        title: "New Arrivals",
-        subtitle: "Latest Models",
-        cta: "View Collection",
-      },
-    },
-    "Mobile Phones": {
-      title: "Mobile Phones",
-      columns: [
-        {
-          title: "By Brand",
-          items: ["Apple", "Samsung", "Xiaomi", "OnePlus", "Google", "Oppo"],
-        },
-        {
-          title: "By Price Range",
-          items: ["Budget Phones", "Mid-range", "Premium", "Flagship"],
-        },
-        {
-          title: "Accessories",
-          items: ["Cases", "Screen Protectors", "Chargers", "Power Banks", "Earphones"],
-        },
-      ],
-      banner: {
-        img: "/image-1.png",
-        title: "iPhone 14 Pro",
-        subtitle: "Now Available",
-        cta: "Shop now",
-      },
-    },
-    "Refrigerator": {
-      title: "Refrigerators",
-      columns: [
-        {
-          title: "By Type",
-          items: ["Single Door", "Double Door", "Side by Side", "French Door", "Mini Refrigerators"],
-        },
-        {
-          title: "By Brand",
-          items: ["LG", "Samsung", "Whirlpool", "Haier", "Godrej", "Bosch"],
-        },
-        {
-          title: "Features",
-          items: ["Frost Free", "Inverter Technology", "Smart Refrigerators", "Energy Efficient"],
-        },
-      ],
-      banner: {
-        img: "/image-2.png",
-        title: "Smart Cooling",
-        subtitle: "Energy Efficient",
-        cta: "Explore Now",
-      },
-    },
-    "TV": {
-      title: "Televisions",
-      columns: [
-        {
-          title: "By Type",
-          items: ["LED", "OLED", "QLED", "Smart TV", "Android TV", "4K Ultra HD"],
-        },
-        {
-          title: "By Size",
-          items: ["32 inch", "43 inch", "50 inch", "55 inch", "65 inch", "75 inch & above"],
-        },
-        {
-          title: "By Brand",
-          items: ["Samsung", "LG", "Sony", "Mi", "OnePlus", "TCL"],
-        },
-      ],
-      banner: {
-        img: "/image.png",
-        title: "OLED Experience",
-        subtitle: "Premium Viewing",
-        cta: "Shop now",
-      },
-    },
-    "Washing Machine": {
-      title: "Washing Machines",
-      columns: [
-        {
-          title: "By Type",
-          items: ["Front Load", "Top Load", "Semi-Automatic", "Fully Automatic", "Washer Dryers"],
-        },
-        {
-          title: "By Brand",
-          items: ["LG", "Samsung", "Bosch", "IFB", "Whirlpool", "Panasonic"],
-        },
-        {
-          title: "By Capacity",
-          items: ["6 Kg", "7 Kg", "8 Kg", "9 Kg & above"],
-        },
-      ],
-      banner: {
-        img: "/image-1.png",
-        title: "Smart Washing",
-        subtitle: "Water Efficient",
-        cta: "View All",
-      },
-    },
-    // Add more categories as needed
+  
+  // Fetch cart data
+  const fetchCart = async () => {
+    try {
+      // Mock cart data for now
+      setCartItemCount(3);
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+    }
   };
+
+  // Initial data loading
+  useEffect(() => {
+    // Set default categories
+    setCategories(defaultCategories);
+    setLoadingCategories(false);
+    
+    // Set default hero slides
+    setHeroSlides(defaultHeroSlides);
+    
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    setIsAuthenticated(!!token);
+    
+    // Fetch cart data
+    fetchCart();
+  }, [isAuthenticated, fetchCart]);
+  
+  // Close mobile menu when location changes
+  useEffect(() => {
+    // Store the current location to compare with future changes
+    const currentPath = location.pathname;
+    
+    // Only close the menu if the location actually changes
+    return () => {
+      if (location.pathname !== currentPath && mobileMenuOpen) {
+        console.log('[HeaderByAnima] Location changed from', currentPath, 'to', location.pathname, 'closing mobile menu.');
+        setMobileMenuOpen(false);
+        setShowCategories(false);
+      }
+    };
+  }, [location.pathname, mobileMenuOpen]);
 
   return (
     <header className="flex flex-col items-center w-full">
@@ -310,8 +257,15 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full p-3 sm:hidden text-white"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="rounded-full p-3 sm:hidden text-white z-[100]"
+            onClick={() => {
+              console.log(`[DEBUG] Hamburger menu clicked. Current state: ${mobileMenuOpen ? 'open' : 'closed'}, toggling to ${!mobileMenuOpen ? 'open' : 'closed'}`);
+              setMobileMenuOpen(!mobileMenuOpen);
+              // When closing the menu, also close categories
+              if (mobileMenuOpen) {
+                setShowCategories(false);
+              }
+            }}
           >
             {mobileMenuOpen ? <XIcon className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
           </Button>
@@ -334,15 +288,19 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
             variant="ghost"
             size="icon"
             className="rounded-full p-3 sm:hidden relative text-white ml-1"
-            onClick={() => navigate('/cart')}
+            onClick={(e) => {
+              e.preventDefault();
+              console.log(`[DEBUG] Mobile cart button clicked, navigating to: /cart`);
+              window.location.href = '/cart';
+            }}
           >
             <ShoppingCartIcon className="w-6 h-6" />
             <Badge className="absolute w-5 h-5 top-0 right-0 bg-successmain rounded-xl flex items-center justify-center text-xs">
-              3
+              {cartItemCount}
             </Badge>
           </Button>
 
-          {/* SearchIcon bar - desktop */}
+          {/* Search bar - desktop */}
           <div className="hidden sm:flex items-center relative ml-6">
             <div className="flex items-center gap-2.5 px-4 py-3 rounded-[100px] border border-solid border-white w-[490px]">
               <SearchIcon className="w-[18px] h-[18px] text-gray-500" />
@@ -353,7 +311,7 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
             </div>
           </div>
 
-          {/* SearchIcon bar - mobile (shown when search is toggled) */}
+          {/* Search bar - mobile (shown when search is toggled) */}
           <div className={`${searchOpen ? 'flex' : 'hidden'} w-full sm:hidden items-center my-3`}>
             <div className="flex items-center gap-2.5 px-4 py-3 rounded-[100px] border border-solid border-white w-full">
               <SearchIcon className="w-[18px] h-[18px] text-gray-500" />
@@ -389,7 +347,11 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
               variant="ghost"
               size="icon"
               className="rounded-full p-[15px]"
-              onClick={() => navigate('/wishlist')}
+              onClick={(e) => {
+                e.preventDefault();
+                console.log(`[DEBUG] Wishlist button clicked, navigating to: /wishlist`);
+                window.location.href = '/wishlist';
+              }}
             >
               <HeartIcon className="w-[18px] h-[18px] text-white-80" />
             </Button>
@@ -404,12 +366,16 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
               variant="ghost"
               size="icon"
               className="rounded-full p-[15px] relative"
-              onClick={() => navigate('/cart')}
+              onClick={(e) => {
+                e.preventDefault();
+                console.log(`[DEBUG] Desktop cart button clicked, navigating to: /cart`);
+                window.location.href = '/cart';
+              }}
             >
               <ShoppingCartIcon className="w-[18px] h-[18px] text-white-80" />
               <Badge className="absolute w-6 h-6 top-0 right-0 bg-successmain rounded-xl border-[3px] border-solid border-[#222934] flex items-center justify-center">
                 <span className="text-white-100 text-xs font-body-extra-small">
-                  3
+                  {cartItemCount}
                 </span>
               </Badge>
             </Button>
@@ -424,29 +390,43 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
         </div>
 
         {/* Mobile menu */}
-        <div className={`${mobileMenuOpen ? 'flex' : 'hidden'} sm:hidden w-full flex-col bg-gray-700 p-4`}>
+        <div ref={mobileMenuRef} className={`${mobileMenuOpen ? 'flex' : 'hidden'} sm:hidden w-full flex-col bg-gray-700 p-4 z-[90] absolute top-[60px] left-0 right-0`}>
           <div className="flex flex-col gap-2">
             {navLinks.map((link, index) => (
               <a
                 key={index}
-                href="#"
-                className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg"
+                href={link.path}
+                className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log(`[DEBUG] Mobile navLink '${link.label}' clicked, navigating to: ${link.path}`);
+                  // Close the mobile menu
+                  setMobileMenuOpen(false);
+                  // Use direct browser navigation for more reliable routing
+                  window.location.href = link.path;
+                }}
               >
-                {link}
+                {link.label}
               </a>
             ))}
             <div className="h-px w-full bg-gray-600 my-2"></div>
             <Button
               variant="ghost"
               className="justify-start px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg"
-              onClick={() => setShowCategories(!showCategories)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(`[DEBUG] Mobile categories button clicked. Current state: ${showCategories ? 'open' : 'closed'}`);
+                setShowCategories(!showCategories);
+              }}
             >
               <span className="flex items-center gap-2">
+                <LayoutGridIcon className="w-4 h-4" />
                 Categories
-                <ChevronDownIcon className="w-4 h-4" />
               </span>
+              <ChevronDownIcon className={`w-4 h-4 transition-transform ${showCategories ? 'rotate-180' : ''}`} />
             </Button>
-            {(showCategories || showHeroSection) && (
+            {(showCategories && mobileMenuOpen) && (
               <div className="ml-4 flex flex-col gap-1 mt-1">
                 {loadingCategories ? (
                   <div className="px-3 py-2 text-white-80">Loading categories...</div>
@@ -454,22 +434,24 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                   <div className="px-3 py-2 text-white-80">Error: {categoryError}</div>
                 ) : (
                   <>
-                    {console.log('Rendering mobile categories:', categories.length)}
                     {categories.slice(0, 6).map((category) => (
                       <a
                         key={category.id}
-                        href={`/category/${category.slug}`}
-                        className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2"
+                        href={`/catalog/${category.slug}`}
+                        className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2 cursor-pointer"
                         onClick={(e) => {
                           e.preventDefault();
-                          navigate(`/category/${category.slug}`);
+                          console.log(`[DEBUG] Mobile category clicked: ${category.name}, navigating to: /catalog/${category.slug}`);
+                          // Close the mobile menu
                           setMobileMenuOpen(false);
+                          // Use direct browser navigation for more reliable routing
+                          window.location.href = `/catalog/${category.slug}`;
                         }}
                       >
                         <img 
                           className="w-4 h-4" 
                           alt={category.name} 
-                          src={category.image || `/default-category.svg`} 
+                          src={category.image || (category as any).icon || `/computer.svg`} 
                         />
                         {category.name}
                       </a>
@@ -477,11 +459,14 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                     {categories.length > 0 && (
                       <a
                         href="/categories"
-                        className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg"
+                        className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg cursor-pointer"
                         onClick={(e) => {
                           e.preventDefault();
-                          navigate('#');
+                          console.log(`[DEBUG] View all categories clicked, navigating to: /categories`);
+                          // Close the mobile menu
                           setMobileMenuOpen(false);
+                          // Use direct browser navigation for more reliable routing
+                          window.location.href = '/categories';
                         }}
                       >
                         View all categories...
@@ -494,14 +479,30 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
             <div className="h-px w-full bg-gray-600 my-2"></div>
             <a
               href="/account"
-              className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2"
+              className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2 cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault();
+                console.log(`[DEBUG] Mobile 'My Account' clicked, navigating to: /account`);
+                // Close the mobile menu
+                setMobileMenuOpen(false);
+                // Use direct browser navigation for more reliable routing
+                window.location.href = '/account';
+              }}
             >
               <UserIcon className="w-4 h-4" />
               My Account
             </a>
             <a
               href="/wishlist"
-              className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2"
+              className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2 cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault();
+                console.log(`[DEBUG] Mobile 'Wishlist' clicked, navigating to: /wishlist`);
+                // Close the mobile menu
+                setMobileMenuOpen(false);
+                // Use direct browser navigation for more reliable routing
+                window.location.href = '/wishlist';
+              }}
             >
               <HeartIcon className="w-4 h-4" />
               Wishlist
@@ -511,200 +512,223 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
 
         {/* Bottom navigation - desktop only */}
         <div className="w-full max-w-[1296px] h-12 hidden sm:flex items-center justify-between px-6">
-          {/* Categories dropdown - only show when not on home page */}
-          {!showHeroSection && (
-            <div ref={categoriesButtonRef} className="relative">
+          {/* Categories dropdown - always functional now */}
+          <div ref={categoriesButtonRef} className="relative">
+            <div
+              className="inline-flex flex-col items-start px-6 py-3 bg-gray-700 rounded-[8px_8px_0px_0px] cursor-pointer select-none"
+              onClick={() => {
+                console.log(`[DEBUG] Desktop categories button clicked. Current state: ${showCategories ? 'open' : 'closed'}`);
+                setShowCategories((v) => !v);
+              }}
+            >
+              <div className="inline-flex items-center gap-4">
+                <div className="inline-flex items-center gap-2">
+                  <LayoutGridIcon className="w-[18px] h-[18px] text-gray-200" />
+                  <span className="text-gray-200 font-navigation-nav-link-regular">Categories</span>
+                </div>
+                <ChevronDownIcon className="w-4 h-4 text-gray-200" />
+              </div>
+            </div>
+            {showCategories && (
               <div
-                className="inline-flex flex-col items-start px-6 py-3 bg-gray-700 rounded-[8px_8px_0px_0px] cursor-pointer select-none"
-                onClick={() => setShowCategories((v) => !v)}
+                ref={categoriesDropdownRef}
+                className="absolute left-0 mt-2 bg-white-100 rounded-b-xl shadow-lg border border-gray-100 z-20 min-w-[260px]"
+                onMouseLeave={() => setHoveredCategory(null)}
               >
-                <div className="inline-flex items-center gap-4">
-                  <div className="inline-flex items-center gap-2">
-                    <img className="w-[18px] h-[18px]" alt="Icon" src="/icon-26.svg" />
-                    <span className="text-gray-200 font-navigation-nav-link-regular">Categories</span>
-                  </div>
-                  <ChevronDownIcon className="w-4 h-4 text-gray-200" />
+                <div className="flex flex-col p-3 gap-1.5">
+                  {categories.map((category) => (
+                    <a
+                      key={category.id}
+                      href={`/catalog/${category.slug}`}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 cursor-pointer w-full"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        console.log(`[DEBUG] Desktop category clicked: ${category.name}, navigating to: /catalog/${category.slug}`);
+                        // Close the categories dropdown
+                        setShowCategories(false);
+                        // Use direct browser navigation for more reliable routing
+                        window.location.href = `/catalog/${category.slug}`;
+                      }}
+                      onMouseEnter={() => setHoveredCategory(category.name)}
+                    >
+                      <img 
+                        className="w-5 h-5" 
+                        alt={category.name} 
+                        src={category.image || (category as any).icon || `/computer.svg`} 
+                      />
+                      <span className="text-gray-700">{category.name}</span>
+                      <ChevronRightIcon className="w-4 h-4 text-gray-400 ml-auto" />
+                    </a>
+                  ))}
                 </div>
               </div>
-              {showCategories && (
-                <div
-                  ref={categoriesDropdownRef}
-                  className="absolute left-0 mt-2 bg-white-100 rounded-b-xl shadow-lg border border-gray-100 z-20 min-w-[260px]"
-                  onMouseLeave={() => setHoveredCategory(null)}
-                >
-                  <div className="flex flex-col p-3 gap-1.5">
-                    {loadingCategories ? (
-                      <div className="px-3 py-2 text-gray-500">Loading categories...</div>
-                    ) : categoryError ? (
-                      <div className="px-3 py-2 text-gray-500">Error: {categoryError}</div>
-                    ) : (
-                      <>
-                        {console.log('Rendering dropdown categories:', categories.length)}
-                        {categories.map((category) => {
-                          // Find the megaMenu data for this category (by name)
-                          const categoryMegaMenu = megaMenuData[category.name];
-                          
-                          return (
-                            <div
-                              key={category.id}
-                              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 cursor-pointer w-full"
-                              onMouseEnter={() => setHoveredCategory(category.name)}
-                              onClick={() => navigate(`/category/${category.slug}`)}
-                            >
-                              <img 
-                                className="w-5 h-5" 
-                                alt={category.name} 
-                                src={category.image || `/default-category.svg`} 
-                              />
-                              <span className="font-medium text-gray-700 text-sm w-[198px]">
-                                {category.name}
-                              </span>
-                              <ChevronRightIcon className="w-4 h-4 text-gray-500" />
-                            </div>
-                          );
-                        })}
-                      </>
-                    )}
-                  </div>
-                  {/* Mega menu (if hovered) */}
-                  {hoveredCategory && megaMenuData[hoveredCategory] && (
-                    <div
-                      className="absolute left-[260px] top-0 bg-white-100 rounded-xl shadow-lg border border-gray-100 flex z-30 min-w-[700px] h-full"
-                      onMouseEnter={() => setHoveredCategory(hoveredCategory)}
-                      onMouseLeave={() => setHoveredCategory(null)}
-                    >
-                      <div className="flex flex-row p-8 gap-12 flex-1">
-                        {megaMenuData[hoveredCategory].columns.map((col, idx) => (
-                          <div key={idx} className="flex flex-col gap-2 min-w-[160px]">
-                            <div className="font-semibold text-gray-900 mb-2">{col.title}</div>
-                            {col.items.map((item, i) => (
-                              <a 
-                                key={i} 
-                                href={`/category/${item.toLowerCase().replace(/\s+/g, '-')}`} 
-                                className="text-gray-700 hover:text-primarymain text-sm py-1 block"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  navigate(`/category/${item.toLowerCase().replace(/\s+/g, '-')}`);
-                                }}
-                              >
-                                {item}
-                              </a>
-                            ))}
-                          </div>
-                        ))}
-                        {/* Banner */}
-                        {megaMenuData[hoveredCategory].banner && (
-                          <div className="flex flex-col items-center justify-center bg-gray-50 rounded-xl p-6 min-w-[220px] h-full">
-                            <img src={megaMenuData[hoveredCategory].banner.img} alt="Banner" className="w-40 h-32 object-contain mb-4" />
-                            <div className="text-xs text-gray-500 mb-1">{megaMenuData[hoveredCategory].banner.subtitle}</div>
-                            <div className="font-bold text-lg text-gray-900 mb-2">{megaMenuData[hoveredCategory].banner.title}</div>
-                            <Button 
-                              className="bg-primarymain text-white-100 rounded-md px-4 py-2 text-sm"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                navigate(`/category/${hoveredCategory.toLowerCase().replace(/\s+/g, '-')}`);
-                              }}
-                            >
-                              {megaMenuData[hoveredCategory].banner.cta}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
+            )}
+            {showCategories && hoveredCategory && (
+              <div
+                className="absolute left-[260px] top-0 bg-white-100 rounded-xl shadow-lg border border-gray-100 flex z-30 min-w-[700px] h-full"
+                onMouseEnter={() => setHoveredCategory(hoveredCategory)}
+                onMouseLeave={() => setHoveredCategory(null)}
+              >
+                <div className="flex flex-row p-8 gap-12 flex-1">
+                  <div className="flex flex-col gap-6 flex-1">
+                    <h3 className="text-lg font-medium text-gray-900">Popular {hoveredCategory} Items</h3>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                      {/* Mock subcategory items */}
+                      {["iPhone 14", "Samsung Galaxy S23", "Google Pixel 7", "OnePlus 11", "Xiaomi 13", "Nothing Phone"].map((item, index) => (
+                        <a
+                          key={index}
+                          href={`/catalog/${item.toLowerCase().replace(/\s+/g, '-')}`} 
+                          className="text-gray-700 hover:text-primarymain text-sm py-1 block"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            console.log(`[DEBUG] Mega menu item clicked: ${item}, navigating to: /catalog/${item.toLowerCase().replace(/\s+/g, '-')}`);
+                            // Close the categories dropdown
+                            setShowCategories(false);
+                            // Use direct browser navigation for more reliable routing
+                            window.location.href = `/catalog/${item.toLowerCase().replace(/\s+/g, '-')}`;
+                          }}
+                        >
+                          {item}
+                        </a>
+                      ))}
                     </div>
-                  )}
+                    <a
+                      href={`/catalog/${hoveredCategory.toLowerCase().replace(/\s+/g, '-')}`}
+                      className="text-primarymain hover:underline text-sm font-medium mt-2"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        console.log(`[DEBUG] View all ${hoveredCategory} clicked, navigating to: /catalog/${hoveredCategory.toLowerCase().replace(/\s+/g, '-')}`);
+                        // Close the categories dropdown
+                        setShowCategories(false);
+                        // Use direct browser navigation for more reliable routing
+                        window.location.href = `/catalog/${hoveredCategory.toLowerCase().replace(/\s+/g, '-')}`;
+                      }}
+                    >
+                      View all {hoveredCategory}
+                    </a>
+                  </div>
+                  <div className="flex flex-col gap-6 flex-1">
+                    <h3 className="text-lg font-medium text-gray-900">Shop by Brand</h3>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                      {/* Mock brand items */}
+                      {["Apple", "Samsung", "Google", "OnePlus", "Xiaomi", "Nothing"].map((item, index) => (
+                        <a
+                          key={index}
+                          href={`/catalog?brand=${item.toLowerCase()}`}
+                          className="text-gray-700 hover:text-primarymain text-sm py-1 block"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            console.log(`[DEBUG] Brand clicked: ${item}, navigating to: /catalog?brand=${item.toLowerCase()}`);
+                            // Close the categories dropdown
+                            setShowCategories(false);
+                            // Use direct browser navigation for more reliable routing
+                            window.location.href = `/catalog?brand=${item.toLowerCase()}`;
+                          }}
+                        >
+                          {item}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-4 w-[200px]">
+                    <div className="rounded-lg overflow-hidden">
+                      <img
+                        className="w-full h-auto"
+                        alt="Promo"
+                        src="/promo-image.jpg"
+                      />
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-sm font-medium text-gray-900">New Arrivals</h4>
+                      <p className="text-xs text-gray-500">Check out the latest products</p>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
 
           {/* Navigation links */}
-          <NavigationMenu className={`${!showHeroSection ? 'ml-0' : 'ml-0 flex-1'} hidden md:block`}>
-            <NavigationMenuList className="flex gap-1">
+          <NavigationMenu className="hidden sm:flex">
+            <NavigationMenuList>
               {navLinks.map((link, index) => (
                 <NavigationMenuItem key={index}>
-                  <NavigationMenuLink className="px-5 py-3 text-white-80 font-navigation-nav-link-regular">
-                    {link}
-                  </NavigationMenuLink>
+                  <a
+                    href={link.path}
+                    className="px-5 py-3 text-white-80 font-navigation-nav-link-regular"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      console.log(`[DEBUG] Navigation link clicked: ${link.label}, navigating to: ${link.path}`);
+                      // Use direct browser navigation for more reliable routing
+                      window.location.href = link.path;
+                    }}
+                  >
+                    {link.label}
+                  </a>
                 </NavigationMenuItem>
               ))}
             </NavigationMenuList>
           </NavigationMenu>
-
-          {/* Language and currency selectors */}
-          <div className="hidden md:flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span className="text-white-80 font-navigation-nav-link-small">
-                Eng
-              </span>
-              <ChevronDownIcon className="w-3.5 h-3.5 text-white-80" />
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-white-80 font-navigation-nav-link-small">
-                USD ($)
-              </span>
-              <ChevronDownIcon className="w-3.5 h-3.5 text-white-80" />
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Hero section with categories sidebar and slider */}
-      {showHeroSection && (
-        <div className="w-full max-w-[1296px] relative flex">
-          {/* Removed: Categories sidebar - desktop only */}
-          {/* Hero Slider */}
-          <div className="flex-1 relative overflow-hidden rounded-lg ml-0 md:ml-6 mr-4 md:mr-0 my-4 md:my-6 h-[400px]">
-            <div 
-              className="flex transition-transform duration-500 ease-in-out h-full"
-              style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-            >
-              {heroSlides.map((slide) => (
-                <div 
-                  key={slide.id} 
-                  className={`flex-shrink-0 w-full h-full ${slide.bgColor} flex flex-col md:flex-row items-center justify-between px-8 md:px-16 py-8 relative`}
+      {/* Hero section */}
+      {showHeroSection && heroSlides.length > 0 && (
+        <div className="w-full bg-white-100">
+          <div className="w-full max-w-[1296px] mx-auto px-4 sm:px-6 py-8">
+            <div className="relative">
+              {heroSlides.map((slide, index) => (
+                <div
+                  key={slide.id}
+                  className={`${
+                    index === currentSlide ? "block" : "hidden"
+                  } flex flex-col md:flex-row items-center gap-8`}
                 >
-                  <div className="z-10 md:max-w-[50%] text-center md:text-left mb-8 md:mb-0">
-                    <p className="text-gray-600 mb-2">{slide.subtitle}</p>
-                    <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">{slide.title}</h2>
-                    <Button 
-                      className="bg-primarymain hover:bg-primarymain/90 text-white px-8 py-3 rounded-full"
-                      asChild
-                    >
-                      <a href={slide.buttonLink}>{slide.buttonText}</a>
-                    </Button>
+                  <div className="flex-1 flex flex-col gap-6">
+                    <h1 className="text-4xl sm:text-5xl font-bold text-gray-900">
+                      {slide.title}
+                    </h1>
+                    <p className="text-xl text-gray-700">{slide.subtitle}</p>
+                    <Button className="w-fit">{slide.button_text}</Button>
                   </div>
-                  <div className="z-10 flex-shrink-0">
-                    <img 
-                      src={slide.image} 
+                  <div className="flex-1 flex justify-center">
+                    <img
+                      className="max-w-full h-auto"
                       alt={slide.title}
-                      className="h-[250px] md:h-[350px] object-contain"
+                      src={slide.image}
                     />
                   </div>
                 </div>
               ))}
-            </div>
-            {/* Navigation arrows */}
-            <button 
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md z-20"
-              onClick={prevSlide}
-            >
-              <ChevronLeftIcon className="w-5 h-5" />
-            </button>
-            <button 
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md z-20"
-              onClick={nextSlide}
-            >
-              <ChevronRightIcon className="w-5 h-5" />
-            </button>
-            {/* Dots indicator */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
-              {heroSlides.map((_, index) => (
-                <button
-                  key={index}
-                  className={`w-2 h-2 rounded-full ${currentSlide === index ? 'bg-primarymain' : 'bg-gray-300'}`}
-                  onClick={() => setCurrentSlide(index)}
-                />
-              ))}
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute top-1/2 -translate-y-1/2 left-4 rounded-full bg-white-100"
+                onClick={prevSlide}
+              >
+                <ChevronLeftIcon className="w-6 h-6" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute top-1/2 -translate-y-1/2 right-4 rounded-full bg-white-100"
+                onClick={nextSlide}
+              >
+                <ChevronRightIcon className="w-6 h-6" />
+              </Button>
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                {heroSlides.map((_, index) => (
+                  <button
+                    key={index}
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      index === currentSlide
+                        ? "bg-primarymain"
+                        : "bg-gray-300"
+                    }`}
+                    onClick={() => setCurrentSlide(index)}
+                  ></button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

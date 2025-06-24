@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ElectronicsStore } from "./screens/ElectronicsStore/ElectronicsStore";
 import { ShopCategories } from "./screens/ShopCategories/ShopCategories";
 import { ShopCatalog } from "./screens/ShopCatalog/ShopCatalog";
@@ -27,15 +27,19 @@ import { TrackOrderLookup } from "./screens/OrderTracking/TrackOrderLookup";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <BrowserRouter>
       <AuthProvider>
       <CartProvider>
         <Routes>
           <Route path="/" element={<ElectronicsStore />} />
           <Route path="/categories" element={<ShopCategories />} />
-          <Route path="/category/:slug" element={<ShopCatalog />} />
+          <Route path="/category/:slug" element={
+            <ShopCatalog />
+          } />
           <Route path="/catalog" element={<ShopCatalog />} />
-          <Route path="/catalog/:slug" element={<ShopCatalog />} />
+          <Route path="/catalog/:slug" element={
+            <ShopCatalog />
+          } />
           
           {/* Promotional Category Pages */}
           <Route path="/best-sellers" element={<BestSellers />} />

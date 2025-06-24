@@ -19,6 +19,7 @@ from .serializers import (
 )
 from .permissions import IsAdminOrOwnerReadOnly, EMIPermission
 from notifications.services import SMSService
+from payments.services import SSLCommerzClient
 from products.models import Product
 import logging
 
@@ -65,19 +66,28 @@ class EMIPlanViewSet(viewsets.ReadOnlyModelViewSet):
     
     @action(detail=False, methods=['get'])
     def available_banks(self, request):
-        """Get list of available banks for EMI"""
-        banks = [
-            {"code": "DBBL", "name": "Dutch-Bangla Bank", "interest_rate": 12.5},
-            {"code": "EBLC", "name": "Eastern Bank", "interest_rate": 13.0},
-            {"code": "BCBL", "name": "Bangladesh Commerce Bank", "interest_rate": 11.5},
-            {"code": "BBL", "name": "BRAC Bank", "interest_rate": 12.0},
-            {"code": "ABBL", "name": "AB Bank", "interest_rate": 13.5},
-            {"code": "MTBL", "name": "Mutual Trust Bank", "interest_rate": 12.0},
-            {"code": "SCB", "name": "Standard Chartered Bank", "interest_rate": 11.0},
-            {"code": "CITI", "name": "Citibank", "interest_rate": 10.5},
-            {"code": "EBL", "name": "Eastern Bank Limited", "interest_rate": 12.5},
-            {"code": "HSBC", "name": "HSBC Bank", "interest_rate": 11.5}
-        ]
+        """Get list of available banks for EMI from SSLCOMMERZ API"""
+        # Create SSLCOMMERZ client
+        client = SSLCommerzClient()
+        
+        # Fetch banks from SSLCOMMERZ API
+        banks = client.get_available_banks()
+        
+        # If API call fails, use fallback data
+        if not banks:
+            logger.warning("Failed to fetch banks from SSLCOMMERZ API, using fallback data")
+            banks = [
+                {"code": "DBBL", "name": "Dutch-Bangla Bank", "interest_rate": 12.5},
+                {"code": "EBLC", "name": "Eastern Bank", "interest_rate": 13.0},
+                {"code": "BCBL", "name": "Bangladesh Commerce Bank", "interest_rate": 11.5},
+                {"code": "BBL", "name": "BRAC Bank", "interest_rate": 12.0},
+                {"code": "ABBL", "name": "AB Bank", "interest_rate": 13.5},
+                {"code": "MTBL", "name": "Mutual Trust Bank", "interest_rate": 12.0},
+                {"code": "SCB", "name": "Standard Chartered Bank", "interest_rate": 11.0},
+                {"code": "CITI", "name": "Citibank", "interest_rate": 10.5},
+                {"code": "EBL", "name": "Eastern Bank Limited", "interest_rate": 12.5},
+                {"code": "HSBC", "name": "HSBC Bank", "interest_rate": 11.5}
+            ]
         
         return Response({
             'status': 'success',
@@ -110,44 +120,63 @@ class EMIPlanViewSet(viewsets.ReadOnlyModelViewSet):
             down_payment = price * (plan.down_payment_percentage / 100)
             financed_amount = price - down_payment
             
-            # Get interest rate (from bank if provided, otherwise use plan rate)
-            interest_rate = plan.interest_rate
-            if bank_code:
-                # This would typically come from a bank configuration
-                bank_rates = {
-                    'DBBL': 12.5, 'EBLC': 13.0, 'BCBL': 11.5, 'BBL': 12.0,
-                    'ABBL': 13.5, 'MTBL': 12.0, 'SCB': 11.0, 'CITI': 10.5,
-                    'EBL': 12.5, 'HSBC': 11.5
-                }
-                interest_rate = bank_rates.get(bank_code, plan.interest_rate)
-            
-            # Calculate interest and monthly installment
-            monthly_interest_rate = interest_rate / 100 / 12
-            if monthly_interest_rate > 0:
-                monthly_installment = financed_amount * (
-                    monthly_interest_rate * (1 + monthly_interest_rate) ** plan.duration_months
-                ) / ((1 + monthly_interest_rate) ** plan.duration_months - 1)
+            # Try getting EMI details from SSLCOMMERZ API if this is an SSLCOMMERZ EMI plan
+            emi_details = None
+            if plan.is_sslcommerz_emi and bank_code:
+                client = SSLCommerzClient()
+                emi_details = client.get_emi_details(bank_code, float(price), plan.duration_months)
+
+            # Use API details if available, otherwise calculate using our formula
+            if emi_details:
+                logger.info(f"Using EMI details from SSLCOMMERZ API for bank {bank_code}")
+                interest_rate = emi_details['interest_rate']
+                monthly_installment = emi_details['monthly_payment']
+                total_payment = emi_details['total_payment']
+                total_interest = total_payment - financed_amount
+                bank_processing_fee = emi_details.get('bank_processing_fee', 0)
             else:
-                monthly_installment = financed_amount / plan.duration_months
-            
-            total_payment = monthly_installment * plan.duration_months
-            total_interest = total_payment - financed_amount
+                # Fallback to local calculation
+                # Get interest rate (from bank if provided, otherwise use plan rate)
+                interest_rate = plan.interest_rate
+                if bank_code:
+                    # This would typically come from a bank configuration
+                    bank_rates = {
+                        'DBBL': 12.5, 'EBLC': 13.0, 'BCBL': 11.5, 'BBL': 12.0,
+                        'ABBL': 13.5, 'MTBL': 12.0, 'SCB': 11.0, 'CITI': 10.5,
+                        'EBL': 12.5, 'HSBC': 11.5
+                    }
+                    interest_rate = bank_rates.get(bank_code, plan.interest_rate)
+                
+                # Calculate interest and monthly installment
+                monthly_interest_rate = interest_rate / 100 / 12
+                if monthly_interest_rate > 0:
+                    monthly_installment = financed_amount * (
+                        monthly_interest_rate * (1 + monthly_interest_rate) ** plan.duration_months
+                    ) / ((1 + monthly_interest_rate) ** plan.duration_months - 1)
+                else:
+                    monthly_installment = financed_amount / plan.duration_months
+                
+                total_payment = monthly_installment * plan.duration_months
+                total_interest = total_payment - financed_amount
+                bank_processing_fee = 0
             
             return Response({
                 'status': 'success',
                 'details': {
-                    'plan_name': plan.plan_name,
+                    'plan_name': plan.name,  # Changed from plan_name to name to match model field
                     'duration_months': plan.duration_months,
                     'product_price': float(price),
                     'down_payment': float(down_payment),
                     'down_payment_percentage': plan.down_payment_percentage,
                     'financed_amount': float(financed_amount),
-                    'interest_rate': interest_rate,
+                    'interest_rate': float(interest_rate),
                     'monthly_installment': float(monthly_installment),
                     'total_payment': float(total_payment),
                     'total_interest': float(total_interest),
                     'total_payable': float(price + total_interest),
-                    'bank_code': bank_code
+                    'bank_code': bank_code,
+                    'bank_processing_fee': float(bank_processing_fee),
+                    'is_live_data': emi_details is not None  # Flag to indicate if data came from API
                 }
             })
             

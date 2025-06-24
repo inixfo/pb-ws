@@ -328,6 +328,7 @@ export const cartService = {
       emiSelected?: boolean;
       emiPeriod?: number; // Duration in months
       emiPlan?: number;   // Plan ID
+      emiBank?: string;   // Bank code for SSLCOMMERZ
       shippingMethod?: string;
     } = {}
   ) => {
@@ -351,6 +352,10 @@ export const cartService = {
       if (options.emiSelected) {
         payload.emi_plan_id = options.emiPlan; // This is the Plan ID
         payload.emi_period = options.emiPeriod;   // This is the Duration in months
+        
+        if (options.emiBank) {
+          payload.emi_bank = options.emiBank;  // Add bank code for SSLCOMMERZ
+        }
       } else {
         // Explicitly set to null or undefined if not selected, if backend prefers that over omission
         // Depending on backend DRF serializer settings (allow_null=True vs. required=False)
@@ -358,6 +363,7 @@ export const cartService = {
         // If backend requires them as null, uncomment below:
         // payload.emi_plan_id = null;
         // payload.emi_period = null;
+        // payload.emi_bank = null;
       }
 
       const response = await api.post('/orders/cart/add_item/', payload);
@@ -818,6 +824,34 @@ export const emiService = {
     } catch (error) {
       return handleError(error);
     }
+  },
+
+  // Get available EMI banks from SSLCOMMERZ
+  getAvailableBanks: async () => {
+    try {
+      const response = await api.get('/emi/plans/available_banks/');
+      return response.data.banks;
+    } catch (error) {
+      console.error('Error fetching available banks:', error);
+      return [];
+    }
+  },
+
+  // Calculate EMI for a specific bank and plan
+  calculateEMI: async (planId: number, productPrice: number, bankCode: string) => {
+    try {
+      const response = await api.get(`/emi/plans/calculate_emi/`, { 
+        params: { 
+          plan_id: planId,
+          product_price: productPrice,
+          bank_code: bankCode
+        } 
+      });
+      return response.data.details;
+    } catch (error) {
+      console.error('Error calculating EMI:', error);
+      return null;
+    }
   }
 };
 
@@ -831,7 +865,16 @@ export const promotionsService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching header promo:', error);
-      return null; // Return null for silent failure
+      // Return default header promo to prevent UI errors
+      return {
+        id: 1,
+        title: "Welcome to Phone Bay",
+        subtitle: "",
+        icon: "",
+        bg_color: "#4F46E5",
+        is_active: true,
+        priority: 1
+      };
     }
   },
 
@@ -851,11 +894,32 @@ export const promotionsService = {
         return response.data;
       }
       
-      // If we have no valid data, return empty array
-      return [];
+      // If we have no valid data, return default slides
+      return [{
+        id: 1,
+        title: "Headphones ProMax",
+        subtitle: "Feel the real quality sound",
+        image: "/image.png",
+        bg_color: "#EEF2FF",
+        button_text: "Shop now",
+        button_link: "/catalog",
+        is_active: true,
+        priority: 1
+      }];
     } catch (error) {
       console.error('Error fetching hero slides:', error);
-      return []; // Return empty array for silent failure
+      // Return default slides
+      return [{
+        id: 1,
+        title: "Headphones ProMax",
+        subtitle: "Feel the real quality sound",
+        image: "/image.png",
+        bg_color: "#EEF2FF",
+        button_text: "Shop now",
+        button_link: "/catalog",
+        is_active: true,
+        priority: 1
+      }];
     }
   },
 
@@ -917,7 +981,20 @@ export const contactService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching contact info:', error);
-      return null; // Return null for silent failure
+      // Return default contact info to prevent UI errors
+      return {
+        id: 1,
+        company_name: "Phone Bay",
+        address: "123 Tech Street, Digital City, 10001",
+        email: "support@phonebay.com",
+        phone: "+1 (555) 123-4567",
+        working_hours: "Mon-Fri: 9:00 AM - 6:00 PM",
+        facebook_url: "https://facebook.com/phonebay",
+        twitter_url: "https://twitter.com/phonebay",
+        instagram_url: "https://instagram.com/phonebay",
+        whatsapp_number: "+1 (555) 987-6543",
+        is_active: true
+      };
     }
   },
 

@@ -8,7 +8,7 @@ const cartService = {
    */
   getCart: async () => {
     try {
-      const response = await fetch(`${API_URL}/api/orders/cart/my_cart/`, {
+      const response = await fetch(`${API_URL}/orders/cart/my_cart/`, {
         headers: getAuthHeaders(),
       });
       
@@ -37,7 +37,7 @@ const cartService = {
    */
   addItem: async (productId, quantity, options = {}) => {
     try {
-      const response = await fetch(`${API_URL}/api/orders/cart/add_item/`, {
+      const response = await fetch(`${API_URL}/orders/cart/add_item/`, {
         method: 'POST',
         headers: {
           ...getAuthHeaders(),
@@ -79,7 +79,7 @@ const cartService = {
    */
   updateItem: async (itemId, quantity, options = {}) => {
     try {
-      const response = await fetch(`${API_URL}/api/orders/cart/update_item/`, {
+      const response = await fetch(`${API_URL}/orders/cart/update_item/`, {
         method: 'POST',
         headers: {
           ...getAuthHeaders(),
@@ -114,7 +114,7 @@ const cartService = {
    */
   removeItem: async (itemId) => {
     try {
-      const response = await fetch(`${API_URL}/api/orders/cart/remove_item/`, {
+      const response = await fetch(`${API_URL}/orders/cart/remove_item/`, {
         method: 'POST',
         headers: {
           ...getAuthHeaders(),

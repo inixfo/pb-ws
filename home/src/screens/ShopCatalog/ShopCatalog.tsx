@@ -12,7 +12,7 @@ import { Select } from "../../components/ui/Select";
 import { Separator } from "../../components/ui/separator";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Product, Category, Brand } from "../../types/products";
-import productService, { FALLBACK_PRODUCTS } from "../../services/api/productService";
+import { productService, FALLBACK_PRODUCTS } from "../../services/api/productService";
 import categoryService from "../../services/api/categoryService";
 import brandService from "../../services/api/brandService";
 import searchService from "../../services/api/searchService";
@@ -24,12 +24,13 @@ const Pagination = PaginationComponent;
 const CURRENCY_SYMBOL = '৳';
 
 export const ShopCatalog = (): JSX.Element => {
-  // Get category slug from URL params
   const { slug } = useParams<{ slug?: string }>();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const searchQuery = queryParams.get('search');
   
+  console.log('[ShopCatalog] COMPONENT MOUNTED. Slug from useParams:', slug, 'Search query:', searchQuery, 'Full pathname:', location.pathname);
+
   // Pagination and sort
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(5);
@@ -100,11 +101,32 @@ export const ShopCatalog = (): JSX.Element => {
 
   // Initial data fetching
   useEffect(() => {
+    console.log('[ShopCatalog] Initial mount effect running. Verifying parameters:');
+    console.log('- URL slug parameter:', slug);
+    console.log('- Location pathname:', location.pathname);
+    console.log('- Search query:', searchQuery);
+    
+    // Check if we're using the correct route pattern
+    if (location.pathname.startsWith('/catalog/') && slug) {
+      console.log('[ShopCatalog] Detected correct /catalog/:slug route pattern');
+    } else if (location.pathname.startsWith('/category/') && slug) {
+      console.log('[ShopCatalog] Detected /category/:slug route pattern');
+    } else if (location.pathname === '/catalog' && !slug) {
+      console.log('[ShopCatalog] Detected base /catalog route (no slug)');
+    } else {
+      console.warn('[ShopCatalog] Unknown route pattern:', location.pathname);
+    }
+    
+    // Always fetch categories and brands first
     fetchCategoriesWithCount();
     fetchBrands();
+    
+    // Fetch products immediately without waiting for filters
+    fetchProducts();
   }, []);
 
   useEffect(() => {
+    console.log('[ShopCatalog useEffect fetchFilterOptions trigger] Slug:', slug, 'Categories count:', categories.length);
     if (categories.length > 0 || slug) {
       fetchFilterOptions();
     }
@@ -123,8 +145,8 @@ export const ShopCatalog = (): JSX.Element => {
 
   // Fetch products when filters change
   useEffect(() => {
-    // Add a small delay to avoid multiple calls when multiple filters change at once
     const debounceTimer = setTimeout(() => {
+      console.log('[ShopCatalog useEffect fetchProducts trigger] Calling fetchProducts. Slug:', slug);
       fetchProducts();
     }, 300);
     
@@ -133,36 +155,31 @@ export const ShopCatalog = (): JSX.Element => {
 
   // Set page title and selected category based on slug
   useEffect(() => {
+    console.log('[ShopCatalog useEffect slug,categories,searchQuery] Running for page title. Slug:', slug, 'Categories loaded:', categories.length > 0, 'Search query:', searchQuery);
     if (slug) {
-      // Find the category that matches the slug
       const category = categories.find(cat => cat.slug === slug);
       if (category) {
+        console.log('[ShopCatalog useEffect slug,categories,searchQuery] Category found for slug:', category);
         setPageTitle(category.name);
         setSelectedCategories([category.name]);
-        
-        // Add category to filter tags if not already there
         if (!filterTags.includes(category.name)) {
           setFilterTags(prev => [...prev, category.name]);
         }
       } else {
-        // Handle subcategory slugs
+        console.log('[ShopCatalog useEffect slug,categories,searchQuery] Category NOT found for slug:', slug, '. Will format as page title.');
         const formattedSlug = slug.replace(/-/g, ' ');
         const capitalizedSlug = formattedSlug
           .split(' ')
           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
           .join(' ');
         setPageTitle(capitalizedSlug);
-        
-        // Add to filter tags if not already there
         if (!filterTags.includes(capitalizedSlug)) {
           setFilterTags(prev => [...prev, capitalizedSlug]);
         }
       }
     } else if (searchQuery) {
-      // If there's a search query but no category, set a search-specific title
+      console.log('[ShopCatalog useEffect slug,categories,searchQuery] Handling searchQuery for page title:', searchQuery);
       setPageTitle(`Search Results: ${searchQuery}`);
-      
-      // Add search query to filter tags if not already there
       const searchTag = `Search: ${searchQuery}`;
       if (!filterTags.includes(searchTag)) {
         setFilterTags(prev => [...prev, searchTag]);
@@ -423,166 +440,166 @@ export const ShopCatalog = (): JSX.Element => {
 
   // Fetch products based on filters
   const fetchProducts = async () => {
+    console.log('[ShopCatalog fetchProducts START] Current slug:', slug, 'Page:', currentPage, 'Sort:', sort, 'Brands:', selectedBrands, 'Colors:', selectedColors, 'Custom:', customFilterValues, 'Price:', minPrice, maxPrice, 'Search:', searchQuery);
+    setLoading(true);
+    setError(null);
+    setDidYouMean(null);
+    setSearchId(null);
+
     try {
-      setLoading(true);
-      
-      // Build query parameters
-      const params: Record<string, any> = {
+      // Only include filters that are actually selected
+      const baseParams: any = {
         page: currentPage,
-        page_size: 12, // Ensure we're requesting a reasonable number of products
+        sort_by: sort
       };
       
-      // If there's a search query, use advanced search endpoint
-      if (searchQuery) {
-        try {
-          const advancedSearchParams = {
-            q: searchQuery,
-            page: currentPage,
-            page_size: 12,
-            category: slug || undefined
-          };
-          
-          // Use advanced search
-          const searchResults = await searchService.search(searchQuery, advancedSearchParams);
-          
-          if (searchResults) {
-            console.log(`Advanced search results:`, searchResults);
-            
-            // Check for "did you mean" suggestion
-            if (searchResults.did_you_mean && searchResults.results.length === 0) {
-              setDidYouMean(searchResults.did_you_mean);
-            } else {
-              setDidYouMean(null);
-            }
-            
-            // Store search ID if available for analytics tracking
-            if (searchResults.search_id) {
-              setSearchId(searchResults.search_id);
-            }
-            
-            // Set products and pagination info
-            setProducts(searchResults.results || []);
-            setTotalProducts(searchResults.count || searchResults.results.length);
-            setTotalPages(Math.ceil((searchResults.count || searchResults.results.length) / 12));
-            
-            return; // Exit early since we've handled the search results
-          }
-        } catch (err) {
-          console.error('Advanced search failed, falling back to regular API:', err);
-          // Continue with regular API if advanced search fails
-        }
-      }
-      
-      // Original code for non-search queries or fallback
-      // Add search parameter if provided
-      if (searchQuery) {
-        params.search = searchQuery;
-      }
-      
-      // Add category filter - try both categoryId and slug for better compatibility
-      if (slug) {
-        // First try to find the matching category in our loaded categories
-        const category = categories.find(cat => cat.slug === slug);
-        if (category) {
-          // If we have the category object, use its ID (more reliable)
-          params.category = category.id;
-          console.log(`Using category ID ${category.id} for ${slug}`);
-        }
-        
-        // Always send the category_slug parameter to ensure it works even if ID-based filtering fails
-        params.category_slug = slug;
-        console.log(`Using category_slug ${slug}`);
-      }
-      
-      // Add brand filter
+      // Only add brand filter if brands are selected
       if (selectedBrands.length > 0) {
-        const brandSlugs = brands
-          .filter(brand => selectedBrands.includes(brand.name))
-          .map(brand => brand.slug);
-        
-        if (brandSlugs.length > 0) {
-          params.brand__slug__in = brandSlugs.join(',');
-        }
+        baseParams.brand = selectedBrands.join(',');
       }
       
-      // Add color filter
+      // Only add price filters if they're different from the default range
+      if (minPrice && minPrice !== '0' && minPrice !== priceRange.min.toString()) {
+        baseParams.base_price__gte = minPrice;
+      }
+      
+      if (maxPrice && maxPrice !== priceRange.max.toString()) {
+        baseParams.base_price__lte = maxPrice;
+      }
+      
+      // Only add custom filters if they're selected
+      if (Object.keys(customFilterValues).length > 0) {
+        Object.entries(customFilterValues).forEach(([key, value]) => {
+          if (value.length > 0) {
+            baseParams[`specifications__${key.toLowerCase()}__in`] = value.join(',');
+          }
+        });
+      }
+      
+      // Only add color filter if colors are selected
       if (selectedColors.length > 0) {
-        // For color filtering, we need to use a custom filter for the specifications field
-        const colorParams = selectedColors.join(',');
-        params['specifications__color__in'] = colorParams;
+        baseParams['specifications__color__in'] = selectedColors.join(',');
       }
+
+      console.log('[ShopCatalog fetchProducts] Final params:', baseParams);
       
-      // Add custom filters
-      Object.entries(customFilterValues).forEach(([key, values]) => {
-        if (values.length > 0) {
-          // Use the specifications lookup for custom filters
-          const paramKey = `specifications__${key.toLowerCase()}__in`;
-          params[paramKey] = values.join(',');
+      let data;
+      let usedFallback = false;
+      
+      const fetchWithParams = async (params: any) => {
+        if (searchQuery) {
+          console.log('[ShopCatalog fetchProducts] Performing search with query:', searchQuery, 'and params:', params);
+          return await searchService.search(searchQuery, params);
+        } else if (slug) {
+          const categoryParams = { ...params, category_slug: slug };
+          console.log('[ShopCatalog fetchProducts] Fetching by category slug:', slug, 'and params:', categoryParams);
+          return await productService.getAll(categoryParams);
+        } else {
+          console.log('[ShopCatalog fetchProducts] Fetching all products with params:', params);
+          return await productService.getAll(params);
         }
-      });
+      };
       
-      // Add price range filter - ensure values are numeric
-      let minPriceValue = minPrice === '' ? 0 : parseFloat(minPrice);
-      let maxPriceValue = maxPrice === '' ? 
-                          (priceRange.max || 10000) : 
-                          parseFloat(maxPrice);
-      
-      // Validate price values
-      if (isNaN(minPriceValue)) minPriceValue = 0;
-      if (isNaN(maxPriceValue)) maxPriceValue = priceRange.max || 10000;
-      
-      // Ensure max >= min
-      if (maxPriceValue < minPriceValue) {
-        // Swap values if max < min
-        [minPriceValue, maxPriceValue] = [maxPriceValue, minPriceValue];
+      // Make direct API call first for better reliability
+      try {
+        console.log('[ShopCatalog fetchProducts] Making direct API call first');
+        const axios = (await import('axios')).default;
+        
+        // Determine the endpoint based on whether we have a category slug
+        const endpoint = slug 
+          ? `http://52.62.201.84/api/products/products/?category_slug=${slug}&page=${currentPage}`
+          : `http://52.62.201.84/api/products/products/?page=${currentPage}`;
+        
+        console.log(`[ShopCatalog fetchProducts] Direct API call to ${endpoint}`);
+        const directResponse = await axios.get(endpoint);
+        
+        if (directResponse.data && 
+            ((directResponse.data.results && Array.isArray(directResponse.data.results) && directResponse.data.results.length > 0) || 
+             (Array.isArray(directResponse.data) && directResponse.data.length > 0))) {
+          
+          console.log(`[ShopCatalog fetchProducts] Direct API call succeeded with ${directResponse.data.results ? directResponse.data.results.length : directResponse.data.length} products`);
+          
+          // Format the response to match expected structure
+          if (Array.isArray(directResponse.data)) {
+            data = {
+              results: directResponse.data,
+              count: directResponse.data.length,
+              next: null,
+              previous: null
+            };
+          } else {
+            data = directResponse.data;
+          }
+        } else {
+          console.warn('[ShopCatalog fetchProducts] Direct API call returned no results, falling back to service');
+          // Fall back to using the service
+          data = await fetchWithParams(baseParams);
+        }
+      } catch (directError) {
+        console.error('[ShopCatalog fetchProducts] Direct API call failed:', directError);
+        // Fall back to using the service
+        data = await fetchWithParams(baseParams);
       }
       
-      // Add min_price parameter if it's not 0 (the default)
-      if (minPriceValue > 0) {
-        params.min_price = minPriceValue;
+      // Handle search-specific properties
+      if (searchQuery && data) {
+        if (data.did_you_mean) {
+          setDidYouMean(data.did_you_mean);
+        }
+        if (data.search_id) {
+          setSearchId(data.search_id);
+        }
       }
       
-      // Always add max_price parameter
-      params.max_price = maxPriceValue;
-      
-      console.log('Fetching products with params:', params);
-      
-      // Add sort parameter
-      if (sort === 'price_low') {
-        params.ordering = 'base_price';
-      } else if (sort === 'price_high') {
-        params.ordering = '-base_price';
-      } else if (sort === 'new') {
-        params.ordering = '-created_at';
-      } else if (sort === 'popular') {
-        params.ordering = '-review_count';
+      // Check if we got valid results
+      if (!data || !data.results || !Array.isArray(data.results) || data.results.length === 0) {
+        console.warn('[ShopCatalog fetchProducts] No results with filters, trying without filters');
+        
+        // Try again with minimal params (just page)
+        const minimalParams: Record<string, any> = {
+          page: currentPage
+        };
+        
+        // If we have a category slug, keep that
+        if (slug) {
+          minimalParams['category_slug'] = slug;
+        }
+        
+        data = await fetchWithParams(minimalParams);
+        usedFallback = true;
+        console.log('[ShopCatalog fetchProducts] Fallback API response:', data);
       }
-      
-      // Attempt to fetch real products
-      const data = await productService.getAll(params);
-      
-      if (data && data.results && data.results.length > 0) {
-        console.log(`Successfully fetched ${data.results.length} products from API`);
+
+      if (data && data.results && Array.isArray(data.results) && data.results.length > 0) {
+        console.log('[ShopCatalog fetchProducts SUCCESS] Products data structure:', {
+          resultsLength: data.results.length,
+          totalPages: data.total_pages || data.num_pages || 1,
+          count: data.count || 0,
+          sampleProduct: data.results.length > 0 ? data.results[0] : null
+        });
+        
         setProducts(data.results);
-        setTotalProducts(data.count || data.results.length);
-        setTotalPages(Math.ceil((data.count || data.results.length) / 12));
+        setTotalPages(data.total_pages || data.num_pages || 1);
+        setTotalProducts(data.count || 0);
+        
+        if (usedFallback) {
+          setError("Some filters were ignored to show you products.");
+        }
+        
+        console.log('[ShopCatalog fetchProducts SUCCESS] Products loaded:', data.results.length, 'Total pages:', data.total_pages || data.num_pages);
       } else {
-        console.error('No products found in API response');
-        // Only if API returns no products, we use fallback
+        console.warn('[ShopCatalog fetchProducts WARN] No results in data or empty array, using fallback.', data);
         setProducts(FALLBACK_PRODUCTS);
+        setTotalPages(1);
         setTotalProducts(FALLBACK_PRODUCTS.length);
-        setTotalPages(Math.ceil(FALLBACK_PRODUCTS.length / 12));
+        setError("Couldn't load products from the server. Showing sample products instead.");
       }
-      
-      setError(null);
-    } catch (err) {
-      console.error('Failed to load products:', err);
-      setError('Failed to load products');
-      
-      // Only use fallback products if API call fails completely
+    } catch (err: any) {
+      console.error('[ShopCatalog fetchProducts ERROR]', err.response?.data || err.message || err);
+      setError(err.message || "Failed to fetch products.");
       setProducts(FALLBACK_PRODUCTS);
+      setTotalPages(1);
       setTotalProducts(FALLBACK_PRODUCTS.length);
-      setTotalPages(Math.ceil(FALLBACK_PRODUCTS.length / 12));
     } finally {
       setLoading(false);
     }
@@ -636,86 +653,38 @@ export const ShopCatalog = (): JSX.Element => {
 
   // Fetch filter options based on category
   const fetchFilterOptions = async () => {
+    console.log('[ShopCatalog fetchFilterOptions START] For slug:', slug);
     try {
-      let categoryId: number | undefined;
-      
-      if (slug) {
-        // Find the category that matches the slug
-        const category = categories.find(cat => cat.slug === slug);
-        if (category) {
-          categoryId = category.id;
-        }
-      }
-      
-      // Pass both categoryId and slug to handle all possible backend implementations
-      const filterOptions = await productService.getFilterOptions(categoryId, slug);
-      
-      console.log('Received filter options:', filterOptions);
-      
-      // Update filter states
-      if (filterOptions) {
-        // Set available colors
-        if (filterOptions.colors && filterOptions.colors.length > 0) {
-          const colorOptions = filterOptions.colors.map((color: string) => {
-            let colorCode = "#000000"; // Default black
-            
-            // Map common color names to hex codes
-            switch(color.toLowerCase()) {
-              case 'black': colorCode = "#000000"; break;
-              case 'white': colorCode = "#ffffff"; break;
-              case 'red': colorCode = "#ff0000"; break;
-              case 'green': colorCode = "#00ff00"; break;
-              case 'blue': colorCode = "#0000ff"; break;
-              case 'yellow': colorCode = "#ffff00"; break;
-              case 'purple': colorCode = "#800080"; break;
-              case 'orange': colorCode = "#ffa500"; break;
-              case 'pink': colorCode = "#ffc0cb"; break;
-              case 'gray': case 'grey': colorCode = "#808080"; break;
-              case 'silver': colorCode = "#c0c0c0"; break;
-              case 'gold': colorCode = "#ffd700"; break;
-              default: colorCode = "#000000"; break;
-            }
-            
-            return { name: color, color: colorCode };
-          });
-          
-          setAvailableColors(colorOptions);
+      const categorySlugForApi = slug || (selectedCategories.length > 0 ? categories.find(c => c.name === selectedCategories[0])?.slug : undefined);
+      console.log('[ShopCatalog fetchFilterOptions] Determined categorySlug for API:', categorySlugForApi);
+
+      if (categorySlugForApi) {
+        const data = await productService.getFilterOptions(undefined, categorySlugForApi);
+        console.log('[ShopCatalog fetchFilterOptions] Raw filter data for', categorySlugForApi, ':', data);
+        
+        if (data) {
+          setCustomFields(Array.isArray(data.custom_filters) ? data.custom_filters : 
+                         Array.isArray(data.specifications_options) ? data.specifications_options : []);
+          setAvailableColors(Array.isArray(data.colors) ? data.colors : []);
+          setPriceRange(data.price_range || { min: 0, max: 10000 });
+          console.log('[ShopCatalog fetchFilterOptions SUCCESS] Filters set for slug:', categorySlugForApi);
         } else {
-          setAvailableColors([]);
+          console.warn('[ShopCatalog fetchFilterOptions WARN] No data returned from getFilterOptions for slug:', categorySlugForApi);
+          setCustomFields([]);
+          setAvailableColors(colors); 
+          setPriceRange({ min: 0, max: 10000 }); 
         }
-        
-        // Set price range
-        if (filterOptions.price_range) {
-          console.log('Setting price range from backend:', filterOptions.price_range);
-          setPriceRange(filterOptions.price_range);
-          
-          // Only update min/max price inputs if user hasn't set them already
-          if (!filterTags.some(tag => tag.includes(CURRENCY_SYMBOL))) {
-            setMinPrice(filterOptions.price_range.min.toString());
-            setMaxPrice(filterOptions.price_range.max.toString());
-          }
-        } else {
-          // Set default price range if not provided by backend
-          console.log('Using default price range');
-          setPriceRange({ min: 0, max: 10000 });
-        }
-        
-        // Set brands
-        if (filterOptions.brands && filterOptions.brands.length > 0) {
-          setBrands(filterOptions.brands);
-        }
-        
-        // Set custom filters
-        if (filterOptions.custom_filters) {
-          const fields = Object.entries(filterOptions.custom_filters).map(([name, options]) => ({
-            name,
-            options: options as string[]
-          }));
-          setCustomFields(fields);
-        }
+      } else {
+        console.log('[ShopCatalog fetchFilterOptions] No category slug provided or derivable, not fetching specific filters.');
+        setCustomFields([]);
+        setAvailableColors(colors);
+        setPriceRange({ min: 0, max: 10000 });
       }
-    } catch (error) {
-      console.error('Error fetching filter options:', error);
+    } catch (err: any) {
+      console.error('[ShopCatalog fetchFilterOptions ERROR] For slug:', slug, err.response?.data || err.message || err);
+      setCustomFields([]);
+      setAvailableColors(colors); 
+      setPriceRange({ min: 0, max: 10000 }); 
     }
   };
 
@@ -914,7 +883,7 @@ export const ShopCatalog = (): JSX.Element => {
             )}
             
             {/* Dynamic Custom Filters */}
-            {customFields.map((field, index) => (
+            {Array.isArray(customFields) && customFields.map((field, index) => (
               <div key={index} className="bg-white rounded-xl border border-gray-200 p-5">
                 <h3 className="text-base font-semibold text-gray-900 mb-2">{field.name}</h3>
                 <div className="flex flex-col gap-2">

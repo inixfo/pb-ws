@@ -51,7 +51,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { StarRating } from "../../../../components/ui/StarRating";
 import { Switch } from "../../../../components/ui/switch";
 import { toast } from "react-hot-toast";
-import { cartService, authService } from "../../../../services/api";
+import { cartService, authService, emiService } from "../../../../services/api";
 import CartManager from "../../../../services/CartManager";
 
 // Helper function to map color names to hex codes (can be expanded)
@@ -82,6 +82,9 @@ export const ProductNavbarSection = (): JSX.Element => {
   const [useEmi, setUseEmi] = useState(false);
   const [selectedEmiType, setSelectedEmiType] = useState<'card_emi' | 'cardless_emi'>('card_emi');
   const [selectedEmiPlan, setSelectedEmiPlan] = useState<number | null>(null);
+  const [selectedBank, setSelectedBank] = useState<string | null>(null);
+  const [availableBanks, setAvailableBanks] = useState<any[]>([]);
+  const [emiDetails, setEmiDetails] = useState<any>(null);
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
   const [cartItemCount, setCartItemCount] = useState<number>(0);
   const [showZoomModal, setShowZoomModal] = useState(false);
@@ -281,6 +284,13 @@ export const ProductNavbarSection = (): JSX.Element => {
       toast.error("Please select an EMI plan");
       return;
     }
+    
+    // For Card EMI, make sure a bank is selected
+    if (useEmi && selectedEmiType === 'card_emi' && !selectedBank) {
+      console.log('Card EMI selected but no bank chosen');
+      toast.error("Please select a bank for Card EMI");
+      return;
+    }
 
     // Prepare cart item data
     const productIdToUse = product.id; // Always use the main product ID
@@ -306,7 +316,8 @@ export const ProductNavbarSection = (): JSX.Element => {
       selectedVariation,
       useEmi,
       selectedEmiPlan, // This is the plan ID from state
-      emiPlanDuration: emiSelectionData.durationValue // This is the duration from the found plan
+      emiPlanDuration: emiSelectionData.durationValue, // This is the duration from the found plan
+      selectedBank: useEmi && selectedEmiType === 'card_emi' ? selectedBank : null
     });
 
     const productData = {
@@ -330,6 +341,7 @@ export const ProductNavbarSection = (): JSX.Element => {
           emiSelected: useEmi,
           emiPlan: useEmi ? emiSelectionData.planIdValue : undefined, 
           emiPeriod: useEmi ? emiSelectionData.durationValue : undefined,
+          emiBank: useEmi && selectedEmiType === 'card_emi' && selectedBank ? selectedBank : undefined
         }
       );
       
@@ -368,12 +380,49 @@ export const ProductNavbarSection = (): JSX.Element => {
   };
 
   // Add EMI handlers
+  // Fetch available banks when component mounts
+  useEffect(() => {
+    if (useEmi && selectedEmiType === 'card_emi') {
+      const fetchBanks = async () => {
+        const banks = await emiService.getAvailableBanks();
+        setAvailableBanks(banks || []);
+        
+        // Auto-select first bank if available
+        if (banks && banks.length > 0 && !selectedBank) {
+          setSelectedBank(banks[0].code);
+        }
+      };
+      
+      fetchBanks();
+    }
+  }, [useEmi, selectedEmiType]);
+
+  // Calculate EMI details when bank or plan changes
+  useEffect(() => {
+    if (useEmi && selectedEmiPlan && selectedBank && product) {
+      const calculateEMIDetails = async () => {
+        const price = selectedVariation?.price || product.price;
+        const details = await emiService.calculateEMI(selectedEmiPlan, price, selectedBank);
+        
+        if (details) {
+          setEmiDetails(details);
+        }
+      };
+      
+      calculateEMIDetails();
+    } else {
+      setEmiDetails(null);
+    }
+  }, [selectedEmiPlan, selectedBank, selectedVariation, product, useEmi]);
+
   const handleEmiToggle = (enabled: boolean) => {
     setUseEmi(enabled);
     if (!enabled) {
       // Reset EMI selections when disabled
       setSelectedEmiType('card_emi');
       setSelectedEmiPlan(null);
+      setSelectedBank(null);
+      setEmiDetails(null);
     } else if (product?.emi_plans?.length === 1) {
       // Auto-select if only one plan
       setSelectedEmiPlan(product.emi_plans[0].id);
@@ -383,10 +432,16 @@ export const ProductNavbarSection = (): JSX.Element => {
   const handleEmiTypeSelect = (type: 'card_emi' | 'cardless_emi') => {
     setSelectedEmiType(type);
     setSelectedEmiPlan(null); // Reset plan selection when type changes
+    setSelectedBank(null);
+    setEmiDetails(null);
   };
 
   const handleEmiPlanSelect = (planId: number) => {
     setSelectedEmiPlan(planId);
+  };
+  
+  const handleBankSelect = (bankCode: string) => {
+    setSelectedBank(bankCode);
   };
 
   // Add a function to handle variation selection
@@ -781,27 +836,58 @@ export const ProductNavbarSection = (): JSX.Element => {
                                        (selectedEmiType === 'card_emi' && plan.emi_type === 'normal') || 
                                        (selectedEmiType === 'cardless_emi' && plan.emi_type === 'cardless');
                               }).length > 0 ? (
-                                <select 
-                                  value={selectedEmiPlan || ''}
-                                  onChange={(e) => handleEmiPlanSelect(Number(e.target.value))}
-                                  className="w-full p-2 border border-gray-300 rounded-md mt-2"
-                                >
-                                  <option value="" disabled>Select an EMI Plan</option>
-                                  {product.emi_plans
-                                    .filter(plan => {
-                                      // Match both old and new field names for compatibility
-                                      return (plan.plan_type === selectedEmiType) || 
-                                             (selectedEmiType === 'card_emi' && plan.emi_type === 'normal') || 
-                                             (selectedEmiType === 'cardless_emi' && plan.emi_type === 'cardless');
-                                    })
-                                    .map(plan => (
-                                      <option key={plan.id} value={plan.id}>
-                                        {plan.name || plan.plan_name || `${plan.duration_months} Months EMI`}
-                                        {plan.interest_rate ? ` (${plan.interest_rate}% interest)` : ' (No interest)'}
-                                        {plan.down_payment_percentage ? ` - ${plan.down_payment_percentage}% downpayment` : ''}
-                                      </option>
-                                    ))}
-                                </select>
+                                <>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Select EMI Plan</label>
+                                    <select 
+                                      value={selectedEmiPlan || ''}
+                                      onChange={(e) => handleEmiPlanSelect(Number(e.target.value))}
+                                      className="w-full p-2 border border-gray-300 rounded-md"
+                                    >
+                                      <option value="" disabled>Select an EMI Plan</option>
+                                      {product.emi_plans
+                                        .filter(plan => {
+                                          // Match both old and new field names for compatibility
+                                          return (plan.plan_type === selectedEmiType) || 
+                                                (selectedEmiType === 'card_emi' && plan.emi_type === 'normal') || 
+                                                (selectedEmiType === 'cardless_emi' && plan.emi_type === 'cardless');
+                                        })
+                                        .map(plan => (
+                                          <option key={plan.id} value={plan.id}>
+                                            {plan.name || plan.plan_name || `${plan.duration_months} Months EMI`}
+                                            {plan.interest_rate ? ` (${plan.interest_rate}% interest)` : ' (No interest)'}
+                                            {plan.down_payment_percentage ? ` - ${plan.down_payment_percentage}% downpayment` : ''}
+                                          </option>
+                                        ))}
+                                    </select>
+                                  </div>
+                                  
+                                  {/* Bank Selection for Card EMI */}
+                                  {selectedEmiType === 'card_emi' && selectedEmiPlan && (
+                                    <div className="mt-3">
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Select Bank</label>
+                                      {availableBanks.length > 0 ? (
+                                        <select
+                                          value={selectedBank || ''}
+                                          onChange={(e) => handleBankSelect(e.target.value)}
+                                          className="w-full p-2 border border-gray-300 rounded-md"
+                                        >
+                                          <option value="" disabled>Select a Bank</option>
+                                          {availableBanks.map(bank => (
+                                            <option key={bank.code} value={bank.code}>
+                                              {bank.name} ({bank.interest_rate}% interest)
+                                            </option>
+                                          ))}
+                                        </select>
+                                      ) : (
+                                        <div className="flex items-center space-x-2">
+                                          <Loader2Icon className="w-4 h-4 animate-spin text-gray-500" />
+                                          <span className="text-sm text-gray-500">Loading banks...</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </>
                               ) : (
                                 <p className="text-sm text-gray-500 mt-2">
                                   No {selectedEmiType === 'card_emi' ? 'Card' : 'Cardless'} EMI plans available for this product.
@@ -811,29 +897,79 @@ export const ProductNavbarSection = (): JSX.Element => {
                               {/* Show EMI details if a plan is selected */}
                               {selectedEmiPlan && (
                                 <div className="mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
-                                  <h3 className="font-medium text-sm mb-2">EMI Details</h3>
-                                  {product.emi_plans
-                                    .filter(plan => plan.id === selectedEmiPlan)
-                                    .map(plan => (
-                                      <div key={plan.id} className="text-sm space-y-1">
-                                        <div className="flex justify-between">
-                                          <span>Duration:</span>
-                                          <span className="font-medium">{plan.duration_months} months</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                          <span>Interest Rate:</span>
-                                          <span className="font-medium">{plan.interest_rate}%</span>
-                                        </div>
-                                        {(plan.down_payment_percentage ?? 0) > 0 && (
-                                          <div className="flex justify-between">
-                                            <span>Down Payment:</span>
-                                            <span className="font-medium">{(plan.down_payment_percentage ?? 0)}% (৳{
-                                              Math.round((selectedVariation?.price || product.price) * (plan.down_payment_percentage ?? 0) / 100)
-                                            })</span>
-                                          </div>
-                                        )}
+                                  <h3 className="font-medium text-sm mb-2">
+                                    EMI Details
+                                    {emiDetails?.is_live_data && (
+                                      <span className="ml-2 text-xs text-green-600">(Live data from SSLCOMMERZ)</span>
+                                    )}
+                                  </h3>
+
+                                  {selectedEmiType === 'card_emi' && !selectedBank ? (
+                                    <p className="text-sm text-gray-500">Please select a bank to see EMI details</p>
+                                  ) : emiDetails ? (
+                                    // Show EMI details from API if available
+                                    <div className="text-sm space-y-1">
+                                      <div className="flex justify-between">
+                                        <span>Duration:</span>
+                                        <span className="font-medium">{emiDetails.duration_months} months</span>
                                       </div>
-                                    ))}
+                                      <div className="flex justify-between">
+                                        <span>Interest Rate:</span>
+                                        <span className="font-medium">{emiDetails.interest_rate}%</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span>Monthly Installment:</span>
+                                        <span className="font-medium">৳{Math.round(emiDetails.monthly_installment)}</span>
+                                      </div>
+                                      {emiDetails.down_payment_percentage > 0 && (
+                                        <div className="flex justify-between">
+                                          <span>Down Payment:</span>
+                                          <span className="font-medium">{emiDetails.down_payment_percentage}% (৳{Math.round(emiDetails.down_payment)})</span>
+                                        </div>
+                                      )}
+                                      {emiDetails.bank_processing_fee > 0 && (
+                                        <div className="flex justify-between">
+                                          <span>Bank Processing Fee:</span>
+                                          <span className="font-medium">৳{Math.round(emiDetails.bank_processing_fee)}</span>
+                                        </div>
+                                      )}
+                                      <div className="flex justify-between font-medium border-t pt-1 mt-1">
+                                        <span>Total Payable:</span>
+                                        <span>৳{Math.round(emiDetails.total_payable)}</span>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    // Show calculated EMI details from the plan if API data not available
+                                    product.emi_plans
+                                      .filter(plan => plan.id === selectedEmiPlan)
+                                      .map(plan => (
+                                        <div key={plan.id} className="text-sm space-y-1">
+                                          <div className="flex justify-between">
+                                            <span>Duration:</span>
+                                            <span className="font-medium">{plan.duration_months} months</span>
+                                          </div>
+                                          <div className="flex justify-between">
+                                            <span>Interest Rate:</span>
+                                            <span className="font-medium">{plan.interest_rate}%</span>
+                                          </div>
+                                          {(plan.down_payment_percentage ?? 0) > 0 && (
+                                            <div className="flex justify-between">
+                                              <span>Down Payment:</span>
+                                              <span className="font-medium">{(plan.down_payment_percentage ?? 0)}% (৳{
+                                                (() => {
+                                                  const productPrice = Number(selectedVariation?.price || product.price || 0);
+                                                  const interestRate = Number(plan.interest_rate || 0);
+                                                  const downPaymentPercentage = Number(plan.down_payment_percentage || 0);
+                                                  const interestAmount = productPrice * interestRate / 100;
+                                                  const priceWithInterest = productPrice + interestAmount;
+                                                  return Math.round(priceWithInterest * downPaymentPercentage / 100);
+                                                })()
+                                              })</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))
+                                  )}
                                 </div>
                               )}
                             </div>
