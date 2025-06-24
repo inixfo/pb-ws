@@ -6,8 +6,84 @@ from django.template import Template, Context
 from django.contrib.contenttypes.models import ContentType
 from .models import Notification, SMSProvider, NotificationTemplate, NotificationEvent
 import uuid
+from django.db.models.signals import post_migrate
+from django.dispatch import receiver
 
 logger = logging.getLogger(__name__)
+
+
+@receiver(post_migrate)
+def create_default_notification_events(sender, **kwargs):
+    """Create default notification events and templates if they don't exist"""
+    if sender.name != 'notifications':
+        return
+        
+    # Default SMS templates
+    default_sms_templates = {
+        'order_created': {
+            'name': 'Order Created SMS',
+            'body': 'Thank you for your order! Your order #{{order_id}} has been received and is being processed.',
+            'type': 'sms'
+        },
+        'emi_application_submitted': {
+            'name': 'EMI Application Submitted SMS',
+            'body': 'Your EMI application for order #{{order_id}} has been submitted. We will process it shortly.',
+            'type': 'sms'
+        }
+    }
+    
+    # Create default templates
+    for template_key, template_data in default_sms_templates.items():
+        template, created = NotificationTemplate.objects.get_or_create(
+            name=template_data['name'],
+            defaults={
+                'type': template_data['type'],
+                'body': template_data['body'],
+                'is_active': True
+            }
+        )
+        
+        if created:
+            logger.info(f"Created default notification template: {template.name}")
+    
+    # Create default notification events
+    default_events = {
+        'order_created': {
+            'name': 'Order Created Notification',
+            'event_type': 'order_created',
+            'sms_template_name': 'Order Created SMS'
+        },
+        'emi_application_submitted': {
+            'name': 'EMI Application Submitted Notification',
+            'event_type': 'emi_application_submitted',
+            'sms_template_name': 'EMI Application Submitted SMS'
+        }
+    }
+    
+    for event_key, event_data in default_events.items():
+        # Find the template
+        sms_template = None
+        if event_data.get('sms_template_name'):
+            try:
+                sms_template = NotificationTemplate.objects.get(
+                    name=event_data['sms_template_name'],
+                    type='sms'
+                )
+            except NotificationTemplate.DoesNotExist:
+                pass
+        
+        # Create the event
+        event, created = NotificationEvent.objects.get_or_create(
+            event_type=event_data['event_type'],
+            defaults={
+                'name': event_data['name'],
+                'sms_template': sms_template,
+                'is_active': True
+            }
+        )
+        
+        if created:
+            logger.info(f"Created default notification event: {event.name}")
 
 
 class SMSService:

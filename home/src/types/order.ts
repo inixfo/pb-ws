@@ -58,6 +58,62 @@ export interface OrderResponse {
   updated_at: string;
 }
 
+export interface OrderDetails {
+  id: number;
+  order_id: string;
+  order_number: string;
+  status: string;
+  payment_status: string;
+  payment_method: string;
+  shipping_address: string;
+  shipping_city: string;
+  shipping_state: string;
+  shipping_postal_code: string;
+  shipping_phone: string;
+  subtotal: number;
+  shipping_cost: number;
+  tax: number;
+  total: number;
+  has_emi: boolean;
+  is_emi_payment?: boolean;
+  created_at: string;
+  updated_at: string;
+  items: {
+    id: number;
+    product: {
+      id: number;
+      name: string;
+      primary_image: string;
+      price: number;
+    };
+    quantity: number;
+    price: number;
+    has_emi: boolean;
+  }[];
+  emi_details?: {
+    plan_name: string;
+    monthly_installment: number;
+    tenure_months: number;
+    down_payment: number;
+    total_interest: number;
+  };
+}
+
+export interface TrackingInfo {
+  order_id: string;
+  tracking_number: string;
+  carrier: string;
+  status: string;
+  estimated_delivery: string;
+  last_update: string;
+  history: {
+    status: string;
+    location: string;
+    timestamp: string;
+    description: string;
+  }[];
+}
+
 export interface ShippingMethod {
   id: number | string;
   name: string;

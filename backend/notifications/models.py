@@ -128,6 +128,7 @@ class NotificationEvent(models.Model):
         
         # EMI events
         ('emi_created', 'EMI Created'),
+        ('emi_application_submitted', 'EMI Application Submitted'),
         ('emi_approved', 'EMI Approved'),
         ('emi_rejected', 'EMI Rejected'),
         ('emi_payment_due', 'EMI Payment Due'),

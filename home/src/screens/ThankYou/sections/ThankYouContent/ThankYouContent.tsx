@@ -4,10 +4,15 @@ import { Badge } from "../../../../components/ui/badge";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Separator } from "../../../../components/ui/separator";
-import { orderService, productService } from "../../../../services/api";
+import { productService } from "../../../../services/api";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../../../../context/CartContext";
 import { getProductImageUrl } from '../../../../utils/imageUtils';
+import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { api } from '../../../../services/api';
+import { orderService } from '../../../../services/api/orderService';
+import { OrderDetails } from '../../../../types/order';
 
 // Helper function to format currency
 const formatCurrency = (amount: number | string | null | undefined): string => {
@@ -43,6 +48,13 @@ interface OrderData {
   created_at: string;
   items: OrderItem[];
   is_emi_payment?: boolean;
+  emi_details?: {
+    plan_name: string;
+    monthly_installment: number;
+    tenure_months: number;
+    down_payment: number;
+    total_interest: number;
+  };
 }
 
 interface OrderItem {
@@ -68,59 +80,102 @@ interface Product {
   total_reviews: number;
 }
 
-export const ThankYouContent = (): JSX.Element => {
-  const navigate = useNavigate();
+export const ThankYouContent: React.FC = () => {
   const location = useLocation();
-  const { addToCart } = useCart();
-  const [order, setOrder] = useState<OrderData | null>(null);
-  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const navigate = useNavigate();
+  const { clearCart } = useCart();
+  const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Parse query parameters
+  const queryParams = new URLSearchParams(location.search);
+  const orderId = queryParams.get('order_id');
+  const paymentStatus = queryParams.get('payment_status');
+  const isEmi = queryParams.get('emi') === 'true';
+  const hasError = queryParams.get('error') === 'true';
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Get order ID from URL query params
-        const queryParams = new URLSearchParams(location.search);
-        const orderId = queryParams.get('order_id');
-        const paymentStatus = queryParams.get('payment_status');
-        const isEmiPayment = queryParams.get('emi') === 'true';
-        
-        if (!orderId) {
-          setError('No order ID provided');
-          setLoading(false);
-          return;
-        }
-        
-        // Fetch order details
-        const orderData = await orderService.getOrderById(orderId);
-        console.log('Order data:', orderData);
-        
-        // Add EMI payment info if applicable
-        if (isEmiPayment) {
-          orderData.is_emi_payment = true;
-          orderData.payment_status = paymentStatus || orderData.payment_status;
-        }
-        
-        setOrder(orderData);
-        
-        // Fetch recommended products (best sellers)
-        const productsData = await productService.getBestSellers(4);
-        console.log('Recommended products:', productsData);
-        const products = productsData.results || productsData || [];
-        setRecommendedProducts(products.slice(0, 2)); // Only show first 2 products
-        
+    // Clear the cart when thank you page is loaded
+    clearCart();
+    
+    // Fetch order details
+    const fetchOrderDetails = async () => {
+      if (!orderId) {
+        setError('No order ID provided. Unable to fetch order details.');
         setLoading(false);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to load order details');
+        return;
+      }
+      
+      try {
+        const response = await api.get(`/orders/${orderId}/`);
+        setOrderDetails(response.data);
+        
+        // If this was an EMI order but no EMI details in the response,
+        // try to fetch EMI details separately
+        if (isEmi && !response.data.emi_details) {
+          try {
+            const emiResponse = await orderService.getEMIDetails(orderId);
+            if (emiResponse.data) {
+              setOrderDetails(prev => ({
+                ...prev!,
+                emi_details: {
+                  plan_name: emiResponse.data.plan_name || 'EMI Plan',
+                  monthly_installment: emiResponse.data.monthly_installment || 0,
+                  tenure_months: emiResponse.data.tenure_months || 0,
+                  down_payment: emiResponse.data.down_payment || 0,
+                  total_interest: emiResponse.data.total_interest || 0
+                }
+              }));
+            }
+          } catch (emiError) {
+            console.error('Failed to fetch EMI details:', emiError);
+            // Don't set error state here as we still have the basic order details
+          }
+        }
+      } catch (err: any) {
+        console.error('Error fetching order details:', err);
+        setError(err.response?.data?.message || 'Failed to fetch order details. Please contact customer support.');
+        
+        // Create fallback order details if we have an order ID but can't fetch details
+        if (orderId) {
+          setOrderDetails({
+            id: parseInt(orderId),
+            order_id: orderId,
+            order_number: `#${orderId}`,
+            status: 'processing',
+            payment_status: paymentStatus || 'pending',
+            total: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            items: [],
+            shipping_address: 'N/A',
+            shipping_city: 'N/A',
+            shipping_state: 'N/A',
+            shipping_postal_code: 'N/A',
+            shipping_phone: 'N/A',
+            payment_method: 'N/A',
+            subtotal: 0,
+            shipping_cost: 0,
+            tax: 0,
+            has_emi: isEmi,
+            is_emi_payment: isEmi,
+            emi_details: isEmi ? {
+              plan_name: 'EMI Plan',
+              monthly_installment: 0,
+              tenure_months: 0,
+              down_payment: 0,
+              total_interest: 0
+            } : undefined
+          });
+        }
+      } finally {
         setLoading(false);
       }
     };
-    
-    fetchData();
-  }, [location.search]);
+
+    fetchOrderDetails();
+  }, [orderId, clearCart, isEmi, paymentStatus]);
 
   // Render star ratings
   const renderStars = (rating: number) => {
@@ -181,258 +236,135 @@ export const ThankYouContent = (): JSX.Element => {
     return methods[code] || code;
   };
 
-  // Handle add to cart button click
-  const handleAddToCart = (product: Product) => {
-    addToCart(product.id, 1);
-  };
-
-  // Handle continue shopping button click
+  // Handle continue shopping
   const handleContinueShopping = () => {
     navigate('/');
   };
 
+  // Show loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center w-full py-20">
-        <div className="w-10 h-10 border-4 border-primarymain border-t-transparent rounded-full animate-spin"></div>
+      <div className="container mx-auto px-4 py-12">
+        <div className="flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primarymain mb-4"></div>
+          <h2 className="text-2xl font-bold text-gray-800">Loading Order Details...</h2>
+          <p className="text-gray-600 mt-2">Please wait while we fetch your order information.</p>
+        </div>
       </div>
     );
   }
 
-  if (error || !order) {
+  // Show error state
+  if (error && !orderDetails) {
     return (
-      <div className="flex flex-col items-center justify-center w-full py-20">
-        <h4 className="text-xl font-semibold text-gray-900 mb-4">
-          {error || "Order details not found"}
-        </h4>
-        <Button onClick={handleContinueShopping}>
-          Continue Shopping
-        </Button>
+      <div className="container mx-auto px-4 py-12">
+        <div className="bg-white shadow-md rounded-lg p-6 max-w-2xl mx-auto">
+          <div className="flex flex-col items-center text-center">
+            <div className="bg-red-100 p-3 rounded-full mb-4">
+              <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Something went wrong</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button onClick={() => navigate('/account/orders')}>
+                View My Orders
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/')}>
+                Continue Shopping
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col md:flex-row w-full items-start gap-8 py-8 px-4">
-      {/* Left section - Order details */}
-      <div className="flex flex-col items-start w-full md:w-1/2 max-w-[600px]">
-        {/* Order confirmation header */}
-        <header className="flex items-center justify-between relative w-full mb-8">
-          <div className="flex items-center gap-4">
-            <img className="w-12 h-12" alt="Check" src="/check.svg" />
-            <div className="flex flex-col w-full items-start gap-1.5">
-              <p className="w-full text-gray-600 text-sm leading-[22px] font-normal">
-                Order #{order.order_id || order.order_number || order.id}
-              </p>
-              <h4 className="w-full font-semibold text-gray-900 text-2xl leading-8">
-                Thank you for your order!
-              </h4>
-              
-              {order.is_emi_payment && (
-                <p className="w-full text-blue-600 text-sm leading-[22px] font-medium mt-1">
-                  Your EMI down payment has been processed successfully!
-                </p>
-              )}
-            </div>
+    <div className="container mx-auto px-4 py-12">
+      <div className="bg-white shadow-md rounded-lg p-6 max-w-2xl mx-auto">
+        <div className="flex flex-col items-center text-center mb-8">
+          <div className="bg-green-100 p-3 rounded-full mb-4">
+            <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
           </div>
-          <Button
-            variant="link"
-            className="text-gray-700 text-sm font-medium underline"
-            onClick={() => navigate(`/track-order/${order.id}`)}
-          >
-            Track order
-          </Button>
-        </header>
+          <h2 className="text-2xl font-bold text-gray-800">Thank You for Your Order!</h2>
+          {hasError ? (
+            <p className="text-amber-600 mt-2">
+              There was an issue processing your payment, but your order has been recorded.
+              Our team will contact you shortly.
+            </p>
+          ) : (
+            <p className="text-gray-600 mt-2">
+              Your order has been received and is now being processed.
+            </p>
+          )}
+        </div>
 
-        {/* Order details section */}
-        <div className="flex flex-col w-full items-start gap-8 mb-8">
-          <Separator className="w-full" />
-          <div className="flex flex-col items-start gap-6 w-full">
-            {/* Delivery address */}
-            <div className="flex flex-col items-start gap-2 w-full">
-              <h6 className="w-full font-semibold text-gray-900 text-base leading-6">
-                Delivery
-              </h6>
-              <p className="w-full text-gray-600 text-sm leading-[22px] font-normal">
-                {order.shipping_address}, {order.shipping_city}, {order.shipping_state}, {order.shipping_postal_code}
-              </p>
+        {orderDetails && (
+          <div className="border-t border-gray-200 pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Order Details</h3>
+                <p className="text-gray-600">Order Number: <span className="font-medium">{orderDetails.order_number || orderDetails.order_id}</span></p>
+                <p className="text-gray-600">Date: <span className="font-medium">{new Date(orderDetails.created_at).toLocaleDateString()}</span></p>
+                <p className="text-gray-600">Status: <span className="font-medium capitalize">{orderDetails.status}</span></p>
+                <p className="text-gray-600">Payment Status: <span className="font-medium capitalize">{orderDetails.payment_status}</span></p>
+                <p className="text-gray-600">Total: <span className="font-medium">{formatCurrency(orderDetails.total)}</span></p>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Shipping Information</h3>
+                <p className="text-gray-600">Address: <span className="font-medium">{orderDetails.shipping_address}</span></p>
+                <p className="text-gray-600">City: <span className="font-medium">{orderDetails.shipping_city}</span></p>
+                <p className="text-gray-600">State: <span className="font-medium">{orderDetails.shipping_state}</span></p>
+                <p className="text-gray-600">Postal Code: <span className="font-medium">{orderDetails.shipping_postal_code}</span></p>
+                <p className="text-gray-600">Phone: <span className="font-medium">{orderDetails.shipping_phone}</span></p>
+              </div>
             </div>
 
-            {/* Delivery time */}
-            <div className="flex flex-col items-start gap-2 w-full">
-              <h6 className="w-full font-semibold text-gray-900 text-base leading-6">
-                Time
-              </h6>
-              <p className="w-full text-gray-600 text-sm leading-[22px] font-normal">
-                {formatDeliveryTime()}
-              </p>
-            </div>
-
-            {/* Payment method */}
-            <div className="flex flex-col items-start gap-2 w-full">
-              <h6 className="w-full font-semibold text-gray-900 text-base leading-6">
-                Payment Method
-              </h6>
-              <p className="w-full text-gray-600 text-sm leading-[22px] font-normal">
-                {getPaymentMethodName(order.payment_method)}
-                {order.is_emi_payment && " (EMI Down Payment)"}
-              </p>
-            </div>
-            
-            {/* EMI Payment Details - show only for EMI payments */}
-            {order.is_emi_payment && (
-              <div className="flex flex-col items-start gap-2 w-full">
-                <h6 className="w-full font-semibold text-gray-900 text-base leading-6">
-                  EMI Details
-                </h6>
-                <div className="w-full bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-gray-700 text-sm leading-[22px] font-medium mb-2">
-                    Your EMI application has been processed successfully.
-                  </p>
-                  <p className="text-gray-600 text-sm leading-[22px]">
-                    You will receive further instructions about your EMI installments via email and SMS.
-                  </p>
+            {/* EMI Details Section */}
+            {(isEmi || orderDetails.is_emi_payment) && orderDetails.emi_details && (
+              <div className="mt-6 border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">EMI Details</h3>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-600">Plan: <span className="font-medium">{orderDetails.emi_details.plan_name}</span></p>
+                      <p className="text-gray-600">Tenure: <span className="font-medium">{orderDetails.emi_details.tenure_months} months</span></p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Monthly Installment: <span className="font-medium">{formatCurrency(orderDetails.emi_details.monthly_installment)}</span></p>
+                      <p className="text-gray-600">Down Payment: <span className="font-medium">{formatCurrency(orderDetails.emi_details.down_payment)}</span></p>
+                      {orderDetails.emi_details.total_interest > 0 && (
+                        <p className="text-gray-600">Total Interest: <span className="font-medium">{formatCurrency(orderDetails.emi_details.total_interest)}</span></p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
-
-            {/* Order Items */}
-            <div className="flex flex-col items-start gap-2 w-full">
-              <h6 className="w-full font-semibold text-gray-900 text-base leading-6">
-                Order Items
-              </h6>
-              <div className="w-full space-y-4">
-                {order.items && order.items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-4 p-3 border border-gray-100 rounded-lg">
-                    <img 
-                      src={item.product.primary_image} 
-                      alt={item.product.name} 
-                      className="w-16 h-16 object-cover rounded-md"
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{item.product.name}</p>
-                      <div className="flex justify-between mt-1">
-                        <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-                        <p className="text-sm font-medium">{formatCurrency(item.price * item.quantity)}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Order Total */}
-            <div className="flex flex-col items-start gap-2 w-full">
-              <h6 className="w-full font-semibold text-gray-900 text-base leading-6">
-                Total
-              </h6>
-              <p className="w-full text-gray-900 text-xl font-bold">
-                {formatCurrency(order.total)}
-              </p>
-            </div>
           </div>
-        </div>
+        )}
 
-        {/* Footer */}
-        <footer className="flex items-center gap-3">
-          <p className="text-gray-600 text-sm leading-[22px] font-normal">
-            Need help?
-          </p>
-          <Button
-            variant="link"
-            className="text-primarymain text-sm font-medium underline p-0 h-auto"
-            onClick={() => navigate('/help-center')}
-          >
-            Contact us
+        <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
+          <Button onClick={() => navigate('/account/orders')}>
+            View My Orders
           </Button>
-        </footer>
-      </div>
-
-      {/* Right section - Recommended products */}
-      <div className="flex flex-col w-full md:w-1/2 bg-gray-50 rounded-2xl p-8">
-        <div className="w-full">
-          <h4 className="text-center mb-8 font-semibold text-gray-900 text-2xl leading-8">
-            You may also like
-          </h4>
-
-          {/* Product cards */}
-          <div className="flex flex-col md:flex-row items-center gap-6 mb-8">
-            {recommendedProducts.map((product) => (
-              <Card
-                key={product.id}
-                className="w-full md:w-[306px] bg-white rounded-lg overflow-hidden border-0 shadow-sm"
-              >
-                <div className="relative flex flex-col items-center justify-center p-6">
-                  {product.sale_price && product.sale_price < product.price && (
-                    <Badge className="absolute top-4 left-4 bg-dangermain text-white">
-                      {`-${Math.round(((product.price - product.sale_price) / product.price) * 100)}%`}
-                    </Badge>
-                  )}
-                  <img
-                    className="w-full max-w-[258px] h-48 object-contain"
-                    alt={product.name}
-                    src={product.primary_image}
-                    onClick={() => navigate(`/products/${product.slug || product.id}`)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                </div>
-                <CardContent className="flex flex-col items-start gap-3 pt-0 pb-4 px-4">
-                  <div className="flex flex-col items-start gap-2 w-full">
-                    <div className="flex items-center gap-2 w-full">
-                      <div className="flex items-start gap-1">
-                        {renderStars(product.average_rating || 0)}
-                      </div>
-                      <p className="flex-1 text-gray-400 text-xs leading-[18px]">
-                        ({product.total_reviews || 0})
-                      </p>
-                    </div>
-                    <p 
-                      className="font-medium text-gray-900 text-sm leading-5 cursor-pointer hover:text-primarymain"
-                      onClick={() => navigate(`/products/${product.slug || product.id}`)}
-                    >
-                      {product.name}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-2 h-10">
-                      {product.sale_price ? (
-                        <>
-                          <p className="font-semibold text-gray-900 text-xl leading-7">
-                            {formatCurrency(product.sale_price)}
-                          </p>
-                          <p className="text-gray-400 text-sm leading-[21px] line-through">
-                            {formatCurrency(product.price)}
-                          </p>
-                        </>
-                      ) : (
-                        <p className="font-semibold text-gray-900 text-xl leading-7">
-                          {formatCurrency(product.price)}
-                        </p>
-                      )}
-                    </div>
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      className="w-10 h-10 p-3 bg-gray-100 rounded-lg hover:bg-primarymain hover:text-white"
-                      onClick={() => handleAddToCart(product)}
-                    >
-                      <ShoppingCartIcon className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Continue shopping button */}
-          <Button 
-            className="flex w-full items-center justify-center gap-2 px-6 py-3 bg-primarymain text-white rounded-lg hover:bg-primarymain/90"
-            onClick={handleContinueShopping}
-          >
-            Continue shopping
-            <ArrowRightIcon className="w-[18px] h-[18px]" />
+          <Button variant="outline" onClick={handleContinueShopping}>
+            Continue Shopping
           </Button>
         </div>
+
+        {error && (
+          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-amber-700 text-sm">
+              <strong>Note:</strong> {error}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

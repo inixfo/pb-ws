@@ -1,22 +1,34 @@
 import axios from 'axios';
 import { API_URL } from '../../config';
+import { OrderCreateRequest, OrderResponse, OrderListItem, ShippingMethod, OrderDetails, TrackingInfo } from '../../types/order';
 import { getAuthHeaders } from './authHeaders';
 
 class OrderService {
-  async getOrders(params = {}) {
+  async createOrder(orderData: OrderCreateRequest): Promise<OrderResponse> {
     try {
-      const response = await axios.get(`${API_URL}/orders/`, {
-        headers: getAuthHeaders(),
-        params
+      const response = await axios.post(`${API_URL}/orders/`, orderData, {
+        headers: getAuthHeaders()
       });
       return response.data;
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      return { results: [] };
+    } catch (error: any) {
+      console.error('Error creating order:', error);
+      throw error;
     }
   }
 
-  async getOrderById(orderId: string) {
+  async getOrders(): Promise<OrderListItem[]> {
+    try {
+      const response = await axios.get(`${API_URL}/orders/`, {
+        headers: getAuthHeaders()
+      });
+      return response.data.results || response.data;
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      throw error;
+    }
+  }
+
+  async getOrderById(orderId: string): Promise<OrderDetails> {
     try {
       const response = await axios.get(`${API_URL}/orders/${orderId}/`, {
         headers: getAuthHeaders()
@@ -24,47 +36,15 @@ class OrderService {
       return response.data;
     } catch (error) {
       console.error(`Error fetching order ${orderId}:`, error);
-      return null;
-    }
-  }
-
-  async createOrder(orderData: any) {
-    console.log('Creating order with data:', orderData);
-    try {
-      const url = `${API_URL}/orders/`;
-      console.log('Order API URL:', url);
-      
-      const headers = getAuthHeaders();
-      console.log('Request headers:', headers);
-      
-      const response = await axios.post(url, orderData, {
-        headers: headers
-      });
-      
-      console.log('Order creation success response:', response.data);
-      return response.data;
-    } catch (error: any) {
-      console.error('Error creating order:', error);
-      if (error.response) {
-        console.error('Error response data:', error.response.data);
-        console.error('Error response status:', error.response.status);
-        console.error('Error response headers:', error.response.headers);
-      } else if (error.request) {
-        console.error('Error request:', error.request);
-      } else {
-        console.error('Error message:', error.message);
-      }
       throw error;
     }
   }
 
-  async cancelOrder(orderId: string) {
+  async cancelOrder(orderId: string): Promise<any> {
     try {
-      const response = await axios.post(
-        `${API_URL}/orders/${orderId}/cancel/`,
-        {},
-        { headers: getAuthHeaders() }
-      );
+      const response = await axios.post(`${API_URL}/orders/${orderId}/cancel/`, {}, {
+        headers: getAuthHeaders()
+      });
       return response.data;
     } catch (error) {
       console.error(`Error cancelling order ${orderId}:`, error);
@@ -72,7 +52,7 @@ class OrderService {
     }
   }
 
-  async getOrderTracking(orderId: string) {
+  async getOrderTracking(orderId: string): Promise<TrackingInfo> {
     try {
       const response = await axios.get(`${API_URL}/orders/${orderId}/tracking/`, {
         headers: getAuthHeaders()
@@ -80,9 +60,50 @@ class OrderService {
       return response.data;
     } catch (error) {
       console.error(`Error fetching tracking for order ${orderId}:`, error);
-      return null;
+      throw error;
+    }
+  }
+
+  async getShippingMethods(city: string): Promise<ShippingMethod[]> {
+    try {
+      const response = await axios.get(`${API_URL}/shipping/methods/?city=${encodeURIComponent(city)}`, {
+        headers: getAuthHeaders()
+      });
+      return response.data.results || response.data;
+    } catch (error) {
+      console.error('Error fetching shipping methods:', error);
+      throw error;
+    }
+  }
+
+  async getShippingRates(city: string, postalCode?: string): Promise<any> {
+    try {
+      let url = `${API_URL}/shipping/rates/?city=${encodeURIComponent(city)}`;
+      if (postalCode) {
+        url += `&postal_code=${encodeURIComponent(postalCode)}`;
+      }
+      
+      const response = await axios.get(url, {
+        headers: getAuthHeaders()
+      });
+      return response.data.results || response.data;
+    } catch (error) {
+      console.error('Error fetching shipping rates:', error);
+      throw error;
+    }
+  }
+
+  async getEMIDetails(orderId: string): Promise<any> {
+    try {
+      const response = await axios.get(`${API_URL}/emi/applications/order/${orderId}/`, {
+        headers: getAuthHeaders()
+      });
+      return response;
+    } catch (error) {
+      console.error(`Error fetching EMI details for order ${orderId}:`, error);
+      throw error;
     }
   }
 }
 
-export default new OrderService(); 
+export const orderService = new OrderService(); 

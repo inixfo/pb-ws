@@ -11,9 +11,11 @@ class SMSTemplate(models.Model):
         ('welcome', 'Welcome Message'),
         ('verification', 'Phone Verification'),
         ('order_confirmation', 'Order Confirmation'),
+        ('order_created', 'Order Created'),
         ('payment_success', 'Payment Success'),
         ('order_status', 'Order Status Update'),
         ('emi_reminder', 'EMI Payment Reminder'),
+        ('emi_application_submitted', 'EMI Application Submitted'),
     )
     
     name = models.CharField(max_length=100)
@@ -90,7 +92,16 @@ def create_default_sms_templates(sender, **kwargs):
     if sender.name != 'sms':
         return
         
-    default_templates = getattr(settings, 'DEFAULT_SMS_TEMPLATES', {})
+    default_templates = {
+        'welcome': 'Welcome to Phone Bay! Thank you for registering with us.',
+        'verification': 'Your Phone Bay verification code is {code}. Valid for 10 minutes.',
+        'order_confirmation': 'Your order #{order_id} has been confirmed. Thank you for shopping with Phone Bay!',
+        'order_created': 'Thank you for your order! Your order #{order_id} has been received and is being processed.',
+        'payment_success': 'Payment of {amount} received for order #{order_id}. Thank you!',
+        'order_status': 'Your order #{order_id} status has been updated to: {status}',
+        'emi_reminder': 'Reminder: Your EMI payment of {amount} for order #{order_id} is due on {due_date}.',
+        'emi_application_submitted': 'Your EMI application for order #{order_id} has been submitted. We will process it shortly.'
+    }
     
     for template_type, template_text in default_templates.items():
         # Skip if template of this type already exists
