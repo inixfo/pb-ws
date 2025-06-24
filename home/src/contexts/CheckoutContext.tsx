@@ -20,6 +20,9 @@ export interface SSLCommerzInitResponse {
   status?: 'success' | 'error';
   redirect_url?: string;
   error?: string;
+  is_mock?: boolean;
+  transaction_id?: string;
+  message?: string;
 }
 
 // Define the type for the new payload
@@ -504,10 +507,15 @@ export const CheckoutProvider: React.FC<{ children: ReactNode }> = ({ children }
         paymentPayload
       );
       
+      console.log('Payment service response:', response);
+      
       if (response.status === 'success') {
         return { 
           status: 'success', 
-          redirect_url: response.redirect_url 
+          redirect_url: response.redirect_url,
+          is_mock: response.is_mock,
+          transaction_id: response.transaction_id,
+          message: response.message
         };
       } else {
         console.error('SSLCommerz init error:', response.message || 'Unknown error');

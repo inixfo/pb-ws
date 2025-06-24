@@ -889,16 +889,33 @@ export const DeliveryInfoContent = (): JSX.Element => {
           // Log the payment payload for debugging
           console.log('Payment payload for SSLCommerz:', paymentPayloadForContext);
           
-          // The initiateSSLCommerzPayment function in CheckoutContext will need to be updated 
-          // to accept an object like paymentPayloadForContext or individual parameters.
-          // For now, we are preparing the data. The actual signature change is in the context.
-          const paymentInitResponse = await initiateSSLCommerzPayment(orderResponse.id, paymentPayloadForContext);
+          try {
+            // The initiateSSLCommerzPayment function in CheckoutContext will need to be updated 
+            // to accept an object like paymentPayloadForContext or individual parameters.
+            // For now, we are preparing the data. The actual signature change is in the context.
+            const paymentInitResponse = await initiateSSLCommerzPayment(orderResponse.id, paymentPayloadForContext);
+            
+            console.log('Payment initiation response:', paymentInitResponse);
 
-          if (paymentInitResponse.redirect_url) {
-            window.location.href = paymentInitResponse.redirect_url;
-          } else {
-            toast.error(paymentInitResponse.error || "Failed to initiate payment session. Please try again.");
-            console.error("SSLCommerz init error:", paymentInitResponse.error);
+            if (paymentInitResponse.redirect_url) {
+              console.log('Redirecting to payment gateway:', paymentInitResponse.redirect_url);
+              
+              // If this is a mock response with is_mock flag, the paymentService has already handled the redirect
+              if (!paymentInitResponse.is_mock) {
+                window.location.href = paymentInitResponse.redirect_url;
+              } else {
+                console.log('Mock payment detected - redirect handled by payment service');
+                // The redirect is handled by the payment service
+                // We just show a loading message here
+                toast.success('Processing payment...');
+              }
+            } else {
+              toast.error(paymentInitResponse.error || "Failed to initiate payment session. Please try again.");
+              console.error("SSLCommerz init error:", paymentInitResponse.error);
+            }
+          } catch (paymentError: any) {
+            console.error('Payment initiation error:', paymentError);
+            toast.error(paymentError.message || "Failed to initiate payment. Please try again.");
           }
         } else if (chosenPaymentMethodKey === "cashOnDelivery") {
           // Handle Cash on Delivery success (e.g., redirect to an order confirmation page)

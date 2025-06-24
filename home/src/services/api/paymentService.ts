@@ -82,6 +82,15 @@ class PaymentService {
           const mockRedirectUrl = is_emi_downpayment 
             ? `${window.location.origin}/thank-you?order_id=${orderId}&payment_status=success&emi=true` 
             : `${window.location.origin}/thank-you?order_id=${orderId}&payment_status=success`;
+          
+          console.log('Using mock redirect URL:', mockRedirectUrl);
+          
+          // Instead of returning the URL, directly navigate to it
+          // This ensures the redirect happens even if the caller doesn't handle it
+          setTimeout(() => {
+            console.log('Redirecting to thank you page...');
+            window.location.assign(mockRedirectUrl);
+          }, 1000);
             
           return {
             status: 'success',
