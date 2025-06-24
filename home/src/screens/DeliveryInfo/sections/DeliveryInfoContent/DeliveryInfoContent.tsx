@@ -224,12 +224,14 @@ export const DeliveryInfoContent = (): JSX.Element => {
       let cardlessItemPrice = 0;
       let foundCardEMIPlan: ProductEMIPlan | null = null;
       let cardEMIItemPrice = 0;
+      let foundBankCode: string | null = null;
 
       for (const item of cart.items) {
         // Check both emi_selected from API and emiSelected from localStorage
         const localStorageItem = item as any; // Type assertion for localStorage format
         const isEmiSelected = item.emi_selected || localStorageItem.emiSelected;
         const emiPlanId = item.emi_period || localStorageItem.emiPeriod;
+        const itemEmiBank = localStorageItem.emiBank; // Get bank code if available
         
         if (isEmiSelected && (item as any).emi_plan) {
           const selectedPlan = (item as any).emi_plan as ProductEMIPlan;
@@ -239,6 +241,10 @@ export const DeliveryInfoContent = (): JSX.Element => {
             if (!foundCardEMIPlan) {
               foundCardEMIPlan = selectedPlan;
               cardEMIItemPrice = parseFloat(String(item.product.sale_price || item.product.price || '0'));
+              // Store the bank code if available
+              if (itemEmiBank) {
+                foundBankCode = itemEmiBank;
+              }
             }
           } else if (selectedPlan.plan_type === 'cardless_emi') {
             if (!cardlessPlan) {
@@ -260,6 +266,10 @@ export const DeliveryInfoContent = (): JSX.Element => {
             if (!foundCardEMIPlan) {
               foundCardEMIPlan = cardPlanMatch;
               cardEMIItemPrice = parseFloat(String(item.product.sale_price || item.product.price || '0'));
+              // Store the bank code if available
+              if (itemEmiBank) {
+                foundBankCode = itemEmiBank;
+              }
             }
           }
 
@@ -270,9 +280,15 @@ export const DeliveryInfoContent = (): JSX.Element => {
             cardlessItemPrice = parseFloat(String(item.product.sale_price || item.product.price || '0'));
           }
         }
+        
+        // If this item has a bank selected and we're looking at Card EMI
+        if (isEmiSelected && itemEmiBank && (localStorageItem.emiType === 'card_emi' || 
+           (foundCardEMIPlan && foundCardEMIPlan.plan_type === 'card_emi'))) {
+          foundBankCode = itemEmiBank;
+        }
       }
       
-      console.log('EMI Status Check:', { hasCardEMI, cardlessPlan, foundCardEMIPlan });
+      console.log('EMI Status Check:', { hasCardEMI, cardlessPlan, foundCardEMIPlan, selectedBank: foundBankCode });
       
       // Set the EMI status flags
       setCartHasCardEMI(hasCardEMI);
@@ -282,6 +298,12 @@ export const DeliveryInfoContent = (): JSX.Element => {
       // Automatically select the appropriate payment method based on EMI status
       if (hasCardEMI) {
         updatePaymentDetails('payment_method', 'SSLCOMMERZ_CARD_EMI');
+        
+        // Pre-select the bank if it was chosen on the product page
+        if (foundBankCode && foundBankCode.trim() !== '') {
+          setSelectedBank(foundBankCode);
+          console.log('Pre-selected bank from cart item:', foundBankCode);
+        }
       } else if (cardlessPlan) {
         updatePaymentDetails('payment_method', 'SSLCOMMERZ_CARDLESS_EMI');
       }
