@@ -11,7 +11,8 @@ class PaymentService {
         selected_bank, 
         emi_type, 
         emi_period,
-        emi_plan_id 
+        emi_plan_id,
+        is_emi_downpayment
       } = paymentDetails;
       
       const payload: any = {
@@ -24,24 +25,34 @@ class PaymentService {
         payload.amount = amount;
       }
       
-      // Add EMI type if provided
-      if (emi_type) {
+      // Handle cardless EMI downpayment as a standard payment
+      if (is_emi_downpayment) {
+        // Include metadata for backend processing
+        payload.is_emi_downpayment = true;
+        
+        if (emi_plan_id) {
+          payload.emi_plan_id = emi_plan_id;
+        }
+      } 
+      // Handle card EMI payment
+      else if (emi_type === 'card_emi') {
+        // Add EMI type
         payload.emi_type = emi_type;
-      }
-      
-      // Add EMI period if provided
-      if (emi_period) {
-        payload.emi_period = emi_period;
-      }
-      
-      // Add EMI plan ID if provided
-      if (emi_plan_id) {
-        payload.emi_plan_id = emi_plan_id;
-      }
-      
-      // Add selected bank for Card EMI if provided
-      if (emi_type === 'card_emi' && selected_bank) {
-        payload.selected_bank = selected_bank;
+        
+        // Add EMI period if provided
+        if (emi_period) {
+          payload.emi_period = emi_period;
+        }
+        
+        // Add EMI plan ID if provided
+        if (emi_plan_id) {
+          payload.emi_plan_id = emi_plan_id;
+        }
+        
+        // Add selected bank for Card EMI if provided
+        if (selected_bank) {
+          payload.selected_bank = selected_bank;
+        }
       }
       
       console.log('Initiating SSLCOMMERZ payment with payload:', payload);

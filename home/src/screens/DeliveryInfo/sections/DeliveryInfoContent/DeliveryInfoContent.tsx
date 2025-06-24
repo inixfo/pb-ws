@@ -848,15 +848,16 @@ export const DeliveryInfoContent = (): JSX.Element => {
           // For Cardless EMI, user only pays the downpayment initially
           amountForSSLCommerz = activeCardlessEMIDownpayment;
           paymentPayloadForContext.amount = amountForSSLCommerz;
-          paymentPayloadForContext.transaction_type = 'DOWN_PAYMENT'; // Inform context this is specific
-          paymentPayloadForContext.total_with_interest = calculatedOrderTotal; // Pass the total with interest for record keeping
           
-          // Add EMI plan details for Cardless EMI
-          if (selectedCardlessEMIPlanDetails) {
-            paymentPayloadForContext.emi_type = 'cardless_emi';
-            paymentPayloadForContext.emi_plan_id = selectedCardlessEMIPlanDetails.id;
-            paymentPayloadForContext.emi_period = selectedCardlessEMIPlanDetails.duration_months;
-          }
+          // IMPORTANT: For cardless EMI, we use standard payment for the downpayment
+          // The backend will handle the EMI application separately
+          paymentPayloadForContext.transaction_type = 'REGULAR_FULL_AMOUNT';
+          paymentPayloadForContext.total_with_interest = calculatedOrderTotal;
+          
+          // We don't need to send EMI-specific parameters for the payment gateway
+          // Just include the order metadata for backend processing
+          paymentPayloadForContext.is_emi_downpayment = true;
+          paymentPayloadForContext.emi_plan_id = selectedCardlessEMIPlanDetails?.id;
         } else if (chosenPaymentMethodKey === "SSLCOMMERZ_CARD_EMI") {
           // Card EMI full amount transaction
           if (activeCardEMICalculatedDetails) {

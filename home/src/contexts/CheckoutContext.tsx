@@ -456,8 +456,8 @@ export const CheckoutProvider: React.FC<{ children: ReactNode }> = ({ children }
       // Prepare payment details with EMI information
       const paymentPayload: any = {
         order_id: orderId,
-        // Set transaction type based on EMI selection
-        transaction_type: paymentDetails.transactionType || (hasEmiItems ? 'EMI_FULL_AMOUNT' : 'REGULAR_FULL_AMOUNT'),
+        // Set transaction type based on payment details or default
+        transaction_type: paymentDetails.transaction_type || 'REGULAR_FULL_AMOUNT',
       };
       
       // Add amount if provided
@@ -465,13 +465,18 @@ export const CheckoutProvider: React.FC<{ children: ReactNode }> = ({ children }
         paymentPayload.amount = paymentDetails.amount;
       }
       
-      // Add EMI details if available
-      if (emiItem) {
-        // Determine EMI type (card_emi or cardless_emi)
-        const emiType = paymentDetails.chosenPaymentMethodKey === "SSLCOMMERZ_CARDLESS_EMI" ? 
-          'cardless_emi' : 'card_emi';
-        
-        paymentPayload.emi_type = emiType;
+      // For Cardless EMI, we use standard payment for the down payment
+      // but include metadata for the backend to process
+      if (paymentDetails.is_emi_downpayment) {
+        // Don't include EMI-specific parameters for SSLCommerz
+        // Just pass the order metadata for backend processing
+        paymentPayload.is_emi_downpayment = true;
+        paymentPayload.emi_plan_id = paymentDetails.emi_plan_id;
+      }
+      // Only add EMI details for Card EMI
+      else if (emiItem && paymentDetails.chosenPaymentMethodKey === "SSLCOMMERZ_CARD_EMI") {
+        // Determine EMI type (always card_emi in this branch)
+        paymentPayload.emi_type = 'card_emi';
         
         // Add EMI period/tenure
         if ((emiItem as any).emi_period) {
@@ -484,15 +489,12 @@ export const CheckoutProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
         
         // Add bank information for card EMI
-        if (emiType === 'card_emi') {
-          // Use selected bank from payment details or from item
-          paymentPayload.selected_bank = 
-            paymentDetails.selected_bank || 
-            (emiItem as any).emi_bank || 
-            '';
-            
-          console.log('Adding bank for Card EMI:', paymentPayload.selected_bank);
-        }
+        paymentPayload.selected_bank = 
+          paymentDetails.selected_bank || 
+          (emiItem as any).emi_bank || 
+          '';
+          
+        console.log('Adding bank for Card EMI:', paymentPayload.selected_bank);
       }
       
       console.log('Initiating payment with payload:', paymentPayload);
