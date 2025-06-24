@@ -11,5 +11,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # No operations needed, just merging migrations
+        # This migration merges the two branches of the migration graph.
+        # The thumbnail fields are first removed in 0005_remove_thumbnail_fields
+        # and then added back in 0006_add_responsive_images.
     ] 
