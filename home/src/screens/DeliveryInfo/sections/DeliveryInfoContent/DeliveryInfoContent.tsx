@@ -231,8 +231,19 @@ export const DeliveryInfoContent = (): JSX.Element => {
         const localStorageItem = item as any; // Type assertion for localStorage format
         const isEmiSelected = item.emi_selected || localStorageItem.emiSelected;
         const emiPlanId = item.emi_period || localStorageItem.emiPeriod;
-        const itemEmiBank = localStorageItem.emiBank; // Get bank code if available
         
+        // Type-safe access to properties that might be in the API response or localStorage
+        const itemEmiBank = (item as any).emi_bank || localStorageItem.emiBank; 
+        const itemEmiType = (item as any).emi_type || localStorageItem.emiType;
+        
+        console.log('Checking cart item for EMI:', { 
+          isEmiSelected, 
+          emiPlanId, 
+          itemEmiBank, 
+          itemEmiType,
+          productName: item.product?.name || 'Unknown'
+        });
+
         if (isEmiSelected && (item as any).emi_plan) {
           const selectedPlan = (item as any).emi_plan as ProductEMIPlan;
 
@@ -244,6 +255,7 @@ export const DeliveryInfoContent = (): JSX.Element => {
               // Store the bank code if available
               if (itemEmiBank) {
                 foundBankCode = itemEmiBank;
+                console.log('Found bank code from emi_plan:', itemEmiBank);
               }
             }
           } else if (selectedPlan.plan_type === 'cardless_emi') {
@@ -252,15 +264,20 @@ export const DeliveryInfoContent = (): JSX.Element => {
               cardlessItemPrice = parseFloat(String(item.product.sale_price || item.product.price || '0'));
             }
           }
-
         } else if (isEmiSelected && item.product && item.product.emi_plans) {
           // There can be both card and cardless plans with the same tenure.
           // Find the exact plan for each type separately based on tenure AND plan_type.
-
-          const possiblePlans = item.product.emi_plans.filter((plan: ProductEMIPlan) => plan.duration_months === emiPlanId);
+          
+          // Check emi_type if available to determine which plan type to look for
+          const targetPlanType = itemEmiType || (itemEmiBank ? 'card_emi' : null);
+          
+          const possiblePlans = item.product.emi_plans.filter((plan: ProductEMIPlan) => 
+            plan.duration_months === emiPlanId);
 
           // Card EMI plan (if any)
-          const cardPlanMatch = possiblePlans.find((plan) => plan.plan_type === 'card_emi');
+          const cardPlanMatch = possiblePlans.find((plan) => 
+            plan.plan_type === 'card_emi' || (targetPlanType === 'card_emi'));
+            
           if (cardPlanMatch) {
             hasCardEMI = true;
             if (!foundCardEMIPlan) {
@@ -269,22 +286,19 @@ export const DeliveryInfoContent = (): JSX.Element => {
               // Store the bank code if available
               if (itemEmiBank) {
                 foundBankCode = itemEmiBank;
+                console.log('Found bank code from cardPlanMatch:', itemEmiBank);
               }
             }
           }
 
           // Cardless EMI plan (if any)
-          const cardlessPlanMatch = possiblePlans.find((plan) => plan.plan_type === 'cardless_emi');
+          const cardlessPlanMatch = possiblePlans.find((plan) => 
+            plan.plan_type === 'cardless_emi' || (targetPlanType === 'cardless_emi'));
+            
           if (cardlessPlanMatch && !cardlessPlan) {
             cardlessPlan = cardlessPlanMatch;
             cardlessItemPrice = parseFloat(String(item.product.sale_price || item.product.price || '0'));
           }
-        }
-        
-        // If this item has a bank selected and we're looking at Card EMI
-        if (isEmiSelected && itemEmiBank && (localStorageItem.emiType === 'card_emi' || 
-           (foundCardEMIPlan && foundCardEMIPlan.plan_type === 'card_emi'))) {
-          foundBankCode = itemEmiBank;
         }
       }
       
@@ -301,8 +315,8 @@ export const DeliveryInfoContent = (): JSX.Element => {
         
         // Pre-select the bank if it was chosen on the product page
         if (foundBankCode && foundBankCode.trim() !== '') {
+          console.log('Setting selected bank to:', foundBankCode);
           setSelectedBank(foundBankCode);
-          console.log('Pre-selected bank from cart item:', foundBankCode);
         }
       } else if (cardlessPlan) {
         updatePaymentDetails('payment_method', 'SSLCOMMERZ_CARDLESS_EMI');
@@ -757,6 +771,13 @@ export const DeliveryInfoContent = (): JSX.Element => {
       updatePaymentDetails('payment_method', emiMethod);
       toast.error(`EMI payment requires using ${emiMethod === "SSLCOMMERZ_CARD_EMI" ? "Card EMI" : "Cardless EMI"} payment option.`);
       return;
+    }
+    
+    // If switching from Card EMI to Cardless EMI, clear the bank selection
+    if (methodId === "SSLCOMMERZ_CARDLESS_EMI" && paymentDetails.payment_method === "SSLCOMMERZ_CARD_EMI") {
+      // No need to select bank for Cardless EMI
+      console.log('Clearing bank selection when switching to Cardless EMI');
+      setSelectedBank('');
     }
     
     // Update the payment method
@@ -1851,33 +1872,141 @@ export const DeliveryInfoContent = (): JSX.Element => {
                       {/* Scenario 2: Cardless EMI Selected */}
                       {selectedCardlessEMIPlanDetails && (
                       <div
-                        className={`flex items-center p-4 border rounded-lg cursor-pointer ${
+                        className={`flex flex-col p-4 border rounded-lg cursor-pointer ${
                               paymentDetails.payment_method === "SSLCOMMERZ_CARDLESS_EMI"
                             ? "border-primarymain bg-blue-50"
                             : "border-gray-200"
                         }`}
                           onClick={() => handleSelectPaymentMethod("SSLCOMMERZ_CARDLESS_EMI")} 
                       >
-                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                              paymentDetails.payment_method === "SSLCOMMERZ_CARDLESS_EMI"
-                            ? "border-primarymain bg-primarymain"
-                            : "border-gray-300"
-                        }`}>
-                              {paymentDetails.payment_method === "SSLCOMMERZ_CARDLESS_EMI" && (
-                            <CheckIcon className="h-3 w-3 text-white" />
-                          )}
-                        </div>
-                          <div className="ml-3 flex flex-col">
-                            <div className="flex items-center gap-2">
-                          <div className="rounded-full bg-gray-100 p-2">
-                                  <CreditCardIcon className="h-5 w-5 text-primarymain" />
+                        <div className="flex items-center">
+                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                                paymentDetails.payment_method === "SSLCOMMERZ_CARDLESS_EMI"
+                              ? "border-primarymain bg-primarymain"
+                              : "border-gray-300"
+                          }`}>
+                                {paymentDetails.payment_method === "SSLCOMMERZ_CARDLESS_EMI" && (
+                              <CheckIcon className="h-3 w-3 text-white" />
+                            )}
                           </div>
-                              <span className="text-base font-medium text-gray-900">Pay Online (Card, MFS, Net Banking via SSLCOMMERZ)</span>
+                          <div className="ml-3 flex items-center gap-2">
+                            <div className="rounded-full bg-gray-100 p-2">
+                                  <CreditCardIcon className="h-5 w-5 text-primarymain" />
+                            </div>
+                            <span className="text-base font-medium text-gray-900">SSLCOMMERZ EMI Payment System (Cardless)</span>
+                          </div>
                         </div>
-                            <p className="text-sm text-gray-600 mt-1 ml-10">Only down payment of {formatCurrency(activeCardlessEMIDownpayment || 0)} will be charged now</p>
+                        
+                        {/* Additional Cardless EMI content when selected */}
+                        {paymentDetails.payment_method === "SSLCOMMERZ_CARDLESS_EMI" && (
+                          <div className="mt-4 ml-8 space-y-4">
+                            {/* EMI information */}
+                            <div className="p-4 bg-gray-50 rounded-lg">
+                              <h4 className="font-medium text-sm mb-2">EMI Details</h4>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Total Product Amount:</span>
+                                  <span className="font-medium">{formatCurrency(activeCardlessEMIBasePrice || 0)}</span>
+                                </div>
+                                
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Down Payment (Now):</span>
+                                  <span className="font-medium">{formatCurrency(activeCardlessEMIDownpayment || 0)}</span>
+                                </div>
+                                
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Monthly Installment:</span>
+                                  <span className="font-medium">{formatCurrency(activeCardlessEMIMonthly || 0)}</span>
+                                </div>
+                                
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Tenure:</span>
+                                  <span className="font-medium">{selectedCardlessEMIPlanDetails.duration_months} months</span>
+                                </div>
+                                
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Interest Rate:</span>
+                                  <span className="font-medium">{selectedCardlessEMIPlanDetails.interest_rate}%</span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* NID upload fields */}
+                            <div className="space-y-4">
+                              <h4 className="text-sm font-medium">Upload National ID (Required)</h4>
+                              
+                              <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">
+                                  NID Front <span className="text-red-500">*</span>
+                                </label>
+                                <input 
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleNidFrontUpload}
+                                  className="block w-full text-sm text-gray-500
+                                    file:mr-4 file:py-2 file:px-4
+                                    file:rounded-lg file:border-0
+                                    file:text-sm file:font-semibold
+                                    file:bg-primary-50 file:text-primarymain
+                                    hover:file:bg-primary-100"
+                                />
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">
+                                  NID Back <span className="text-red-500">*</span>
+                                </label>
+                                <input 
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleNidBackUpload}
+                                  className="block w-full text-sm text-gray-500
+                                    file:mr-4 file:py-2 file:px-4
+                                    file:rounded-lg file:border-0
+                                    file:text-sm file:font-semibold
+                                    file:bg-primary-50 file:text-primarymain
+                                    hover:file:bg-primary-100"
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Employment information */}
+                            <div className="space-y-4">
+                              <h4 className="text-sm font-medium">Employment Information (Required)</h4>
+                              
+                              <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Job Title <span className="text-red-500">*</span>
+                                </label>
+                                <input 
+                                  type="text"
+                                  value={jobTitle}
+                                  onChange={(e) => setJobTitle(e.target.value)}
+                                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-primarymain focus:border-primarymain"
+                                  placeholder="e.g. Software Engineer"
+                                  required
+                                />
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Monthly Income (৳) <span className="text-red-500">*</span>
+                                </label>
+                                <input 
+                                  type="number"
+                                  value={salary}
+                                  onChange={(e) => setSalary(e.target.value)}
+                                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-primarymain focus:border-primarymain"
+                                  placeholder="e.g. 50000"
+                                  min="1"
+                                  required
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                        </div>
-                      )} 
+                      )}
                       
                       {/* Always show SSLCOMMERZ Standard Payment option */}
                       {!cartHasCardEMI && !selectedCardlessEMIPlanDetails && (
