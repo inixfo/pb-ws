@@ -36,6 +36,11 @@ class Cart(models.Model):
 class CartItem(models.Model):
     """Shopping cart item model."""
     
+    EMI_TYPE_CHOICES = (
+        ('card_emi', 'Card EMI'),
+        ('cardless_emi', 'Cardless EMI'),
+    )
+    
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     variation = models.ForeignKey('products.ProductVariation', on_delete=models.SET_NULL, null=True, blank=True)
@@ -43,6 +48,8 @@ class CartItem(models.Model):
     emi_selected = models.BooleanField(default=False)
     emi_period = models.PositiveIntegerField(default=0, help_text="EMI period in months")
     emi_plan = models.ForeignKey('emi.EMIPlan', on_delete=models.SET_NULL, null=True, blank=True, help_text="Selected EMI plan")
+    emi_type = models.CharField(max_length=20, choices=EMI_TYPE_CHOICES, null=True, blank=True, help_text="Type of EMI")
+    emi_bank = models.CharField(max_length=20, null=True, blank=True, help_text="Bank code for SSLCOMMERZ EMI")
     shipping_method = models.CharField(max_length=100, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -152,6 +159,8 @@ class OrderItem(models.Model):
     price = models.DecimalField(max_digits=12, decimal_places=2, help_text="Price at the time of purchase")
     has_emi = models.BooleanField(default=False)
     emi_plan = models.ForeignKey('emi.EMIPlan', on_delete=models.SET_NULL, null=True, blank=True)
+    emi_type = models.CharField(max_length=20, choices=CartItem.EMI_TYPE_CHOICES, null=True, blank=True, help_text="Type of EMI")
+    emi_bank = models.CharField(max_length=20, null=True, blank=True, help_text="Bank code for SSLCOMMERZ EMI")
     
     def __str__(self):
         return f"{self.quantity} x {self.product.name} in {self.order}"

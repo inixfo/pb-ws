@@ -46,7 +46,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         model = CartItem
         fields = [
             'id', 'product', 'product_id', 'variation', 'variation_id', 'quantity',
-            'emi_selected', 'emi_period', 'emi_plan_id', 'emi_plan',
+            'emi_selected', 'emi_period', 'emi_plan_id', 'emi_plan', 'emi_type', 'emi_bank',
             'shipping_method', 'total_price'
         ]
         read_only_fields = ['total_price']
@@ -276,7 +276,9 @@ class OrderCreateSerializer(serializers.ModelSerializer):
                 quantity=cart_item.quantity,
                 price=price,
                 has_emi=cart_item.emi_selected,
-                emi_plan=cart_item.emi_plan if cart_item.emi_selected else None
+                emi_plan=cart_item.emi_plan if cart_item.emi_selected else None,
+                emi_type=cart_item.emi_type if cart_item.emi_selected else None,
+                emi_bank=cart_item.emi_bank if cart_item.emi_selected else None
             )
         
         # Record promo code usage if applied

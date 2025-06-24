@@ -65,6 +65,7 @@ interface LocalCartItem {
   emiPeriod: number;
   emiPlan?: number;
   emiBank?: string;
+  emiType?: 'card_emi' | 'cardless_emi';
   shippingMethod?: string;
   addedAt: string;
 }
@@ -75,6 +76,7 @@ interface CartOptions {
   emiPeriod?: number;
   emiPlan?: number;
   emiBank?: string;
+  emiType?: 'card_emi' | 'cardless_emi';
   shippingMethod?: string;
 }
 
@@ -227,6 +229,7 @@ class CartManager {
     quantity: number = 1, 
     options: CartOptions = {}
   ): Promise<CartResponse> {
+    console.log('CartManager.addItem - options:', options);
     const isAuthenticated = authService.isAuthenticated();
     
     if (isAuthenticated) {
@@ -290,6 +293,8 @@ class CartManager {
         localCart[existingItemIndex].emiSelected = options.emiSelected || false;
         localCart[existingItemIndex].emiPeriod = options.emiPeriod || 0;
         localCart[existingItemIndex].emiPlan = options.emiPlan;
+        localCart[existingItemIndex].emiBank = options.emiBank;
+        localCart[existingItemIndex].emiType = options.emiType;
         localCart[existingItemIndex].shippingMethod = options.shippingMethod;
       } else {
         // Find variation data if variationId is provided
@@ -317,6 +322,8 @@ class CartManager {
           emiSelected: options.emiSelected || false,
           emiPeriod: options.emiPeriod || 0,
           emiPlan: options.emiPlan,
+          emiBank: options.emiBank,
+          emiType: options.emiType,
           shippingMethod: options.shippingMethod,
           addedAt: new Date().toISOString()
         });

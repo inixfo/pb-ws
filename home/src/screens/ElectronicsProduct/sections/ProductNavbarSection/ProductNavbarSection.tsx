@@ -317,7 +317,8 @@ export const ProductNavbarSection = (): JSX.Element => {
       useEmi,
       selectedEmiPlan, // This is the plan ID from state
       emiPlanDuration: emiSelectionData.durationValue, // This is the duration from the found plan
-      selectedBank: useEmi && selectedEmiType === 'card_emi' ? selectedBank : null
+      selectedBank: useEmi && selectedEmiType === 'card_emi' ? selectedBank : null,
+      selectedEmiType // The type of EMI selected (card_emi or cardless_emi)
     });
 
     const productData = {
@@ -341,7 +342,8 @@ export const ProductNavbarSection = (): JSX.Element => {
           emiSelected: useEmi,
           emiPlan: useEmi ? emiSelectionData.planIdValue : undefined, 
           emiPeriod: useEmi ? emiSelectionData.durationValue : undefined,
-          emiBank: useEmi && selectedEmiType === 'card_emi' && selectedBank ? selectedBank : undefined
+          emiBank: useEmi && selectedEmiType === 'card_emi' && selectedBank ? selectedBank : undefined,
+          emiType: useEmi ? selectedEmiType : undefined
         }
       );
       

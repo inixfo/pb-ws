@@ -329,6 +329,7 @@ export const cartService = {
       emiPeriod?: number; // Duration in months
       emiPlan?: number;   // Plan ID
       emiBank?: string;   // Bank code for SSLCOMMERZ
+      emiType?: 'card_emi' | 'cardless_emi'; // Type of EMI
       shippingMethod?: string;
     } = {}
   ) => {
@@ -356,6 +357,10 @@ export const cartService = {
         if (options.emiBank) {
           payload.emi_bank = options.emiBank;  // Add bank code for SSLCOMMERZ
         }
+        
+        if (options.emiType) {
+          payload.emi_type = options.emiType;  // Add EMI type
+        }
       } else {
         // Explicitly set to null or undefined if not selected, if backend prefers that over omission
         // Depending on backend DRF serializer settings (allow_null=True vs. required=False)
@@ -364,6 +369,7 @@ export const cartService = {
         // payload.emi_plan_id = null;
         // payload.emi_period = null;
         // payload.emi_bank = null;
+        // payload.emi_type = null;
       }
 
       const response = await api.post('/orders/cart/add_item/', payload);

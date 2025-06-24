@@ -86,6 +86,8 @@ class CartViewSet(viewsets.GenericViewSet):
         emi_selected = serializer.validated_data.get('emi_selected', False)
         emi_period = serializer.validated_data.get('emi_period', 0)
         emi_plan = serializer.validated_data.get('emi_plan')
+        emi_type = serializer.validated_data.get('emi_type')
+        emi_bank = serializer.validated_data.get('emi_bank')
         variation = serializer.validated_data.get('variation')
         shipping_method = serializer.validated_data.get('shipping_method')
         
@@ -154,6 +156,8 @@ class CartViewSet(viewsets.GenericViewSet):
             cart_item.emi_selected = emi_selected
             cart_item.emi_period = emi_period if emi_selected else 0
             cart_item.emi_plan = emi_plan if emi_selected else None
+            cart_item.emi_type = emi_type if emi_selected else None
+            cart_item.emi_bank = emi_bank if emi_selected else None
             if shipping_method:
                 cart_item.shipping_method = shipping_method
             cart_item.save()
@@ -168,6 +172,8 @@ class CartViewSet(viewsets.GenericViewSet):
                 emi_selected=emi_selected,
                 emi_period=emi_period if emi_selected else 0,
                 emi_plan=emi_plan if emi_selected else None,
+                emi_type=emi_type if emi_selected else None,
+                emi_bank=emi_bank if emi_selected else None,
                 shipping_method=shipping_method
             )
             created = True
@@ -201,6 +207,8 @@ class CartViewSet(viewsets.GenericViewSet):
         quantity = serializer.validated_data.get('quantity', cart_item.quantity)
         emi_selected = serializer.validated_data.get('emi_selected', cart_item.emi_selected)
         emi_period = serializer.validated_data.get('emi_period', cart_item.emi_period)
+        emi_type = serializer.validated_data.get('emi_type', cart_item.emi_type)
+        emi_bank = serializer.validated_data.get('emi_bank', cart_item.emi_bank)
         
         # Check if product is available
         if not cart_item.product.is_available or cart_item.product.stock_quantity < quantity:
