@@ -156,7 +156,18 @@ class CartViewSet(viewsets.GenericViewSet):
             cart_item.emi_selected = emi_selected
             cart_item.emi_period = emi_period if emi_selected else 0
             cart_item.emi_plan = emi_plan if emi_selected else None
-            cart_item.emi_type = emi_type if emi_selected else None
+            
+            # Set default emi_type based on emi_plan if not provided
+            if emi_selected:
+                if emi_type:
+                    cart_item.emi_type = emi_type
+                elif emi_plan:
+                    cart_item.emi_type = 'cardless_emi' if emi_plan.plan_type == 'cardless_emi' else 'card_emi'
+                else:
+                    cart_item.emi_type = None
+            else:
+                cart_item.emi_type = None
+                
             cart_item.emi_bank = emi_bank if emi_selected else None
             if shipping_method:
                 cart_item.shipping_method = shipping_method
@@ -172,7 +183,11 @@ class CartViewSet(viewsets.GenericViewSet):
                 emi_selected=emi_selected,
                 emi_period=emi_period if emi_selected else 0,
                 emi_plan=emi_plan if emi_selected else None,
-                emi_type=emi_type if emi_selected else None,
+                emi_type=(
+                    emi_type if emi_type and emi_selected else 
+                    ('cardless_emi' if emi_plan and emi_plan.plan_type == 'cardless_emi' and emi_selected else 
+                     'card_emi' if emi_plan and emi_selected else None)
+                ),
                 emi_bank=emi_bank if emi_selected else None,
                 shipping_method=shipping_method
             )
@@ -209,6 +224,7 @@ class CartViewSet(viewsets.GenericViewSet):
         emi_period = serializer.validated_data.get('emi_period', cart_item.emi_period)
         emi_type = serializer.validated_data.get('emi_type', cart_item.emi_type)
         emi_bank = serializer.validated_data.get('emi_bank', cart_item.emi_bank)
+        shipping_method = serializer.validated_data.get('shipping_method', cart_item.shipping_method)
         
         # Check if product is available
         if not cart_item.product.is_available or cart_item.product.stock_quantity < quantity:
@@ -236,7 +252,33 @@ class CartViewSet(viewsets.GenericViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
-        serializer.save()
+        # Update cart item
+        cart_item.quantity = quantity
+        
+        # Update EMI fields if provided
+        if 'emi_selected' in request.data:
+            cart_item.emi_selected = emi_selected
+            cart_item.emi_period = emi_period if emi_selected else 0
+            cart_item.emi_plan = emi_plan if emi_selected else None
+            
+            # Set default emi_type based on emi_plan if not provided
+            if emi_selected:
+                if emi_type:
+                    cart_item.emi_type = emi_type
+                elif emi_plan:
+                    cart_item.emi_type = 'cardless_emi' if emi_plan.plan_type == 'cardless_emi' else 'card_emi'
+                else:
+                    cart_item.emi_type = None
+            else:
+                cart_item.emi_type = None
+                
+            cart_item.emi_bank = emi_bank if emi_selected else None
+        
+        # Update shipping method if provided
+        if shipping_method:
+            cart_item.shipping_method = shipping_method
+            
+        cart_item.save()
         return Response(serializer.data)
     
     @action(detail=False, methods=['post'])

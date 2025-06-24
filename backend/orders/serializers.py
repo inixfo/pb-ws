@@ -81,10 +81,12 @@ class OrderItemSerializer(serializers.ModelSerializer):
     
     product = ProductListSerializer(read_only=True)
     variation = serializers.PrimaryKeyRelatedField(read_only=True)
+    emi_plan = EMIPlanSerializer(read_only=True)
     
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'variation', 'quantity', 'price', 'has_emi', 'total_price']
+        fields = ['id', 'product', 'variation', 'quantity', 'price', 'has_emi', 
+                 'emi_plan', 'emi_type', 'emi_bank', 'total_price']
         read_only_fields = ['price', 'total_price']
 
 
