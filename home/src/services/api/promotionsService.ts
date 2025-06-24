@@ -26,6 +26,42 @@ export const DEFAULT_NEW_ARRIVALS_BANNER = {
   updated_at: "2023-01-01T00:00:00Z"
 };
 
+export const DEFAULT_SALE_BANNER = {
+  id: 3,
+  title: "Special Offers",
+  subtitle: "Limited time deals on selected products",
+  button_text: "Shop Now",
+  button_link: "/special-offers",
+  image: "/banner-sale.jpg",
+  is_active: true,
+  created_at: "2023-01-01T00:00:00Z", 
+  updated_at: "2023-01-01T00:00:00Z"
+};
+
+export const DEFAULT_CATALOG_TOP_BANNER = {
+  id: 4,
+  title: "Browse Our Collection",
+  subtitle: "Find the perfect device for you",
+  button_text: "Explore",
+  button_link: "/catalog",
+  image: "/banner-catalog-top.jpg",
+  is_active: true,
+  created_at: "2023-01-01T00:00:00Z", 
+  updated_at: "2023-01-01T00:00:00Z"
+};
+
+export const DEFAULT_CATALOG_BOTTOM_BANNER = {
+  id: 5,
+  title: "Need Help?",
+  subtitle: "Our experts are ready to assist you",
+  button_text: "Contact Us",
+  button_link: "/contact",
+  image: "/banner-catalog-bottom.jpg",
+  is_active: true,
+  created_at: "2023-01-01T00:00:00Z", 
+  updated_at: "2023-01-01T00:00:00Z"
+};
+
 class PromotionsService {
   async getHeaderPromoBanners() {
     try {
@@ -65,8 +101,8 @@ class PromotionsService {
       return response.data;
     } catch (error) {
       console.error('Error fetching sale banner:', error);
-      // Return null but could add a default here if needed
-      return null;
+      // Return default banner instead of null
+      return DEFAULT_SALE_BANNER;
     }
   }
 
@@ -76,8 +112,8 @@ class PromotionsService {
       return response.data;
     } catch (error) {
       console.error('Error fetching catalog top banner:', error);
-      // Return null but could add a default here if needed
-      return null;
+      // Return default banner instead of null
+      return DEFAULT_CATALOG_TOP_BANNER;
     }
   }
 
@@ -87,8 +123,8 @@ class PromotionsService {
       return response.data;
     } catch (error) {
       console.error('Error fetching catalog bottom banner:', error);
-      // Return null but could add a default here if needed
-      return null;
+      // Return default banner instead of null
+      return DEFAULT_CATALOG_BOTTOM_BANNER;
     }
   }
 }
