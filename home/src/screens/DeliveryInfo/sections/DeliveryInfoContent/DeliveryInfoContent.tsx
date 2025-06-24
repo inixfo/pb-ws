@@ -801,29 +801,14 @@ export const DeliveryInfoContent = (): JSX.Element => {
     updatePaymentDetails('payment_method', chosenPaymentMethodKey);
 
     if (chosenPaymentMethodKey === "SSLCOMMERZ_CARDLESS_EMI") {
-        // Validate all required fields for cardless EMI
-        if (!nidFrontPhoto || !nidBackPhoto) {
-            toast.error("NID front and back photos are required for Cardless EMI.");
-            setIsProcessingPayment(false);
-            return;
-        }
-        if (!jobTitle.trim()) {
-            toast.error("Job title is required for Cardless EMI.");
-            setIsProcessingPayment(false);
-            return;
-        }
-        if (!salary || parseFloat(salary) <= 0) {
-            toast.error("Monthly salary is required for Cardless EMI.");
-            setIsProcessingPayment(false);
-            return;
-        }
-        
         // Check EMI plan details exist
         if (!selectedCardlessEMIPlanDetails || activeCardlessEMIDownpayment === null) {
             toast.error("EMI plan details couldn't be calculated. Please try a different payment method.");
             setIsProcessingPayment(false);
             return;
         }
+        
+        // We no longer need to validate NID and employment information as they're collected after checkout
     }
     
     // For Card EMI, check if a bank is selected
@@ -839,10 +824,6 @@ export const DeliveryInfoContent = (): JSX.Element => {
       if (chosenPaymentMethodKey === "SSLCOMMERZ_CARDLESS_EMI" && selectedCardlessEMIPlanDetails) {
         emiApplicationData = {
           emi_plan_id: selectedCardlessEMIPlanDetails.id,
-          job_title: jobTitle,
-          monthly_salary: parseFloat(salary),
-          nid_front_image: nidFrontPhoto,
-          nid_back_image: nidBackPhoto,
           product_price: activeCardlessEMIBasePrice,
           down_payment_amount: activeCardlessEMIDownpayment,
           monthly_installment: activeCardlessEMIMonthly,
@@ -1929,79 +1910,10 @@ export const DeliveryInfoContent = (): JSX.Element => {
                                   <span className="font-medium">{selectedCardlessEMIPlanDetails.interest_rate}%</span>
                                 </div>
                               </div>
-                            </div>
-                            
-                            {/* NID upload fields */}
-                            <div className="space-y-4">
-                              <h4 className="text-sm font-medium">Upload National ID (Required)</h4>
-                              
-                              <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">
-                                  NID Front <span className="text-red-500">*</span>
-                                </label>
-                                <input 
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={handleNidFrontUpload}
-                                  className="block w-full text-sm text-gray-500
-                                    file:mr-4 file:py-2 file:px-4
-                                    file:rounded-lg file:border-0
-                                    file:text-sm file:font-semibold
-                                    file:bg-primary-50 file:text-primarymain
-                                    hover:file:bg-primary-100"
-                                />
-                              </div>
-                              
-                              <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">
-                                  NID Back <span className="text-red-500">*</span>
-                                </label>
-                                <input 
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={handleNidBackUpload}
-                                  className="block w-full text-sm text-gray-500
-                                    file:mr-4 file:py-2 file:px-4
-                                    file:rounded-lg file:border-0
-                                    file:text-sm file:font-semibold
-                                    file:bg-primary-50 file:text-primarymain
-                                    hover:file:bg-primary-100"
-                                />
-                              </div>
-                            </div>
-                            
-                            {/* Employment information */}
-                            <div className="space-y-4">
-                              <h4 className="text-sm font-medium">Employment Information (Required)</h4>
-                              
-                              <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">
-                                  Job Title <span className="text-red-500">*</span>
-                                </label>
-                                <input 
-                                  type="text"
-                                  value={jobTitle}
-                                  onChange={(e) => setJobTitle(e.target.value)}
-                                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-primarymain focus:border-primarymain"
-                                  placeholder="e.g. Software Engineer"
-                                  required
-                                />
-                              </div>
-                              
-                              <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">
-                                  Monthly Income (৳) <span className="text-red-500">*</span>
-                                </label>
-                                <input 
-                                  type="number"
-                                  value={salary}
-                                  onChange={(e) => setSalary(e.target.value)}
-                                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-primarymain focus:border-primarymain"
-                                  placeholder="e.g. 50000"
-                                  min="1"
-                                  required
-                                />
-                              </div>
+                              <p className="text-xs mt-3 flex items-center gap-1 text-blue-700">
+                                <InfoIcon className="h-4 w-4 flex-shrink-0 text-blue-500" />
+                                Only the down payment will be charged now. You'll complete the EMI setup after checkout.
+                              </p>
                             </div>
                           </div>
                         )}
