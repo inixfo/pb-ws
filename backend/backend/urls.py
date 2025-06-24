@@ -36,6 +36,9 @@ urlpatterns = [
     path('api/promotions/', include('promotions.urls')),
     path('api/contact/', include('contact.urls')),
     path('api/sms/', include('sms.urls')),
+    
+    # Social Auth URLs
+    path('api/social-auth/', include('social_django.urls', namespace='social')),
 ]
 
 # Serve media files in development

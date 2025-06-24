@@ -6,6 +6,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 import json
 import logging
+from social_django.utils import load_strategy, load_backend
+from social_core.exceptions import AuthForbidden, AuthAlreadyAssociated, MissingBackend
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +15,7 @@ from .models import Profile, Address, PaymentMethod
 from .serializers import (
     UserSerializer, UserDetailSerializer, UserCreateSerializer,
     ProfileSerializer, AddressSerializer, PaymentMethodSerializer,
-    PasswordChangeSerializer
+    PasswordChangeSerializer, GoogleAuthSerializer, PhoneVerificationSerializer
 )
 from .permissions import IsOwnerOrAdmin, IsUserOwnerOrAdmin
 
@@ -413,3 +415,120 @@ class DebugRegistrationView(APIView):
             'message': 'This is a debug endpoint. User would be created with these details:',
             'data': serializer.validated_data
         })
+
+
+class GoogleLoginView(APIView):
+    """Handle Google OAuth login/signup"""
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        serializer = GoogleAuthSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Get token from request
+            token = serializer.validated_data['token']
+            
+            # Load the Google OAuth backend
+            strategy = load_strategy(request)
+            backend = load_backend(strategy, 'google-oauth2', redirect_uri=None)
+            
+            # Authenticate user with token
+            user = backend.do_auth(token)
+            
+            # Check if user needs phone verification
+            needs_verification = not user.is_verified
+            
+            # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'user': UserSerializer(user).data,
+                'needs_phone_verification': needs_verification,
+            })
+            
+        except (AuthForbidden, AuthAlreadyAssociated, MissingBackend) as e:
+            logger.error(f"Social auth error: {str(e)}")
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Unexpected error in Google login: {str(e)}")
+            return Response({'error': 'Authentication failed'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PhoneVerificationView(APIView):
+    """Verify user's phone number"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        serializer = PhoneVerificationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = request.user
+        phone = serializer.validated_data['phone']
+        
+        # Save phone number to user
+        user.phone = phone
+        user.save()
+        
+        try:
+            # Generate and send verification code
+            from sms.services import SMSService
+            sms_service = SMSService()
+            sms_service.generate_verification_code(phone)
+            
+            return Response({
+                'message': 'Verification code sent to your phone',
+                'phone': phone
+            })
+        except Exception as e:
+            logger.error(f"Error sending verification code: {str(e)}")
+            return Response({
+                'error': 'Failed to send verification code'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class VerifyPhoneCodeView(APIView):
+    """Verify the SMS code sent to user's phone"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        code = request.data.get('code')
+        phone = request.data.get('phone')
+        
+        if not code or not phone:
+            return Response({
+                'error': 'Code and phone are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Verify the code
+            from sms.services import SMSService
+            from sms.models import PhoneVerification
+            
+            sms_service = SMSService()
+            is_valid = sms_service.verify_code(phone, code)
+            
+            if is_valid:
+                # Mark user as verified
+                user = request.user
+                user.is_verified = True
+                user.save()
+                
+                return Response({
+                    'message': 'Phone verified successfully',
+                    'user': UserSerializer(user).data
+                })
+            else:
+                return Response({
+                    'error': 'Invalid verification code'
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error verifying code: {str(e)}")
+            return Response({
+                'error': 'Failed to verify code'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

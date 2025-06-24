@@ -203,3 +203,23 @@ class PasswordChangeSerializer(serializers.Serializer):
         if not user.check_password(value):
             raise serializers.ValidationError("Old password is incorrect.")
         return value 
+
+
+class GoogleAuthSerializer(serializers.Serializer):
+    """Serializer for Google OAuth authentication."""
+    
+    token = serializers.CharField(required=True)
+
+
+class PhoneVerificationSerializer(serializers.Serializer):
+    """Serializer for phone verification."""
+    
+    phone = serializers.CharField(required=True)
+    
+    def validate_phone(self, value):
+        """Validate phone number format."""
+        # Basic validation - can be improved with regex
+        cleaned_phone = ''.join(filter(str.isdigit, value))
+        if len(cleaned_phone) < 10:
+            raise serializers.ValidationError('Phone number must be at least 10 digits')
+        return value 

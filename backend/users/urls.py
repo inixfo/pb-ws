@@ -5,7 +5,8 @@ from .views import (
     UserRegistrationView, UserLoginView, UserDetailView,
     ProfileUpdateView, AddressListCreateView, AddressDetailView,
     PaymentMethodListCreateView, PaymentMethodDetailView,
-    PasswordChangeView, UserLogoutView, DebugRegistrationView
+    PasswordChangeView, UserLogoutView, DebugRegistrationView,
+    GoogleLoginView, PhoneVerificationView, VerifyPhoneCodeView
 )
 
 app_name = 'users'
@@ -18,6 +19,11 @@ urlpatterns = [
     path('logout/', UserLogoutView.as_view(), name='logout'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('password/change/', PasswordChangeView.as_view(), name='password_change'),
+    
+    # Google Authentication
+    path('google-login/', GoogleLoginView.as_view(), name='google_login'),
+    path('verify-phone/', PhoneVerificationView.as_view(), name='verify_phone'),
+    path('verify-code/', VerifyPhoneCodeView.as_view(), name='verify_code'),
     
     # User profile
     path('me/', UserDetailView.as_view(), name='user_detail'),
