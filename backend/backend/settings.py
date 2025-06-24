@@ -68,6 +68,8 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000',
     'http://localhost:5174',
     'http://localhost:5173',
+    'http://phonebay.xyz',
+    'https://phonebay.xyz',
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = [
@@ -184,6 +186,13 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# SSLCOMMERZ Payment Gateway Settings (for development)
+SSLCOMMERZ_STORE_ID = 'testpb0live'
+SSLCOMMERZ_STORE_PASSWORD = 'testpb0live33333'
+SSLCOMMERZ_STORE_NAME = 'Phone Bay Test'
+SSLCOMMERZ_IS_SANDBOX = True
+SSLCOMMERZ_API_URL = 'https://sandbox.sslcommerz.com/gwprocess/v4/api'
+
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -275,10 +284,10 @@ SMS_TEST_MODE = os.getenv('SMS_TEST_MODE', 'False').lower() == 'true'  # Set to 
 
 # SMS template defaults
 DEFAULT_SMS_TEMPLATES = {
-    'welcome': 'Welcome to {brand}! Your account has been created successfully. Shop the latest mobile phones and accessories.',
-    'verification': 'Your {brand} verification code is {code}. Valid for {expiry} minutes.',
+    'welcome': 'Welcome to Phone Bay! Your account has been created successfully. Shop the latest mobile phones and accessories.',
+    'verification': 'Your Phone Bay verification code is {code}. Valid for {expiry} minutes.',
     'order_confirmation': 'Thank you for your order {name}! Your order #{order_id} has been received and is being processed. Total: {total} BDT.',
-    'payment_success': 'Payment received for your order #{order_id}. Amount: {total} BDT. Thank you for shopping with {brand}!',
+    'payment_success': 'Payment received for your order #{order_id}. Amount: {total} BDT. Thank you for shopping with Phone Bay!',
     'order_status': 'Your order #{order_id} status has been updated to: {status}. Track your order on our website.',
     'emi_reminder': 'Reminder: Your EMI payment of {amount} BDT for order #{order_id} is due on {due_date}. Please make your payment to avoid late fees.'
 }

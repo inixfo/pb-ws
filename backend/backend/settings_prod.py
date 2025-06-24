@@ -36,14 +36,14 @@ CORS_ALLOWED_ORIGINS = [
     'http://52.62.201.84',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'http://phonebay.xyz',
 ]
 
 # SSLCOMMERZ Payment Gateway Settings
-STORE_ID = 'phonebayxyz0live'
-STORE_PASSWORD = '67CE865CBBB7718758'
-STORE_NAME = 'Phone Bay'
-SSLCOMMERZ_SANDBOX = False
+SSLCOMMERZ_STORE_ID = 'phonebayxyz0live'
+SSLCOMMERZ_STORE_PASSWORD = '67CE865CBBB7718758'
+SSLCOMMERZ_STORE_NAME = 'Phone Bay'
+SSLCOMMERZ_IS_SANDBOX = False
+SSLCOMMERZ_API_URL = 'https://securepay.sslcommerz.com/gwprocess/v4/api'
 
 # Payment Gateway URLs
 FRONTEND_BASE_URL = 'http://phonebay.xyz'
