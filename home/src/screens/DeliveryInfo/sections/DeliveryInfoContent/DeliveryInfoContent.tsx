@@ -848,29 +848,46 @@ export const DeliveryInfoContent = (): JSX.Element => {
           // For Cardless EMI, user only pays the downpayment initially
           amountForSSLCommerz = activeCardlessEMIDownpayment;
           paymentPayloadForContext.amount = amountForSSLCommerz;
-          paymentPayloadForContext.transactionType = 'DOWN_PAYMENT'; // Inform context this is specific
+          paymentPayloadForContext.transaction_type = 'DOWN_PAYMENT'; // Inform context this is specific
           paymentPayloadForContext.total_with_interest = calculatedOrderTotal; // Pass the total with interest for record keeping
+          
+          // Add EMI plan details for Cardless EMI
+          if (selectedCardlessEMIPlanDetails) {
+            paymentPayloadForContext.emi_type = 'cardless_emi';
+            paymentPayloadForContext.emi_plan_id = selectedCardlessEMIPlanDetails.id;
+            paymentPayloadForContext.emi_period = selectedCardlessEMIPlanDetails.duration_months;
+          }
         } else if (chosenPaymentMethodKey === "SSLCOMMERZ_CARD_EMI") {
           // Card EMI full amount transaction
           if (activeCardEMICalculatedDetails) {
             amountForSSLCommerz = activeCardEMICalculatedDetails.baseAmount;
             paymentPayloadForContext.amount = amountForSSLCommerz;
           }
-          paymentPayloadForContext.transactionType = 'EMI_FULL_AMOUNT';
+          paymentPayloadForContext.transaction_type = 'EMI_FULL_AMOUNT';
           
           // Add selected bank for Card EMI
           if (selectedBank) {
             paymentPayloadForContext.selected_bank = selectedBank;
           }
+          
+          // Add EMI plan details for Card EMI
+          if (activeCardEMIPlanDetails) {
+            paymentPayloadForContext.emi_type = 'card_emi';
+            paymentPayloadForContext.emi_plan_id = activeCardEMIPlanDetails.id;
+            paymentPayloadForContext.emi_period = activeCardEMIPlanDetails.duration_months;
+          }
         } else if (chosenPaymentMethodKey === "SSLCOMMERZ_STANDARD") {
           // For standard SSLCommerz, it's the orderTotal from context (which should be the final payable amount)
           amountForSSLCommerz = calculatedOrderTotal; // Use calculated order total which includes EMI interest
           paymentPayloadForContext.amount = amountForSSLCommerz;
-          paymentPayloadForContext.transactionType = 'REGULAR_FULL_AMOUNT';
+          paymentPayloadForContext.transaction_type = 'REGULAR_FULL_AMOUNT';
         }
         // If chosenPaymentMethodKey is 'cashOnDelivery', initiateSSLCommerzPayment won't be called.
 
         if (chosenPaymentMethodKey.startsWith("SSLCOMMERZ")) {
+          // Log the payment payload for debugging
+          console.log('Payment payload for SSLCommerz:', paymentPayloadForContext);
+          
           // The initiateSSLCommerzPayment function in CheckoutContext will need to be updated 
           // to accept an object like paymentPayloadForContext or individual parameters.
           // For now, we are preparing the data. The actual signature change is in the context.

@@ -454,28 +454,48 @@ export const CheckoutProvider: React.FC<{ children: ReactNode }> = ({ children }
         cart.items.find((item: any) => item.emi_selected) : null;
       
       // Prepare payment details with EMI information
-      const paymentPayload = {
-        ...paymentDetails,
+      const paymentPayload: any = {
         order_id: orderId,
         // Set transaction type based on EMI selection
-        transactionType: hasEmiItems ? 'EMI_FULL_AMOUNT' : 'REGULAR_FULL_AMOUNT',
+        transaction_type: paymentDetails.transactionType || (hasEmiItems ? 'EMI_FULL_AMOUNT' : 'REGULAR_FULL_AMOUNT'),
       };
+      
+      // Add amount if provided
+      if (paymentDetails.amount !== undefined) {
+        paymentPayload.amount = paymentDetails.amount;
+      }
       
       // Add EMI details if available
       if (emiItem) {
-        paymentPayload.emi_type = (emiItem as any).emi_type || 
-          ((emiItem as any).emi_plan && (emiItem as any).emi_plan.plan_type === 'cardless_emi' ? 'cardless_emi' : 'card_emi');
+        // Determine EMI type (card_emi or cardless_emi)
+        const emiType = paymentDetails.chosenPaymentMethodKey === "SSLCOMMERZ_CARDLESS_EMI" ? 
+          'cardless_emi' : 'card_emi';
         
-        if ((emiItem as any).emi_bank) {
-          paymentPayload.emi_bank = (emiItem as any).emi_bank;
-        }
+        paymentPayload.emi_type = emiType;
         
+        // Add EMI period/tenure
         if ((emiItem as any).emi_period) {
           paymentPayload.emi_period = (emiItem as any).emi_period;
         }
+        
+        // Add EMI plan ID if available
+        if ((emiItem as any).emi_plan && (emiItem as any).emi_plan.id) {
+          paymentPayload.emi_plan_id = (emiItem as any).emi_plan.id;
+        }
+        
+        // Add bank information for card EMI
+        if (emiType === 'card_emi') {
+          // Use selected bank from payment details or from item
+          paymentPayload.selected_bank = 
+            paymentDetails.selected_bank || 
+            (emiItem as any).emi_bank || 
+            '';
+            
+          console.log('Adding bank for Card EMI:', paymentPayload.selected_bank);
+        }
       }
       
-      console.log('Initiating payment with EMI details:', paymentPayload);
+      console.log('Initiating payment with payload:', paymentPayload);
       
       const response = await paymentService.initiateSslcommerzPayment(
         orderId,
@@ -488,6 +508,7 @@ export const CheckoutProvider: React.FC<{ children: ReactNode }> = ({ children }
           redirect_url: response.redirect_url 
         };
       } else {
+        console.error('SSLCommerz init error:', response.message || 'Unknown error');
         return { 
           status: 'error', 
           error: response.message || 'Failed to initiate payment' 

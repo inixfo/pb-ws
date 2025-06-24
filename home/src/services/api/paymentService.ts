@@ -5,11 +5,18 @@ import { getAuthHeaders } from './authHeaders';
 class PaymentService {
   async initiateSslcommerzPayment(orderId: number, paymentDetails: any = {}) {
     try {
-      const { amount, transactionType = 'REGULAR_FULL_AMOUNT', selected_bank, emi_type, emi_bank } = paymentDetails;
+      const { 
+        amount, 
+        transaction_type = 'REGULAR_FULL_AMOUNT', 
+        selected_bank, 
+        emi_type, 
+        emi_period,
+        emi_plan_id 
+      } = paymentDetails;
       
       const payload: any = {
         order_id: orderId,
-        transaction_type: transactionType
+        transaction_type: transaction_type
       };
       
       // Only add amount if it's defined
@@ -17,14 +24,24 @@ class PaymentService {
         payload.amount = amount;
       }
       
-      // Add selected bank for Card EMI if provided
-      if (transactionType === 'EMI_FULL_AMOUNT' && (selected_bank || emi_bank)) {
-        payload.selected_bank = selected_bank || emi_bank;
-      }
-      
       // Add EMI type if provided
       if (emi_type) {
         payload.emi_type = emi_type;
+      }
+      
+      // Add EMI period if provided
+      if (emi_period) {
+        payload.emi_period = emi_period;
+      }
+      
+      // Add EMI plan ID if provided
+      if (emi_plan_id) {
+        payload.emi_plan_id = emi_plan_id;
+      }
+      
+      // Add selected bank for Card EMI if provided
+      if (emi_type === 'card_emi' && selected_bank) {
+        payload.selected_bank = selected_bank;
       }
       
       console.log('Initiating SSLCOMMERZ payment with payload:', payload);
