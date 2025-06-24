@@ -9,7 +9,7 @@ from django.db.models import Q
 from django.db import transaction
 from datetime import datetime, timedelta
 from decimal import Decimal
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from .models import EMIPlan, EMIApplication, EMIRecord, EMIInstallment
 from .serializers import (
@@ -64,7 +64,7 @@ class EMIPlanViewSet(viewsets.ReadOnlyModelViewSet):
         
         return queryset
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def available_banks(self, request):
         """Get list of available banks for EMI from SSLCOMMERZ API"""
         # Create SSLCOMMERZ client
@@ -95,7 +95,7 @@ class EMIPlanViewSet(viewsets.ReadOnlyModelViewSet):
             'count': len(banks)
         })
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def calculate_emi(self, request):
         """Calculate EMI details for a plan"""
         try:
