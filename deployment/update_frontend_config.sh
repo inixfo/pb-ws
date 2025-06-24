@@ -3,8 +3,12 @@
 # Script to update the frontend config.js file with the correct Google Client ID
 # Usage: ./update_frontend_config.sh [google_client_id]
 
-# Get the Google Client ID from argument or use default
-GOOGLE_CLIENT_ID=${1:-"988564065705-pat9e6cesim147njv6ddof095gmk7hhn.apps.googleusercontent.com"}
+# Get the Google Client ID from argument or prompt
+if [ -z "$1" ]; then
+    read -p "Enter Google Client ID: " GOOGLE_CLIENT_ID
+else
+    GOOGLE_CLIENT_ID="$1"
+fi
 
 # Path to the config.js file
 CONFIG_FILE="../home/src/config.js"

@@ -4,13 +4,16 @@
 # This script updates both backend and frontend configurations
 
 echo "===== Phone Bay Google OAuth Deployment Script ====="
-echo "Client ID: 988564065705-pat9e6cesim147njv6ddof095gmk7hhn.apps.googleusercontent.com"
-echo "Client Secret: [HIDDEN]"
+echo "Please provide your Google OAuth credentials"
 echo ""
 
-# 1. Set environment variables for the current session
-export GOOGLE_CLIENT_ID="988564065705-pat9e6cesim147njv6ddof095gmk7hhn.apps.googleusercontent.com"
-export GOOGLE_CLIENT_SECRET="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"
+# 1. Prompt for credentials
+read -p "Enter Google Client ID: " GOOGLE_CLIENT_ID
+read -p "Enter Google Client Secret: " GOOGLE_CLIENT_SECRET
+
+# Set environment variables for the current session
+export GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+export GOOGLE_CLIENT_SECRET="$GOOGLE_CLIENT_SECRET"
 
 echo "✅ Environment variables set for current session"
 

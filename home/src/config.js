@@ -63,7 +63,7 @@ const config = {
   API_URL: 'http://52.62.201.84/api',
   STRIPE_PUBLIC_KEY: 'pk_test_51OJlMsITKMzQFQGt7yYxM0NxUJlmUXFCuAJQA4yjNnBzMRmGgvfQFdtpCrZWjjJPkMEVF6jcGFVdkfSLyYbMZGsj00QUBvn9Dn',
   RAZORPAY_KEY_ID: 'rzp_test_8VVN5vUzTCBg8p',
-  GOOGLE_CLIENT_ID: '988564065705-pat9e6cesim147njv6ddof095gmk7hhn.apps.googleusercontent.com',
+  GOOGLE_CLIENT_ID: '',  // Set this during build or deployment
   FACEBOOK_APP_ID: '1234567890',
   RECAPTCHA_SITE_KEY: '6LdZwpIpAAAAAFWa0xkR3ASn5QbKQWgHEZGa-Iqe',
   MAPBOX_TOKEN: 'pk.eyJ1IjoiYWRpdHlhLWt1bWFyLWRhcyIsImEiOiJjbHZkdnFkZXkwMDNiMmtvNWF2YnlwZWVlIn0.7Zn9L-LX_0L-rAKwPVnZBA',

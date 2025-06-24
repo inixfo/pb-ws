@@ -3,8 +3,8 @@
 # Script to set Google OAuth environment variables for production deployment
 
 # Set Google OAuth credentials
-export GOOGLE_CLIENT_ID="988564065705-pat9e6cesim147njv6ddof095gmk7hhn.apps.googleusercontent.com"
-export GOOGLE_CLIENT_SECRET="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"
+export GOOGLE_CLIENT_ID="your_google_client_id_here"
+export GOOGLE_CLIENT_SECRET="your_google_client_secret_here"
 
 # Print confirmation
 echo "Google OAuth environment variables set:"

@@ -12,8 +12,8 @@ DEBUG = False
 ALLOWED_HOSTS = ['52.62.201.84', 'localhost', '127.0.0.1']
 
 # Google OAuth Settings
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get('GOOGLE_CLIENT_ID', '988564065705-pat9e6cesim147njv6ddof095gmk7hhn.apps.googleusercontent.com')
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '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')
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get('GOOGLE_CLIENT_ID', '')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 
 # Authentication backends
 AUTHENTICATION_BACKENDS = (
