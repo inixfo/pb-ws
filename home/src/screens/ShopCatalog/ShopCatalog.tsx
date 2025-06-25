@@ -500,8 +500,12 @@ export const ShopCatalog = (): JSX.Element => {
       
       // Add brand filter if brands are selected
       if (selectedBrandIds.length > 0) {
-        // For direct URL construction, we'll handle this in the endpoint building section
+        // Store brand IDs and slugs for filtering
         baseParams.brandIds = selectedBrandIds;
+        baseParams.brandSlugs = selectedBrands.map(brandName => {
+          const brand = brands.find(b => b.name === brandName);
+          return brand?.slug || brandName.toLowerCase().replace(/\s+/g, '-');
+        });
       }
       
       // Only add price filters if they're different from the default range
@@ -536,14 +540,23 @@ export const ShopCatalog = (): JSX.Element => {
         // Create a copy of params to modify
         const apiParams = { ...params };
         
-        // Handle special brandIds parameter for service calls
-        if (apiParams.brandIds && Array.isArray(apiParams.brandIds)) {
-          // Convert to multiple brand parameters
-          apiParams.brandIds.forEach((brandId: number, index: number) => {
-            apiParams[`brand_${index}`] = brandId;
-          });
+        // Handle special brand parameters for service calls
+        if (apiParams.brandSlugs && Array.isArray(apiParams.brandSlugs) && apiParams.brandSlugs.length > 0) {
+          // Use the brand__slug__in filter for multiple brands
+          apiParams.brand__slug__in = apiParams.brandSlugs.join(',');
+          // Remove the brandSlugs parameter
+          delete apiParams.brandSlugs;
+          delete apiParams.brandIds;
+        } else if (apiParams.brandIds && Array.isArray(apiParams.brandIds) && apiParams.brandIds.length === 1) {
+          // Use the brand filter for single brand
+          apiParams.brand = apiParams.brandIds[0];
           // Remove the brandIds parameter
           delete apiParams.brandIds;
+          delete apiParams.brandSlugs;
+        } else {
+          // Remove unused brand parameters
+          delete apiParams.brandIds;
+          delete apiParams.brandSlugs;
         }
         
         if (searchQuery) {
@@ -576,17 +589,19 @@ export const ShopCatalog = (): JSX.Element => {
         
         // Add other filter parameters
         Object.entries(baseParams).forEach(([key, value]) => {
-          if (key !== 'page' && key !== 'ordering' && key !== 'brandIds') {
+          if (key !== 'page' && key !== 'ordering' && key !== 'brandIds' && key !== 'brandSlugs') {
             // For all parameters, just use the key-value pair directly
             endpoint += `&${key}=${encodeURIComponent(String(value))}`;
           }
         });
         
-        // Special handling for multiple brand IDs
-        if (baseParams.brandIds && Array.isArray(baseParams.brandIds)) {
-          baseParams.brandIds.forEach(brandId => {
-            endpoint += `&brand=${encodeURIComponent(String(brandId))}`;
-          });
+        // Special handling for multiple brand selection
+        if (baseParams.brandSlugs && Array.isArray(baseParams.brandSlugs) && baseParams.brandSlugs.length > 0) {
+          // Use the brand__slug__in filter for multiple brands
+          endpoint += `&brand__slug__in=${encodeURIComponent(baseParams.brandSlugs.join(','))}`;
+        } else if (baseParams.brandIds && Array.isArray(baseParams.brandIds) && baseParams.brandIds.length === 1) {
+          // Use the brand filter for single brand
+          endpoint += `&brand=${encodeURIComponent(String(baseParams.brandIds[0]))}`;
         }
         
         console.log(`[ShopCatalog fetchProducts] Direct API call to ${endpoint}`);
