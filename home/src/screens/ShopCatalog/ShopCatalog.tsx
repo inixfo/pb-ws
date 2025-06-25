@@ -143,49 +143,76 @@ export const ShopCatalog = (): JSX.Element => {
     }
   }, [priceRange, filterTags]);
 
-  // Fetch products when filters change
+  // Effect to fetch products when filters change
   useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      console.log('[ShopCatalog useEffect fetchProducts trigger] Calling fetchProducts. Slug:', slug);
-      fetchProducts();
-    }, 300);
+    fetchProducts();
+  }, [
+    slug, 
+    currentPage, 
+    sort, 
+    selectedBrands, 
+    selectedColors, 
+    minPrice, 
+    maxPrice, 
+    searchQuery, 
+    JSON.stringify(customFilterValues)
+  ]);
+  
+  // Effect to fetch categories and filter options when slug changes
+  useEffect(() => {
+    fetchCategoriesWithCount();
+    fetchBrands();
+    fetchFilterOptions();
     
-    return () => clearTimeout(debounceTimer);
-  }, [currentPage, sort, selectedBrands, selectedColors, customFilterValues, minPrice, maxPrice, slug, searchQuery]);
-
-  // Set page title and selected category based on slug
-  useEffect(() => {
-    console.log('[ShopCatalog useEffect slug,categories,searchQuery] Running for page title. Slug:', slug, 'Categories loaded:', categories.length > 0, 'Search query:', searchQuery);
+    // Reset pagination when slug changes
+    setCurrentPage(1);
+    
+    // Set page title based on slug
     if (slug) {
-      const category = categories.find(cat => cat.slug === slug);
-      if (category) {
-        console.log('[ShopCatalog useEffect slug,categories,searchQuery] Category found for slug:', category);
-        setPageTitle(category.name);
-        setSelectedCategories([category.name]);
-        if (!filterTags.includes(category.name)) {
-          setFilterTags(prev => [...prev, category.name]);
-        }
-      } else {
-        console.log('[ShopCatalog useEffect slug,categories,searchQuery] Category NOT found for slug:', slug, '. Will format as page title.');
-        const formattedSlug = slug.replace(/-/g, ' ');
-        const capitalizedSlug = formattedSlug
-          .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
-        setPageTitle(capitalizedSlug);
-        if (!filterTags.includes(capitalizedSlug)) {
-          setFilterTags(prev => [...prev, capitalizedSlug]);
-        }
-      }
-    } else if (searchQuery) {
-      console.log('[ShopCatalog useEffect slug,categories,searchQuery] Handling searchQuery for page title:', searchQuery);
-      setPageTitle(`Search Results: ${searchQuery}`);
-      const searchTag = `Search: ${searchQuery}`;
-      if (!filterTags.includes(searchTag)) {
-        setFilterTags(prev => [...prev, searchTag]);
-      }
+      // Convert slug to title case
+      const title = slug
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      setPageTitle(title);
+    } else {
+      setPageTitle('All Products');
     }
-  }, [slug, categories, searchQuery]);
+  }, [slug]);
+  
+  // Effect to update filter tags when filters change
+  useEffect(() => {
+    const tags: string[] = [];
+    
+    // Add brand tags
+    selectedBrands.forEach(brand => {
+      tags.push(`Brand: ${brand}`);
+    });
+    
+    // Add color tags
+    selectedColors.forEach(color => {
+      tags.push(`Color: ${color}`);
+    });
+    
+    // Add price tag if different from default
+    if (
+      (minPrice && minPrice !== '0' && minPrice !== priceRange.min.toString()) || 
+      (maxPrice && maxPrice !== priceRange.max.toString())
+    ) {
+      tags.push(`Price: ${CURRENCY_SYMBOL}${minPrice} - ${CURRENCY_SYMBOL}${maxPrice}`);
+    }
+    
+    // Add custom filter tags
+    Object.entries(customFilterValues).forEach(([key, values]) => {
+      if (values.length > 0) {
+        values.forEach(value => {
+          tags.push(`${key}: ${value}`);
+        });
+      }
+    });
+    
+    setFilterTags(tags);
+  }, [selectedBrands, selectedColors, minPrice, maxPrice, customFilterValues, priceRange]);
 
   // Handlers
   const handleBrandToggle = (brand: string) => {
@@ -448,10 +475,28 @@ export const ShopCatalog = (): JSX.Element => {
 
     try {
       // Only include filters that are actually selected
-      const baseParams: any = {
+      const baseParams: Record<string, any> = {
         page: currentPage,
-        sort_by: sort
       };
+      
+      // Add sorting parameter based on selected sort option
+      switch (sort) {
+        case 'popular':
+          baseParams.ordering = '-popularity_score';
+          break;
+        case 'new':
+          baseParams.ordering = '-created_at';
+          break;
+        case 'price_low':
+          baseParams.ordering = 'price';
+          break;
+        case 'price_high':
+          baseParams.ordering = '-price';
+          break;
+        default:
+          // Default sorting
+          baseParams.ordering = '-popularity_score';
+      }
       
       // Only add brand filter if brands are selected
       if (selectedBrands.length > 0) {
@@ -460,11 +505,11 @@ export const ShopCatalog = (): JSX.Element => {
       
       // Only add price filters if they're different from the default range
       if (minPrice && minPrice !== '0' && minPrice !== priceRange.min.toString()) {
-        baseParams.base_price__gte = minPrice;
+        baseParams.price__gte = minPrice;
       }
       
       if (maxPrice && maxPrice !== priceRange.max.toString()) {
-        baseParams.base_price__lte = maxPrice;
+        baseParams.price__lte = maxPrice;
       }
       
       // Only add custom filters if they're selected
@@ -486,7 +531,7 @@ export const ShopCatalog = (): JSX.Element => {
       let data;
       let usedFallback = false;
       
-      const fetchWithParams = async (params: any) => {
+      const fetchWithParams = async (params: Record<string, any>) => {
         if (searchQuery) {
           console.log('[ShopCatalog fetchProducts] Performing search with query:', searchQuery, 'and params:', params);
           return await searchService.search(searchQuery, params);
@@ -505,10 +550,22 @@ export const ShopCatalog = (): JSX.Element => {
         console.log('[ShopCatalog fetchProducts] Making direct API call first');
         const axios = (await import('axios')).default;
         
-        // Determine the endpoint based on whether we have a category slug
-        const endpoint = slug 
+        // Build the endpoint URL with proper parameters
+        let endpoint = slug 
           ? `https://phonebay.xyz/api/products/products/?category_slug=${slug}&page=${currentPage}`
           : `https://phonebay.xyz/api/products/products/?page=${currentPage}`;
+        
+        // Add sorting parameter
+        if (baseParams.ordering) {
+          endpoint += `&ordering=${baseParams.ordering}`;
+        }
+        
+        // Add other filter parameters
+        Object.entries(baseParams).forEach(([key, value]) => {
+          if (key !== 'page' && key !== 'ordering') {
+            endpoint += `&${key}=${encodeURIComponent(String(value))}`;
+          }
+        });
         
         console.log(`[ShopCatalog fetchProducts] Direct API call to ${endpoint}`);
         const directResponse = await axios.get(endpoint);
@@ -522,10 +579,11 @@ export const ShopCatalog = (): JSX.Element => {
           // Format the response to match expected structure
           if (Array.isArray(directResponse.data)) {
             data = {
-              results: directResponse.data,
+              results: directResponse.data as Product[],
               count: directResponse.data.length,
               next: null,
-              previous: null
+              previous: null,
+              total_pages: 1
             };
           } else {
             data = directResponse.data;
@@ -553,16 +611,17 @@ export const ShopCatalog = (): JSX.Element => {
       
       // Check if we got valid results
       if (data && data.results && data.results.length > 0) {
-        
-        setProducts(data.results);
-        setTotalPages(data.total_pages || data.num_pages || 1);
-        setTotalProducts(data.count || 0);
+        // Ensure we have the correct type
+        const typedResults = data.results as Product[];
+        setProducts(typedResults);
+        setTotalPages(data.total_pages || data.num_pages || Math.ceil(data.count / 12) || 1);
+        setTotalProducts(data.count || data.results.length || 0);
         
         if (usedFallback) {
           setError("Some filters were ignored to show you products.");
         }
         
-        console.log('[ShopCatalog fetchProducts SUCCESS] Products loaded:', data.results.length, 'Total pages:', data.total_pages || data.num_pages);
+        console.log('[ShopCatalog fetchProducts SUCCESS] Products loaded:', data.results.length, 'Total pages:', data.total_pages || data.num_pages || Math.ceil(data.count / 12) || 1);
       } else {
         console.warn('[ShopCatalog fetchProducts WARN] No results in data or empty array', data);
         
@@ -625,13 +684,60 @@ export const ShopCatalog = (): JSX.Element => {
   // Fetch brands
   const fetchBrands = async () => {
     try {
-      const data = await brandService.getAll();
-      if (data && data.results) {
-        setBrands(data.results.map((brand: Brand) => ({
-          ...brand,
-          count: brand.id // Temporary count placeholder
-        })));
+      // First try to get brands from filter options, which will include counts
+      let brandsWithCounts: Brand[] = [];
+      
+      // If we have a category slug, try to get category-specific brands
+      if (slug) {
+        try {
+          const filterOptions = await productService.getFilterOptions(undefined, slug);
+          if (filterOptions && Array.isArray(filterOptions.brands)) {
+            brandsWithCounts = filterOptions.brands as Brand[];
+            console.log('Got category-specific brands with counts:', brandsWithCounts);
+          }
+        } catch (err) {
+          console.error('Failed to get category-specific brands:', err);
+        }
       }
+      
+      // If we couldn't get brands with counts from filter options, fall back to regular brand list
+      if (brandsWithCounts.length === 0) {
+        const data = await brandService.getAll();
+        if (data && data.results) {
+          // Try to get brand counts from filter options
+          try {
+            const filterOptions = await productService.getFilterOptions();
+            if (filterOptions && Array.isArray(filterOptions.brands)) {
+              // Map counts to brands
+              const brandCounts: Record<string, number> = {};
+              filterOptions.brands.forEach((brand: any) => {
+                brandCounts[brand.name] = brand.count;
+              });
+              
+              brandsWithCounts = data.results.map((brand: Brand) => ({
+                ...brand,
+                count: brandCounts[brand.name] || 0
+              }));
+            } else {
+              brandsWithCounts = data.results.map((brand: Brand) => ({
+                ...brand,
+                count: 0
+              }));
+            }
+          } catch (err) {
+            console.error('Failed to get brand counts:', err);
+            brandsWithCounts = data.results.map((brand: Brand) => ({
+              ...brand,
+              count: 0
+            }));
+          }
+        }
+      }
+      
+      // Sort brands by count (descending)
+      brandsWithCounts.sort((a: Brand, b: Brand) => (b.count || 0) - (a.count || 0));
+      
+      setBrands(brandsWithCounts);
     } catch (err) {
       console.error('Failed to load brands:', err);
     }
@@ -644,27 +750,66 @@ export const ShopCatalog = (): JSX.Element => {
       const categorySlugForApi = slug || (selectedCategories.length > 0 ? categories.find(c => c.name === selectedCategories[0])?.slug : undefined);
       console.log('[ShopCatalog fetchFilterOptions] Determined categorySlug for API:', categorySlugForApi);
 
-      if (categorySlugForApi) {
-        const data = await productService.getFilterOptions(undefined, categorySlugForApi);
-        console.log('[ShopCatalog fetchFilterOptions] Raw filter data for', categorySlugForApi, ':', data);
-        
-        if (data) {
-          setCustomFields(Array.isArray(data.custom_filters) ? data.custom_filters : 
-                         Array.isArray(data.specifications_options) ? data.specifications_options : []);
-          setAvailableColors(Array.isArray(data.colors) ? data.colors : []);
-          setPriceRange(data.price_range || { min: 0, max: 10000 });
-          console.log('[ShopCatalog fetchFilterOptions SUCCESS] Filters set for slug:', categorySlugForApi);
+      // Fetch filter options from the API
+      const data = categorySlugForApi
+        ? await productService.getFilterOptions(undefined, categorySlugForApi)
+        : await productService.getFilterOptions();
+
+      console.log('[ShopCatalog fetchFilterOptions] Raw filter data:', data);
+      
+      if (data) {
+        // Set custom filters
+        if (Array.isArray(data.custom_filters)) {
+          setCustomFields(data.custom_filters);
+        } else if (Array.isArray(data.specifications_options)) {
+          setCustomFields(data.specifications_options);
         } else {
-          console.warn('[ShopCatalog fetchFilterOptions WARN] No data returned from getFilterOptions for slug:', categorySlugForApi);
           setCustomFields([]);
-          setAvailableColors(colors); 
-          setPriceRange({ min: 0, max: 10000 }); 
         }
+        
+        // Set available colors with proper structure
+        if (Array.isArray(data.colors)) {
+          const formattedColors = data.colors.map((color: any) => {
+            // If color already has the correct structure, use it
+            if (color && typeof color === 'object' && color.name && color.color) {
+              return color;
+            }
+            
+            // Otherwise, create a proper color object
+            const colorName = typeof color === 'string' ? color : color?.name || '';
+            const colorHex = color?.color || getColorHex(colorName);
+            
+            return {
+              name: colorName,
+              color: colorHex
+            };
+          });
+          
+          setAvailableColors(formattedColors);
+        } else {
+          // Fallback to default colors
+          setAvailableColors(colors);
+        }
+        
+        // Set price range
+        if (data.price_range) {
+          setPriceRange(data.price_range);
+          
+          // Only update min/max price inputs if the user hasn't manually set them
+          if (!filterTags.some(tag => tag.includes(CURRENCY_SYMBOL))) {
+            setMinPrice(data.price_range.min.toString());
+            setMaxPrice(data.price_range.max.toString());
+          }
+        } else {
+          setPriceRange({ min: 0, max: 10000 });
+        }
+        
+        console.log('[ShopCatalog fetchFilterOptions SUCCESS] Filters set for slug:', categorySlugForApi);
       } else {
-        console.log('[ShopCatalog fetchFilterOptions] No category slug provided or derivable, not fetching specific filters.');
+        console.warn('[ShopCatalog fetchFilterOptions WARN] No data returned from getFilterOptions for slug:', categorySlugForApi);
         setCustomFields([]);
-        setAvailableColors(colors);
-        setPriceRange({ min: 0, max: 10000 });
+        setAvailableColors(colors); 
+        setPriceRange({ min: 0, max: 10000 }); 
       }
     } catch (err: any) {
       console.error('[ShopCatalog fetchFilterOptions ERROR] For slug:', slug, err.response?.data || err.message || err);
@@ -672,6 +817,27 @@ export const ShopCatalog = (): JSX.Element => {
       setAvailableColors(colors); 
       setPriceRange({ min: 0, max: 10000 }); 
     }
+  };
+  
+  // Helper function to get a color hex code from a color name
+  const getColorHex = (colorName: string): string => {
+    const colorMap: Record<string, string> = {
+      'green': '#8bc4ab',
+      'coral red': '#ee7976',
+      'light pink': '#df8fbf',
+      'sky blue': '#9acbf1',
+      'black': '#364254',
+      'white': '#ffffff',
+      'red': '#e53935',
+      'blue': '#1976d2',
+      'yellow': '#fdd835',
+      'purple': '#9c27b0',
+      'orange': '#ff9800',
+      'gray': '#9e9e9e'
+    };
+    
+    const normalizedColorName = colorName.toLowerCase();
+    return colorMap[normalizedColorName] || '#cccccc'; // Default gray if color not found
   };
 
   // Add function to handle clicking on product from search results for analytics
