@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://52.62.201.84/',
+        target: 'https://phonebay.xyz/',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path

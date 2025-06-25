@@ -112,7 +112,7 @@ class ProductService {
       console.log('[productService.getAll] All endpoints failed, trying direct axios call');
       const axios = (await import('axios')).default;
       
-      const directUrl = 'http://52.62.201.84/api/products/products/';
+      const directUrl = 'https://phonebay.xyz/api/products/products/';
       console.log(`[productService.getAll] Direct axios call to ${directUrl}`);
       
       const response = await axios.get(directUrl, { params });

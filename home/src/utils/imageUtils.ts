@@ -5,7 +5,7 @@
 import { Product, ProductImage } from "../types/products";
 
 // Define the backend URL constant
-const BACKEND_URL = 'http://52.62.201.84/';
+const BACKEND_URL = 'https://phonebay.xyz/';
 
 /**
  * Ensure a URL is absolute by adding the backend URL if needed

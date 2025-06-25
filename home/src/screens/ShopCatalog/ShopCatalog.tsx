@@ -507,8 +507,8 @@ export const ShopCatalog = (): JSX.Element => {
         
         // Determine the endpoint based on whether we have a category slug
         const endpoint = slug 
-          ? `http://52.62.201.84/api/products/products/?category_slug=${slug}&page=${currentPage}`
-          : `http://52.62.201.84/api/products/products/?page=${currentPage}`;
+          ? `https://phonebay.xyz/api/products/products/?category_slug=${slug}&page=${currentPage}`
+          : `https://phonebay.xyz/api/products/products/?page=${currentPage}`;
         
         console.log(`[ShopCatalog fetchProducts] Direct API call to ${endpoint}`);
         const directResponse = await axios.get(endpoint);
