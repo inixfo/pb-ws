@@ -938,8 +938,41 @@ export const ShopCatalog = (): JSX.Element => {
               </div>
             ) : products.length === 0 ? (
               // Empty state
-              <div className="p-6 text-center">
-                <p className="text-gray-500">No products found matching your criteria.</p>
+              <div className="p-8 text-center bg-white rounded-xl border border-gray-200">
+                <img 
+                  src="/empty-box.svg" 
+                  alt="No products found" 
+                  className="w-16 h-16 mx-auto mb-4 opacity-50"
+                  onError={(e) => {
+                    e.currentTarget.src = "/empty-box.svg";
+                    e.currentTarget.onerror = null;
+                  }}
+                />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {slug ? `No Products Available in ${pageTitle}` : 'No Products Found'}
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  {slug 
+                    ? `There are currently no products available in this category. Please check back later or browse other categories.`
+                    : `No products match your selected filters. Try adjusting your filter options or search terms.`
+                  }
+                </p>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <Button 
+                    variant="outline"
+                    onClick={handleClearAll}
+                    className="border-gray-300"
+                  >
+                    Clear Filters
+                  </Button>
+                  <Button 
+                    variant="default"
+                    onClick={() => navigate('/catalog')}
+                    className="bg-primarymain text-white"
+                  >
+                    Browse All Products
+                  </Button>
+                </div>
               </div>
             ) : (
               // Products grid
