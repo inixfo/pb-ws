@@ -13,6 +13,7 @@ python-dotenv==1.0.1
 # For Google Authentication
 social-auth-app-django>=5.2.0,<5.3.0
 django-allauth>=0.54.0,<0.55.0
+google-auth>=2.28.0,<2.29.0
 # For SSLCOMMERZ payment gateway
 # Change from SSLCommerz-python==0.0.7 to a custom install approach
 # SSLCommerz-python==0.0.7

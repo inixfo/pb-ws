@@ -8,6 +8,9 @@ import json
 import logging
 from social_django.utils import load_strategy, load_backend
 from social_core.exceptions import AuthForbidden, AuthAlreadyAssociated, MissingBackend
+from django.conf import settings
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 logger = logging.getLogger(__name__)
 
@@ -427,16 +430,37 @@ class GoogleLoginView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            # Get token from request
+            # Get ID token from request
             token = serializer.validated_data['token']
             
-            # Load the Google OAuth backend
-            strategy = load_strategy(request)
-            backend = load_backend(strategy, 'google-oauth2', redirect_uri=None)
+            # For Google One Tap/Identity Services, we need to verify the ID token
+            # Verify the token
+            id_info = id_token.verify_oauth2_token(
+                token, google_requests.Request(), 
+                settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+            )
             
-            # Authenticate user with token
-            user = backend.do_auth(token)
+            # Check issuer
+            if id_info['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+                raise ValueError('Invalid issuer')
             
+            # Get or create user based on email
+            email = id_info['email']
+            User = get_user_model()
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                # Create new user
+                user = User.objects.create_user(
+                    email=email,
+                    first_name=id_info.get('given_name', ''),
+                    last_name=id_info.get('family_name', ''),
+                    password=None,
+                    is_verified=False
+                )
+                # Create a profile for the new user
+                Profile.objects.create(user=user)
+                
             # Check if user needs phone verification
             needs_verification = not user.is_verified
             
@@ -450,11 +474,11 @@ class GoogleLoginView(APIView):
                 'needs_phone_verification': needs_verification,
             })
             
-        except (AuthForbidden, AuthAlreadyAssociated, MissingBackend) as e:
-            logger.error(f"Social auth error: {str(e)}")
+        except ValueError as e:
+            logger.error(f"Google token validation error: {str(e)}")
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            logger.error(f"Unexpected error in Google login: {str(e)}")
+            logger.error(f"Google auth error: {str(e)}")
             return Response({'error': 'Authentication failed'}, status=status.HTTP_400_BAD_REQUEST)
 
 
