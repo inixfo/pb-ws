@@ -9,7 +9,7 @@ from .settings import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['52.62.201.84', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['phonebay.xyz', 'www.phonebay.xyz', '52.62.201.84', 'localhost', '127.0.0.1']
 
 # Google OAuth Settings
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get('GOOGLE_CLIENT_ID', '')
