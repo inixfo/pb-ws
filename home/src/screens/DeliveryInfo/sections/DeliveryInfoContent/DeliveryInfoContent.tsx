@@ -335,6 +335,8 @@ export const DeliveryInfoContent = (): JSX.Element => {
         // Monthly installment includes interest
         const monthly = totalPayable / cardlessPlan.duration_months;
         
+        // Note: We're storing the base downpayment without shipping here
+        // The shipping cost will be added to the downpayment in the UI display
         setActiveCardlessEMIDownpayment(downpayment);
         setActiveCardlessEMIMonthly(monthly);
         setActiveCardlessEMIBasePrice(cardlessItemPrice);
@@ -846,7 +848,8 @@ export const DeliveryInfoContent = (): JSX.Element => {
 
         if (chosenPaymentMethodKey === "SSLCOMMERZ_CARDLESS_EMI" && activeCardlessEMIDownpayment !== null) {
           // For Cardless EMI, user only pays the downpayment initially
-          amountForSSLCommerz = activeCardlessEMIDownpayment;
+          // Include shipping cost in the downpayment
+          amountForSSLCommerz = activeCardlessEMIDownpayment + shippingCost;
           paymentPayloadForContext.amount = amountForSSLCommerz;
           
           // IMPORTANT: For cardless EMI, we use standard payment for the downpayment
@@ -975,12 +978,23 @@ export const DeliveryInfoContent = (): JSX.Element => {
 
     const downPaymentPercent = planParams.down_payment_percentage || 0;
     const tenureMonths = planParams.duration_months || 1;
+    
+    // Get current shipping cost
+    const shippingDetails = calculateShippingDetails(
+      selectedShippingMethod,
+      shippingMethods,
+      shippingRates,
+      cart
+    );
+    const currentShippingCost = shippingDetails.cost || 0;
 
     // Different calculation based on EMI type
     if (targetPlanType === 'card_emi') {
       // For Card EMI - Interest is handled by SSLCOMMERZ and the bank, so we don't add it
       // We just show the basic information that will be passed to SSLCOMMERZ
       const downPayment = downPaymentPercent > 0 ? baseAmount * (downPaymentPercent / 100) : 0;
+      // Add shipping cost to downpayment
+      const totalDownPayment = downPayment + currentShippingCost;
       const financedAmount = baseAmount - downPayment;
       
       // For Card EMI, we show estimated monthly amount without our own interest calculation
@@ -988,10 +1002,10 @@ export const DeliveryInfoContent = (): JSX.Element => {
       const monthlyInstallment = tenureMonths > 0 ? financedAmount / tenureMonths : financedAmount;
       
       return {
-        downPayment,
+        downPayment: totalDownPayment, // Include shipping in downpayment
         financedAmount,
         totalInterest: 0, // Set to 0 as we don't calculate this
-        totalPayable: baseAmount, // Just the base amount
+        totalPayable: baseAmount + currentShippingCost, // Include shipping in total
         monthlyInstallment,
         tenureMonths,
         interestPercent: 0, // Set to 0 as it's handled by SSLCOMMERZ/bank
@@ -1003,6 +1017,8 @@ export const DeliveryInfoContent = (): JSX.Element => {
       // For Cardless EMI - We calculate our own interest
       const interestPercent = planParams.interest_rate || 0;
       const downPayment = baseAmount * (downPaymentPercent / 100);
+      // Add shipping cost to downpayment
+      const totalDownPayment = downPayment + currentShippingCost;
       const financedAmount = baseAmount - downPayment;
       
       // Use flat interest rate for entire period (not annual)
@@ -1011,10 +1027,10 @@ export const DeliveryInfoContent = (): JSX.Element => {
       const monthlyInstallment = tenureMonths > 0 ? totalPayable / tenureMonths : totalPayable;
 
       return {
-        downPayment,
+        downPayment: totalDownPayment, // Include shipping in downpayment
         financedAmount,
         totalInterest,
-        totalPayable: downPayment + totalPayable, // Include down payment in total
+        totalPayable: totalDownPayment + totalPayable - downPayment, // Total with shipping included in downpayment
         monthlyInstallment,
         tenureMonths,
         interestPercent,
@@ -2289,7 +2305,7 @@ export const DeliveryInfoContent = (): JSX.Element => {
                 </div>
                 <div className="w-[156px] font-heading-desktop-h5 text-gray-900 text-right">
                   {paymentDetails.payment_method === "SSLCOMMERZ_CARDLESS_EMI" && activeCardlessEMIDownpayment !== null ? 
-                    formatCurrency(activeCardlessEMIDownpayment) : 
+                    formatCurrency(activeCardlessEMIDownpayment + shippingCost) : 
                     formatCurrency(calculatedOrderTotal)}
                 </div>
               </div>
@@ -2299,28 +2315,10 @@ export const DeliveryInfoContent = (): JSX.Element => {
                 <>
                   <div className="flex items-center gap-4 w-full mt-2 pt-2 border-t border-gray-200">
                     <div className="flex-1 text-gray-600 text-xs leading-[22px]">
-                      Product price:
-                    </div>
-                    <div className="w-[156px] font-navigation-nav-link-small text-gray-600 text-right">
-                      {formatCurrency(activeCardlessEMIBasePrice)}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 w-full mt-1">
-                    <div className="flex-1 text-gray-600 text-xs leading-[22px]">
-                      Interest ({selectedCardlessEMIPlanDetails.interest_rate}% flat rate):
+                      EMI Interest ({selectedCardlessEMIPlanDetails.interest_rate}% flat rate):
                     </div>
                     <div className="w-[156px] font-navigation-nav-link-small text-gray-600 text-right">
                       {formatCurrency(activeCardlessEMIFinancedAmount * (selectedCardlessEMIPlanDetails.interest_rate / 100))}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 w-full mt-1 font-medium">
-                    <div className="flex-1 text-gray-700 text-xs leading-[22px]">
-                      Total with interest:
-                    </div>
-                    <div className="w-[156px] font-navigation-nav-link-small text-gray-700 text-right">
-                      {formatCurrency(activeCardlessEMIBasePrice + (activeCardlessEMIFinancedAmount * (selectedCardlessEMIPlanDetails.interest_rate / 100)))}
                     </div>
                   </div>
                   
@@ -2384,7 +2382,7 @@ export const DeliveryInfoContent = (): JSX.Element => {
                     {(selectedCardlessEMIPlanDetails.down_payment_percentage || 0) > 0 && (
                       <div className="flex justify-between">
                         <span>Down Payment:</span>
-                        <span className="font-semibold">{Number(selectedCardlessEMIPlanDetails.down_payment_percentage).toFixed(2)}% ({formatCurrency(activeCardlessEMIDownpayment)})</span>
+                        <span className="font-semibold">{Number(selectedCardlessEMIPlanDetails.down_payment_percentage).toFixed(2)}% + Shipping ({formatCurrency(activeCardlessEMIDownpayment + shippingCost)})</span>
                       </div>
                     )}
                     <div className="flex justify-between">
