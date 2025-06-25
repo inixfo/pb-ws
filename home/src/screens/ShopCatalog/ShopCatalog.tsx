@@ -498,9 +498,9 @@ export const ShopCatalog = (): JSX.Element => {
           baseParams.ordering = '-popularity_score';
       }
       
-      // Only add brand filter if brands are selected - use brand IDs
+      // Only add brand filter if brands are selected - use brand__in parameter for multiple brands
       if (selectedBrandIds.length > 0) {
-        baseParams.brand = selectedBrandIds.join(',');
+        baseParams.brand__in = selectedBrandIds.join(',');
       }
       
       // Only add price filters if they're different from the default range
@@ -563,7 +563,15 @@ export const ShopCatalog = (): JSX.Element => {
         // Add other filter parameters
         Object.entries(baseParams).forEach(([key, value]) => {
           if (key !== 'page' && key !== 'ordering') {
-            endpoint += `&${key}=${encodeURIComponent(String(value))}`;
+            // Special case for brand IDs - use brand__in
+            if (key === 'brand__in') {
+              endpoint += `&${key}=${encodeURIComponent(String(value))}`;
+            } else if (key === 'brand') {
+              // Single brand ID
+              endpoint += `&brand=${encodeURIComponent(String(value))}`;
+            } else {
+              endpoint += `&${key}=${encodeURIComponent(String(value))}`;
+            }
           }
         });
         
@@ -1045,18 +1053,13 @@ export const ShopCatalog = (): JSX.Element => {
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <h3 className="text-base font-semibold text-gray-900 mb-2">Brand</h3>
                 <div className="flex flex-col gap-2">
-                  {(showAllBrands ? brands : brands.slice(0, 5)).map((brand) => (
+                  {brands.map((brand) => (
                     <label key={brand.id} className="flex items-center gap-2 cursor-pointer text-sm">
                       <Checkbox checked={selectedBrands.includes(brand.name)} onChange={() => handleBrandToggle(brand.name, brand.id)} />
                       <span>{brand.name}</span>
                       <span className="ml-auto text-xs text-gray-400">{brand.count || 0}</span>
                     </label>
                   ))}
-                  {brands.length > 5 && (
-                    <button className="text-xs text-primary font-medium mt-1" onClick={() => setShowAllBrands(v => !v)}>
-                      {showAllBrands ? "Show less" : "Show all"}
-                    </button>
-                  )}
                 </div>
               </div>
             )}
