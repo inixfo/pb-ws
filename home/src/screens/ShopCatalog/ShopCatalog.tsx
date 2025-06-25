@@ -559,6 +559,11 @@ export const ShopCatalog = (): JSX.Element => {
           delete apiParams.brandSlugs;
         }
         
+        // Make sure ordering parameter is preserved
+        if (params.ordering) {
+          apiParams.ordering = params.ordering;
+        }
+        
         if (searchQuery) {
           console.log('[ShopCatalog fetchProducts] Performing search with query:', searchQuery, 'and params:', apiParams);
           return await searchService.search(searchQuery, apiParams);
@@ -578,13 +583,16 @@ export const ShopCatalog = (): JSX.Element => {
         const axios = (await import('axios')).default;
         
         // Build the endpoint URL with proper parameters
-        let endpoint = slug 
-          ? `https://phonebay.xyz/api/products/products/?category_slug=${slug}&page=${currentPage}`
-          : `https://phonebay.xyz/api/products/products/?page=${currentPage}`;
+        let endpoint = `https://phonebay.xyz/api/products/products/?page=${currentPage}`;
+        
+        // Add category slug if available
+        if (slug) {
+          endpoint += `&category_slug=${encodeURIComponent(slug)}`;
+        }
         
         // Add sorting parameter
         if (baseParams.ordering) {
-          endpoint += `&ordering=${baseParams.ordering}`;
+          endpoint += `&ordering=${encodeURIComponent(baseParams.ordering)}`;
         }
         
         // Add other filter parameters
@@ -605,7 +613,13 @@ export const ShopCatalog = (): JSX.Element => {
         }
         
         console.log(`[ShopCatalog fetchProducts] Direct API call to ${endpoint}`);
-        const directResponse = await axios.get(endpoint);
+        const directResponse = await axios.get(endpoint, { 
+          timeout: 10000, // 10 second timeout
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
         
         if (directResponse.data && 
             ((directResponse.data.results && Array.isArray(directResponse.data.results) && directResponse.data.results.length > 0) || 
@@ -644,10 +658,53 @@ export const ShopCatalog = (): JSX.Element => {
           // Fall back to using the service
           data = await fetchWithParams(baseParams);
         }
-      } catch (directError) {
+      } catch (error) {
+        const directError = error as any;
         console.error('[ShopCatalog fetchProducts] Direct API call failed:', directError);
+        
+        // Log more detailed error information
+        if (directError.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          console.error('Error response data:', directError.response.data);
+          console.error('Error response status:', directError.response.status);
+          console.error('Error response headers:', directError.response.headers);
+        } else if (directError.request) {
+          // The request was made but no response was received
+          console.error('Error request:', directError.request);
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          console.error('Error message:', directError.message);
+        }
+        
         // Fall back to using the service
-        data = await fetchWithParams(baseParams);
+        try {
+          data = await fetchWithParams(baseParams);
+        } catch (serviceErr) {
+          const serviceError = serviceErr as any;
+          console.error('[ShopCatalog fetchProducts] Service API call also failed:', serviceError);
+          setError('Couldn\'t load products from the server. Showing sample products instead.');
+          // Use fallback products with proper type casting
+          const typedFallbackProducts = FALLBACK_PRODUCTS.map(product => ({
+            ...product,
+            price: product.base_price,
+            sale_price: product.discount_price,
+            rating: product.average_rating || 0,
+            reviews_count: product.review_count || 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            variations: [],
+            emi_available: false,
+            is_approved: true,
+            stock_status: 'in_stock'
+          })) as unknown as Product[];
+          
+          setProducts(typedFallbackProducts);
+          setTotalProducts(typedFallbackProducts.length);
+          setTotalPages(1);
+          setLoading(false);
+          return;
+        }
       }
       
       // Handle search-specific properties
