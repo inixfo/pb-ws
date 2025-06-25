@@ -500,13 +500,9 @@ export const ShopCatalog = (): JSX.Element => {
       
       // Add brand filter if brands are selected
       if (selectedBrandIds.length > 0) {
-        if (selectedBrandIds.length === 1) {
-          // Use brand parameter for single brand
-          baseParams.brand = selectedBrandIds[0];
-        } else {
-          // Use brand__in parameter for multiple brands
-          baseParams.brand__in = selectedBrandIds.join(',');
-        }
+        // Use brand__in parameter for multiple brands
+        // Django's filter system will handle it properly
+        baseParams.brand__id__in = selectedBrandIds.join(',');
       }
       
       // Only add price filters if they're different from the default range
