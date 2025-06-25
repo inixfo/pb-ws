@@ -500,9 +500,8 @@ export const ShopCatalog = (): JSX.Element => {
       
       // Add brand filter if brands are selected
       if (selectedBrandIds.length > 0) {
-        // Use brand__in parameter for multiple brands
-        // Django's filter system will handle it properly
-        baseParams.brand__id__in = selectedBrandIds.join(',');
+        // For direct URL construction, we'll handle this in the endpoint building section
+        baseParams.brandIds = selectedBrandIds;
       }
       
       // Only add price filters if they're different from the default range
@@ -534,16 +533,29 @@ export const ShopCatalog = (): JSX.Element => {
       let usedFallback = false;
       
       const fetchWithParams = async (params: Record<string, any>) => {
+        // Create a copy of params to modify
+        const apiParams = { ...params };
+        
+        // Handle special brandIds parameter for service calls
+        if (apiParams.brandIds && Array.isArray(apiParams.brandIds)) {
+          // Convert to multiple brand parameters
+          apiParams.brandIds.forEach((brandId: number, index: number) => {
+            apiParams[`brand_${index}`] = brandId;
+          });
+          // Remove the brandIds parameter
+          delete apiParams.brandIds;
+        }
+        
         if (searchQuery) {
-          console.log('[ShopCatalog fetchProducts] Performing search with query:', searchQuery, 'and params:', params);
-          return await searchService.search(searchQuery, params);
+          console.log('[ShopCatalog fetchProducts] Performing search with query:', searchQuery, 'and params:', apiParams);
+          return await searchService.search(searchQuery, apiParams);
         } else if (slug) {
-          const categoryParams = { ...params, category_slug: slug };
+          const categoryParams = { ...apiParams, category_slug: slug };
           console.log('[ShopCatalog fetchProducts] Fetching by category slug:', slug, 'and params:', categoryParams);
           return await productService.getAll(categoryParams);
         } else {
-          console.log('[ShopCatalog fetchProducts] Fetching all products with params:', params);
-          return await productService.getAll(params);
+          console.log('[ShopCatalog fetchProducts] Fetching all products with params:', apiParams);
+          return await productService.getAll(apiParams);
         }
       };
       
@@ -564,11 +576,18 @@ export const ShopCatalog = (): JSX.Element => {
         
         // Add other filter parameters
         Object.entries(baseParams).forEach(([key, value]) => {
-          if (key !== 'page' && key !== 'ordering') {
+          if (key !== 'page' && key !== 'ordering' && key !== 'brandIds') {
             // For all parameters, just use the key-value pair directly
             endpoint += `&${key}=${encodeURIComponent(String(value))}`;
           }
         });
+        
+        // Special handling for multiple brand IDs
+        if (baseParams.brandIds && Array.isArray(baseParams.brandIds)) {
+          baseParams.brandIds.forEach(brandId => {
+            endpoint += `&brand=${encodeURIComponent(String(brandId))}`;
+          });
+        }
         
         console.log(`[ShopCatalog fetchProducts] Direct API call to ${endpoint}`);
         const directResponse = await axios.get(endpoint);
