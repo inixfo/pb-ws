@@ -50,6 +50,7 @@ export const ShopCatalog = (): JSX.Element => {
 
   // Filters state
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedBrandIds, setSelectedBrandIds] = useState<number[]>([]);
   const [selectedSSD, setSelectedSSD] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -215,17 +216,14 @@ export const ShopCatalog = (): JSX.Element => {
   }, [selectedBrands, selectedColors, minPrice, maxPrice, customFilterValues, priceRange]);
 
   // Handlers
-  const handleBrandToggle = (brand: string) => {
-    // Toggle the brand selection
-    setSelectedBrands((prev) =>
-      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
-    );
-    
-    // Update filter tags
-    if (!selectedBrands.includes(brand)) {
-      setFilterTags(prev => [...prev, brand]);
+  const handleBrandToggle = (brand: string, brandId: number) => {
+    // Update selected brand names for UI display
+    if (selectedBrands.includes(brand)) {
+      setSelectedBrands(selectedBrands.filter(b => b !== brand));
+      setSelectedBrandIds(selectedBrandIds.filter(id => id !== brandId));
     } else {
-      setFilterTags(prev => prev.filter(tag => tag !== brand));
+      setSelectedBrands([...selectedBrands, brand]);
+      setSelectedBrandIds([...selectedBrandIds, brandId]);
     }
     
     // Reset to first page when changing filters
@@ -319,63 +317,65 @@ export const ShopCatalog = (): JSX.Element => {
   
   const handleClearAll = () => {
     setSelectedBrands([]);
-    setSelectedSSD([]);
+    setSelectedBrandIds([]);
     setSelectedColors([]);
-    setCustomFilterValues({});
     setMinPrice(priceRange.min.toString());
     setMaxPrice(priceRange.max.toString());
-    
-    // Keep category filter if we're on a category page
-    if (slug) {
-      const categoryTag = filterTags.find(tag => 
-        categories.some(cat => cat.name === tag)
-      );
-      setFilterTags(categoryTag ? [categoryTag] : []);
-    } else {
-      setFilterTags([]);
-    }
+    setCustomFilterValues({});
+    setFilterTags([]);
+    setCurrentPage(1);
   };
   
   const handleRemoveTag = (tag: string) => {
-    setFilterTags((prev) => prev.filter((t) => t !== tag));
-    
-    // Check if it's a price filter tag
-    if (tag.includes(CURRENCY_SYMBOL)) {
+    // Check if it's a brand tag
+    if (tag.startsWith('Brand: ')) {
+      const brandName = tag.replace('Brand: ', '');
+      const brandToRemove = brands.find(b => b.name === brandName);
+      
+      if (brandToRemove) {
+        setSelectedBrands(selectedBrands.filter(b => b !== brandName));
+        setSelectedBrandIds(selectedBrandIds.filter(id => id !== brandToRemove.id));
+      }
+    }
+    // Check if it's a color tag
+    else if (tag.startsWith('Color: ')) {
+      const colorName = tag.replace('Color: ', '');
+      setSelectedColors(selectedColors.filter(c => c !== colorName));
+    }
+    // Check if it's a price tag
+    else if (tag.startsWith('Price: ')) {
+      // Reset price filters to defaults
       setMinPrice(priceRange.min.toString());
       setMaxPrice(priceRange.max.toString());
-      return;
     }
-    
-    // Check if it's a custom filter tag (format: "FilterName: Value")
-    if (tag.includes(': ')) {
-      const [filterName, value] = tag.split(': ');
-      
-      // Update customFilterValues
-      setCustomFilterValues(prev => {
-        const updatedFilters = { ...prev };
-        if (updatedFilters[filterName]) {
-          updatedFilters[filterName] = updatedFilters[filterName].filter(v => v !== value);
-          if (updatedFilters[filterName].length === 0) {
-            delete updatedFilters[filterName];
+    // Check if it's a custom filter tag
+    else {
+      // Format is "Key: Value"
+      const colonIndex = tag.indexOf(': ');
+      if (colonIndex > 0) {
+        const key = tag.substring(0, colonIndex);
+        const value = tag.substring(colonIndex + 2);
+        
+        // Update the custom filter values
+        setCustomFilterValues(prev => {
+          const newValues = { ...prev };
+          
+          if (newValues[key]) {
+            newValues[key] = newValues[key].filter(v => v !== value);
+            
+            // Remove the key if there are no values left
+            if (newValues[key].length === 0) {
+              delete newValues[key];
+            }
           }
-        }
-        return updatedFilters;
-      });
-      
-      return;
+          
+          return newValues;
+        });
+      }
     }
     
-    // Handle other tag types
-    if (selectedBrands.includes(tag)) {
-      setSelectedBrands(prev => prev.filter(b => b !== tag));
-    } else if (selectedSSD.includes(tag)) {
-      setSelectedSSD(prev => prev.filter(s => s !== tag));
-    } else if (selectedColors.includes(tag)) {
-      setSelectedColors(prev => prev.filter(c => c !== tag));
-    } else if (selectedCategories.includes(tag)) {
-      setSelectedCategories(prev => prev.filter(c => c !== tag));
-      navigate('/catalog');
-    }
+    // Reset to first page when removing filters
+    setCurrentPage(1);
   };
   
   const handleAddToCart = (id: number, slug?: string) => {
@@ -467,7 +467,7 @@ export const ShopCatalog = (): JSX.Element => {
 
   // Fetch products based on filters
   const fetchProducts = async () => {
-    console.log('[ShopCatalog fetchProducts START] Current slug:', slug, 'Page:', currentPage, 'Sort:', sort, 'Brands:', selectedBrands, 'Colors:', selectedColors, 'Custom:', customFilterValues, 'Price:', minPrice, maxPrice, 'Search:', searchQuery);
+    console.log('[ShopCatalog fetchProducts START] Current slug:', slug, 'Page:', currentPage, 'Sort:', sort, 'Brands:', selectedBrands, 'Brand IDs:', selectedBrandIds, 'Colors:', selectedColors, 'Custom:', customFilterValues, 'Price:', minPrice, maxPrice, 'Search:', searchQuery);
     setLoading(true);
     setError(null);
     setDidYouMean(null);
@@ -498,9 +498,9 @@ export const ShopCatalog = (): JSX.Element => {
           baseParams.ordering = '-popularity_score';
       }
       
-      // Only add brand filter if brands are selected
-      if (selectedBrands.length > 0) {
-        baseParams.brand = selectedBrands.join(',');
+      // Only add brand filter if brands are selected - use brand IDs
+      if (selectedBrandIds.length > 0) {
+        baseParams.brand = selectedBrandIds.join(',');
       }
       
       // Only add price filters if they're different from the default range
@@ -576,10 +576,24 @@ export const ShopCatalog = (): JSX.Element => {
           
           console.log(`[ShopCatalog fetchProducts] Direct API call succeeded with ${directResponse.data.results ? directResponse.data.results.length : directResponse.data.length} products`);
           
-          // Format the response to match expected structure
+          // Array format for the direct API call result
           if (Array.isArray(directResponse.data)) {
+            const formattedProducts: Product[] = directResponse.data.map((product: any) => ({
+              ...product,
+              // Ensure required Product properties exist
+              price: product.price || product.base_price || 0,
+              sale_price: product.sale_price || null,
+              rating: product.rating || product.avg_review_rating || 0,
+              reviews_count: product.reviews_count || product.review_count || 0,
+              created_at: product.created_at || new Date().toISOString(),
+              updated_at: product.updated_at || new Date().toISOString(),
+              category: product.category || { id: 0, name: 'Unknown', slug: 'unknown' },
+              brand: product.brand || { id: 0, name: 'Unknown', slug: 'unknown' },
+              variations: product.variations || []
+            }));
+            
             data = {
-              results: directResponse.data as Product[],
+              results: formattedProducts,
               count: directResponse.data.length,
               next: null,
               previous: null,
@@ -612,7 +626,20 @@ export const ShopCatalog = (): JSX.Element => {
       // Check if we got valid results
       if (data && data.results && data.results.length > 0) {
         // Ensure we have the correct type
-        const typedResults = data.results as Product[];
+        const typedResults: Product[] = data.results.map((product: any) => ({
+          ...product,
+          // Ensure required Product properties exist
+          price: product.price || product.base_price || 0,
+          sale_price: product.sale_price || null,
+          rating: product.rating || product.avg_review_rating || 0,
+          reviews_count: product.reviews_count || product.review_count || 0,
+          created_at: product.created_at || new Date().toISOString(),
+          updated_at: product.updated_at || new Date().toISOString(),
+          category: product.category || { id: 0, name: 'Unknown', slug: 'unknown' },
+          brand: product.brand || { id: 0, name: 'Unknown', slug: 'unknown' },
+          variations: product.variations || []
+        }));
+        
         setProducts(typedResults);
         setTotalPages(data.total_pages || data.num_pages || Math.ceil(data.count / 12) || 1);
         setTotalProducts(data.count || data.results.length || 0);
@@ -1020,7 +1047,7 @@ export const ShopCatalog = (): JSX.Element => {
                 <div className="flex flex-col gap-2">
                   {(showAllBrands ? brands : brands.slice(0, 5)).map((brand) => (
                     <label key={brand.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                      <Checkbox checked={selectedBrands.includes(brand.name)} onChange={() => handleBrandToggle(brand.name)} />
+                      <Checkbox checked={selectedBrands.includes(brand.name)} onChange={() => handleBrandToggle(brand.name, brand.id)} />
                       <span>{brand.name}</span>
                       <span className="ml-auto text-xs text-gray-400">{brand.count || 0}</span>
                     </label>
