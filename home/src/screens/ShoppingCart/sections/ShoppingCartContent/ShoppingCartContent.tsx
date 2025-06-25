@@ -252,6 +252,13 @@ export const ShoppingCartContent = (): JSX.Element => {
         
         console.log('Promo code validation response:', response);
         
+        // Check if the promo code has minimum purchase requirements
+        if (response.min_purchase_amount > parseFloat(cart.total_price)) {
+          setPromoCodeError(`This promo code requires a minimum purchase of ৳${response.min_purchase_amount.toFixed(2)}`);
+          setPromoCodeLoading(false);
+          return;
+        }
+        
         // Show success message with discount amount
         toast.success(`Promo code ${promoCode} applied! You saved ৳${response.discount_amount.toFixed(2)}`);
         
@@ -288,8 +295,14 @@ export const ShoppingCartContent = (): JSX.Element => {
       }
     } catch (error: any) {
       console.error('Error applying promo code:', error);
-      setPromoCodeError(error.message || 'Failed to apply promo code');
-      toast.error(error.message || 'Failed to apply promo code');
+      // Extract error message from response if available
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to apply promo code';
+                          
+      setPromoCodeError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setPromoCodeLoading(false);
     }
@@ -319,9 +332,21 @@ export const ShoppingCartContent = (): JSX.Element => {
       
       // Refresh cart
       fetchCart();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error removing promo code:', error);
-      toast.error('Failed to remove promo code');
+      // Extract error message from response if available
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to remove promo code';
+                          
+      toast.error(errorMessage);
+      
+      // Even if the API call fails, we should still remove it from local state
+      // This ensures the UI is consistent even if the backend has issues
+      setAppliedPromoCode(null);
+      localStorage.removeItem('promo_code');
+      fetchCart();
     } finally {
       setPromoCodeLoading(false);
     }
@@ -738,77 +763,6 @@ export const ShoppingCartContent = (): JSX.Element => {
               )}
             </CardContent>
           </Card>
-
-          {/* EMI Details Card - Only show if any item has EMI selected */}
-          {cart.items.some((item: any) => item.emi_selected) && (
-            <Card className="w-full md:w-[416px] bg-gray-50 rounded-2xl px-8 py-1">
-              <CardHeader className="px-0 pt-5 pb-0">
-                <h2 className="font-heading-desktop-h6 text-gray-900">
-                  EMI Details
-                </h2>
-              </CardHeader>
-              <CardContent className="p-0 py-4">
-                {cart.items.filter((item: any) => item.emi_selected).map((item: any, index: number) => (
-                  <div key={`emi-${item.id}-${index}`} className="mb-4 last:mb-0">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-medium text-gray-700">Product:</span>
-                      <span className="text-sm text-gray-900">{item.product.name}</span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-medium text-gray-700">EMI Type:</span>
-                      <span className="text-sm text-gray-900">
-                        {item.emi_type === 'card_emi' ? 'Card EMI' : 
-                         item.emi_type === 'cardless_emi' ? 'Cardless EMI' : 
-                         'EMI'}
-                      </span>
-                    </div>
-                    
-                    {item.emi_bank && (
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium text-gray-700">Bank:</span>
-                        <span className="text-sm text-gray-900">{item.emi_bank}</span>
-                      </div>
-                    )}
-                    
-                    {item.emi_plan && (
-                      <>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm font-medium text-gray-700">Duration:</span>
-                          <span className="text-sm text-gray-900">
-                            {item.emi_period || item.emi_plan.duration_months} months
-                          </span>
-                        </div>
-                        
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm font-medium text-gray-700">Interest Rate:</span>
-                          <span className="text-sm text-gray-900">
-                            {item.emi_plan.interest_rate}%
-                          </span>
-                        </div>
-                        
-                        {item.emi_plan.down_payment_percentage > 0 && (
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm font-medium text-gray-700">Down Payment:</span>
-                            <span className="text-sm text-gray-900">
-                              {item.emi_plan.down_payment_percentage}%
-                            </span>
-                          </div>
-                        )}
-                      </>
-                    )}
-                    
-                    {index < cart.items.filter((i: any) => i.emi_selected).length - 1 && (
-                      <Separator className="my-3" />
-                    )}
-                  </div>
-                ))}
-                <div className="mt-3 text-xs text-gray-500">
-                  Note: EMI details will be finalized during payment processing.
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </div>
