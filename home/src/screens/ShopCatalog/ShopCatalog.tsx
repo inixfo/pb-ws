@@ -469,6 +469,9 @@ export const ShopCatalog = (): JSX.Element => {
   // Fetch products based on filters
   const fetchProducts = async () => {
     console.log('[ShopCatalog fetchProducts START] Current slug:', slug, 'Page:', currentPage, 'Sort:', sort, 'Brands:', selectedBrands, 'Brand IDs:', selectedBrandIds, 'Colors:', selectedColors, 'Custom:', customFilterValues, 'Price:', minPrice, maxPrice, 'Search:', searchQuery);
+    
+    // Clear products and set loading state to ensure user sees loading indicator
+    setProducts([]);
     setLoading(true);
     setError(null);
     setDidYouMean(null);
@@ -744,15 +747,23 @@ export const ShopCatalog = (): JSX.Element => {
           variations: product.variations || []
         }));
         
-        setProducts(typedResults);
-        setTotalPages(data.total_pages || data.num_pages || Math.ceil(data.count / 12) || 1);
-        setTotalProducts(data.count || data.results.length || 0);
+        console.log(`[ShopCatalog fetchProducts] Got sorted products with sort=${sort}:`, typedResults.map(p => ({id: p.id, price: p.price, name: p.name})));
         
-        if (usedFallback) {
-          setError("Some filters were ignored to show you products.");
-        }
+        // Clear products first to ensure UI updates properly
+        setProducts([]);
         
-        console.log('[ShopCatalog fetchProducts SUCCESS] Products loaded:', data.results.length, 'Total pages:', data.total_pages || data.num_pages || Math.ceil(data.count / 12) || 1);
+        // Use setTimeout to ensure state update has a chance to clear before setting new data
+        setTimeout(() => {
+          setProducts(typedResults);
+          setTotalPages(data.total_pages || data.num_pages || Math.ceil(data.count / 12) || 1);
+          setTotalProducts(data.count || data.results.length || 0);
+          
+          if (usedFallback) {
+            setError("Some filters were ignored to show you products.");
+          }
+          
+          console.log('[ShopCatalog fetchProducts SUCCESS] Products loaded:', data.results.length, 'Total pages:', data.total_pages || data.num_pages || Math.ceil(data.count / 12) || 1);
+        }, 50);
       } else {
         console.warn('[ShopCatalog fetchProducts WARN] No results in data or empty array', data);
         
@@ -1064,10 +1075,22 @@ export const ShopCatalog = (): JSX.Element => {
             <select
               value={sort}
               onChange={(e) => {
-                console.log('Sort changed to:', e.target.value);
-                setSort(e.target.value);
-                // Reset to page 1 when sorting changes
-                setCurrentPage(1);
+                const newSortValue = e.target.value;
+                console.log('Sort changed to:', newSortValue);
+                
+                // Force a complete reset of the sorting workflow
+                setLoading(true);
+                setProducts([]);
+                
+                // Use setTimeout to ensure state updates happen in the correct order
+                setTimeout(() => {
+                  // Change sort value
+                  setSort(newSortValue);
+                  // Reset to page 1 when sorting changes
+                  setCurrentPage(1);
+                  
+                  // Let the useEffect trigger fetch based on these state changes
+                }, 50);
               }}
               className="w-[140px] border-none shadow-none text-sm rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
@@ -1211,7 +1234,12 @@ export const ShopCatalog = (): JSX.Element => {
               // Loading state
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-gray-100 rounded-xl h-80 animate-pulse"></div>
+                  <div key={i} className="flex flex-col gap-4">
+                    <div className="bg-gray-100 rounded-xl h-52 animate-pulse"></div>
+                    <div className="h-4 bg-gray-100 rounded animate-pulse w-3/4"></div>
+                    <div className="h-4 bg-gray-100 rounded animate-pulse w-1/2"></div>
+                    <div className="h-8 bg-gray-100 rounded animate-pulse"></div>
+                  </div>
                 ))}
               </div>
             ) : error ? (
