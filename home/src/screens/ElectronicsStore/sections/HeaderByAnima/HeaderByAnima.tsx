@@ -442,7 +442,7 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
             onClick={(e) => {
               e.preventDefault();
               console.log(`[DEBUG] Mobile cart button clicked, navigating to: /cart`);
-              window.location.href = '/cart';
+              navigate('/cart');
             }}
           >
             <ShoppingCartIcon className="w-6 h-6" />
@@ -497,7 +497,7 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
               onClick={(e) => {
                 e.preventDefault();
                 console.log(`[DEBUG] Desktop cart button clicked, navigating to: /cart`);
-                window.location.href = '/cart';
+                navigate('/cart');
               }}
             >
               <ShoppingCartIcon className="w-[18px] h-[18px] text-white-80" />
@@ -514,7 +514,7 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
               onClick={(e) => {
                 e.preventDefault();
                 console.log(`[DEBUG] Account button clicked, navigating to: /account`);
-                window.location.href = '/account';
+                navigate('/account');
               }}
             >
               <UserIcon className="w-[18px] h-[18px] text-white-80" />
@@ -535,8 +535,8 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                   console.log(`[DEBUG] Mobile navLink '${link.label}' clicked, navigating to: ${link.path}`);
                   // Close the mobile menu
                   setMobileMenuOpen(false);
-                  // Use direct browser navigation for more reliable routing
-                  window.location.href = link.path;
+                  // Use React Router navigation
+                  navigate(link.path);
                 }}
               >
                 {link.label}
@@ -578,8 +578,8 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                           console.log(`[DEBUG] Mobile category clicked: ${category.name}, navigating to: /catalog/${category.slug}`);
                           // Close the mobile menu
                           setMobileMenuOpen(false);
-                          // Use direct browser navigation for more reliable routing
-                          window.location.href = `/catalog/${category.slug}`;
+                          // Use React Router navigation
+                          navigate(`/catalog/${category.slug}`);
                         }}
                       >
                         <img 
@@ -598,8 +598,8 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                         console.log(`[DEBUG] See All Products clicked, navigating to: /catalog`);
                         // Close the mobile menu
                         setMobileMenuOpen(false);
-                        // Use direct browser navigation for more reliable routing
-                        window.location.href = '/catalog';
+                        // Use React Router navigation
+                        navigate('/catalog');
                       }}
                     >
                       See All Products
@@ -618,8 +618,8 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                 console.log(`[DEBUG] Mobile 'My Account' clicked, navigating to: /account`);
                 // Close the mobile menu
                 setMobileMenuOpen(false);
-                // Use direct browser navigation for more reliable routing
-                window.location.href = '/account';
+                // Use React Router navigation
+                navigate('/account');
               }}
             >
               <UserIcon className="w-4 h-4" />
@@ -664,8 +664,8 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                         console.log(`[DEBUG] Sidebar category clicked: ${item.name}, navigating to: /catalog/${item.slug}`);
                         // Close the categories dropdown
                         setShowCategories(false);
-                        // Use direct browser navigation for more reliable routing
-                        window.location.href = `/catalog/${item.slug}`;
+                        // Use React Router navigation
+                        navigate(`/catalog/${item.slug}`);
                       }}
                       onMouseEnter={() => setHoveredCategory(item.name)}
                     >
@@ -682,8 +682,8 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                     onClick={(e) => {
                       e.preventDefault();
                       console.log(`[DEBUG] Sidebar See All Products clicked, navigating to: /catalog`);
-                      // Use direct browser navigation for more reliable routing
-                      window.location.href = '/catalog';
+                      // Use React Router navigation
+                      navigate('/catalog');
                     }}
                   >
                     <span className="font-medium text-primarymain text-sm w-full">See All Products</span>
@@ -711,8 +711,8 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                                 console.log(`[DEBUG] Mega menu item clicked: ${item}, navigating to: /catalog/${item.toLowerCase().replace(/\s+/g, '-')}`);
                                 // Close the categories dropdown
                                 setShowCategories(false);
-                                // Use direct browser navigation for more reliable routing
-                                window.location.href = `/catalog/${item.toLowerCase().replace(/\s+/g, '-')}`;
+                                // Use React Router navigation
+                                navigate(`/catalog/${item.toLowerCase().replace(/\s+/g, '-')}`);
                               }}
                             >
                               {item}
@@ -748,9 +748,8 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                     className="px-5 py-3 text-white-80 font-navigation-nav-link-regular"
                     onClick={(e) => {
                       e.preventDefault();
-                      console.log(`[DEBUG] Navigation link clicked: ${link.label}, navigating to: ${link.path}`);
-                      // Use direct browser navigation for more reliable routing
-                      window.location.href = link.path;
+                      console.log(`[DEBUG] Nav Link clicked: ${link.label}, navigating to: ${link.path}`);
+                      navigate(link.path);
                     }}
                   >
                     {link.label}
@@ -778,8 +777,8 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                     console.log(`[DEBUG] Sidebar category clicked: ${item.name}, navigating to: /catalog/${item.slug}`);
                     // Close the categories dropdown
                     setShowCategories(false);
-                    // Use direct browser navigation for more reliable routing
-                    window.location.href = `/catalog/${item.slug}`;
+                    // Use React Router navigation
+                    navigate(`/catalog/${item.slug}`);
                   }}
                   onMouseEnter={() => setHoveredCategory(item.name)}
                 >
@@ -798,8 +797,8 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                 onClick={(e) => {
                   e.preventDefault();
                   console.log(`[DEBUG] Sidebar See All Products clicked, navigating to: /catalog`);
-                  // Use direct browser navigation for more reliable routing
-                  window.location.href = '/catalog';
+                  // Use React Router navigation
+                  navigate('/catalog');
                 }}
               >
                 <span className="font-medium text-primarymain text-sm w-full">See All Products</span>
@@ -827,8 +826,8 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                               console.log(`[DEBUG] Mega menu item clicked: ${item}, navigating to: /catalog/${item.toLowerCase().replace(/\s+/g, '-')}`);
                               // Close the categories dropdown
                               setShowCategories(false);
-                              // Use direct browser navigation for more reliable routing
-                              window.location.href = `/catalog/${item.toLowerCase().replace(/\s+/g, '-')}`;
+                              // Use React Router navigation
+                              navigate(`/catalog/${item.toLowerCase().replace(/\s+/g, '-')}`);
                             }}
                           >
                             {item}
