@@ -24,6 +24,22 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['52.62.201.84', 'localhost', '127.0.0.1', 'phonebay.xyz', 'www.phonebay.xyz']
 
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = [
+    'http://52.62.201.84',
+    'https://52.62.201.84',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:5174',
+    'http://localhost:5173',
+    'http://phonebay.xyz',
+    'https://phonebay.xyz',
+    'http://www.phonebay.xyz',
+    'https://www.phonebay.xyz',
+]
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_HTTPONLY = False  # Set to False to allow JavaScript to access the CSRF token
 
 # Application definition
 
