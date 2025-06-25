@@ -7,7 +7,8 @@ from .views import (
     VendorManagementViewSet,
     OrderManagementViewSet,
     SystemSettingsViewSet,
-    UserManagementViewSet
+    UserManagementViewSet,
+    SiteSettingsView
 )
 
 app_name = 'adminpanel'
@@ -22,4 +23,5 @@ router.register('users', UserManagementViewSet, basename='user-management')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('settings/', SiteSettingsView.as_view(), name='site-settings'),
 ] 

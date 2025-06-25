@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ElectronicsStore } from "./screens/ElectronicsStore/ElectronicsStore";
@@ -16,6 +16,7 @@ import { CartProvider } from "./context/CartContext";
 import { SignIn, SignUp, ForgotPassword } from "./screens/Auth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
+import { SiteSettingsProvider, useSiteSettings } from "./contexts/SiteSettingsContext";
 import { BestSellers } from "./screens/BestSellers/BestSellers";
 import { TodaysDeals } from "./screens/TodaysDeals/TodaysDeals";
 import { NewArrivals } from "./screens/NewArrivals/NewArrivals";
@@ -25,11 +26,33 @@ import { HelpCenter } from "./screens/HelpCenter/HelpCenter";
 import { OrderTrackingPage } from "./screens/OrderTracking/OrderTrackingPage";
 import { TrackOrderLookup } from "./screens/OrderTracking/TrackOrderLookup";
 
+// FaviconUpdater component to update the favicon from site settings
+const FaviconUpdater = () => {
+  const { settings } = useSiteSettings();
+  
+  useEffect(() => {
+    if (settings.favicon) {
+      // Update favicon if available in site settings
+      const link: HTMLLinkElement = document.querySelector("link[rel*='icon']") || document.createElement('link');
+      link.type = 'image/png';
+      link.rel = 'shortcut icon';
+      link.href = settings.favicon;
+      document.getElementsByTagName('head')[0].appendChild(link);
+      console.log('[FaviconUpdater] Updated favicon to:', settings.favicon);
+    }
+  }, [settings.favicon]);
+  
+  // This component doesn't render anything
+  return null;
+};
+
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
       <CartProvider>
+      <SiteSettingsProvider>
+        <FaviconUpdater />
         <Routes>
           <Route path="/" element={<ElectronicsStore />} />
           <Route path="/categories" element={<ShopCategories />} />
@@ -75,6 +98,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="/login" element={<SignIn />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
         </Routes>
+      </SiteSettingsProvider>
       </CartProvider>
       </AuthProvider>
     </BrowserRouter>

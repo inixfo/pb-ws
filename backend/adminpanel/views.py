@@ -4,6 +4,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Count, Sum, Avg, Q, F
 from datetime import datetime, timedelta
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 
 from products.models import Product, Category, Brand
 from products.serializers import ProductSerializer
@@ -14,6 +16,8 @@ from orders.serializers import OrderSerializer
 from users.models import User
 from users.permissions import IsAdminUser
 from users.serializers import UserSerializer
+from .models import SiteSettings
+from .serializers import SiteSettingsSerializer
 
 
 class DashboardViewSet(viewsets.ViewSet):
@@ -502,3 +506,15 @@ class UserManagementViewSet(viewsets.ModelViewSet):
             'customer_count': customer_count,
             'new_users_last_30_days': new_users
         })
+
+
+class SiteSettingsView(APIView):
+    """API view to get site settings."""
+    
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Get site settings."""
+        settings = SiteSettings.get_settings()
+        serializer = SiteSettingsSerializer(settings)
+        return Response(serializer.data)

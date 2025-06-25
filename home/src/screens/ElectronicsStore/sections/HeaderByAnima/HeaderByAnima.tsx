@@ -25,6 +25,432 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { categoryService, promotionsService } from '../../../../services/api';
 import { useCart } from "../../../../context/CartContext";
 import { SearchBar } from '../../../../components/SearchBar/SearchBar';
+import { useSiteSettings } from '../../../../contexts/SiteSettingsContext';
+
+// Define an interface for the header promo banner
+interface HeaderPromo {
+  id: number;
+  title: string;
+  subtitle: string;
+  icon: string;
+  bg_color: string;
+  is_active: boolean;
+  priority: number;
+}
+
+// Define an interface for the hero slides
+interface HeroSlide {
+  id: number;
+  title: string;
+  subtitle: string;
+  image: string;
+  bg_color: string;
+  button_text: string;
+  button_link: string;
+  is_active: boolean;
+  priority: number;
+}
+
+export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: boolean } = {}): JSX.Element => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Navigation links data
+  const navLinks = [
+    { label: "Best Sellers", path: "/best-sellers" },
+    { label: "Today's Deals", path: "/todays-deals" },
+    { label: "New Arrivals", path: "/new-arrivals" },
+    { label: "Help Center", path: "/help-center" },
+    { label: "Track Order", path: "/track-order" },
+  ];
+
+  // Hero slider data - This will be replaced with data from API
+  const defaultHeroSlides = [
+    {
+      id: 1,
+      title: "Headphones ProMax",
+      subtitle: "Feel the real quality sound",
+      image: "/image.png",
+      bg_color: "bg-blue-100",
+      button_text: "Shop now",
+      button_link: "#"
+    },
+    {
+      id: 2,
+      title: "iPhone 14 Pro",
+      subtitle: "The ultimate smartphone experience",
+      image: "/image-1.png",
+      bg_color: "bg-gray-100",
+      button_text: "Learn more",
+      button_link: "#"
+    },
+    {
+      id: 3,
+      title: "MacBook Pro M2",
+      subtitle: "Power to change everything",
+      image: "/image-2.png",
+      bg_color: "bg-indigo-100",
+      button_text: "Buy now",
+      button_link: "#"
+    }
+  ];
+
+  const [showCategories, setShowCategories] = useState(false);
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  
+  const categoriesButtonRef = useRef<HTMLDivElement>(null);
+  const categoriesDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  const [categories, setCategories] = useState<any[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState<boolean>(true);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+
+  // Default categories to use when API call fails
+  const defaultCategories = [
+    {
+      id: 1,
+      name: "Smartphones & Tablets",
+      slug: "smartphones-tablets",
+      icon: "/smartphone.svg"
+    },
+    {
+      id: 2,
+      name: "Computers & Laptops",
+      slug: "computers-laptops",
+      icon: "/computer.svg"
+    },
+    {
+      id: 3,
+      name: "Audio & Headphones",
+      slug: "audio-headphones",
+      icon: "/headphones.svg"
+    },
+    {
+      id: 4,
+      name: "Cameras & Photography",
+      slug: "cameras-photography",
+      icon: "/camera.svg"
+    },
+    {
+      id: 5,
+      name: "Smart Home & IoT",
+      slug: "smart-home",
+      icon: "/smart-home.svg"
+    },
+    {
+      id: 6,
+      name: "Gaming & Consoles",
+      slug: "gaming-consoles",
+      icon: "/gaming.svg"
+    },
+    {
+      id: 7,
+      name: "TV & Home Theater",
+      slug: "tv-home-theater",
+      icon: "/tv.svg"
+    },
+    {
+      id: 8,
+      name: "Wearables & Smartwatches",
+      slug: "wearables-smartwatches",
+      icon: "/smartwatch.svg"
+    }
+  ];
+
+  // Add state for the header promo
+  const [headerPromo, setHeaderPromo] = useState<HeaderPromo | null>(null);
+  const [headerPromoLoading, setHeaderPromoLoading] = useState(false);
+
+  // Replace the static hero slides with dynamic state
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
+  const [heroSlidesLoading, setHeroSlidesLoading] = useState(false);
+
+  // Auto slide for hero section
+  useEffect(() => {
+    if (showHeroSection && heroSlides.length > 0) {
+      const interval = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [showHeroSection, heroSlides.length]);
+
+  // Close mobile menu when location changes
+  useEffect(() => {
+    // Store the current location to compare with future changes
+    const currentPath = location.pathname;
+    
+    // Only close the menu if the location actually changes
+    return () => {
+      if (location.pathname !== currentPath && mobileMenuOpen) {
+        console.log('[HeaderByAnima sections] Location changed from', currentPath, 'to', location.pathname, 'closing mobile menu.');
+        setMobileMenuOpen(false);
+        setShowCategories(false);
+      }
+    };
+  }, [location.pathname, mobileMenuOpen]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        categoriesDropdownRef.current &&
+        !categoriesDropdownRef.current.contains(event.target as Node) &&
+        categoriesButtonRef.current &&
+        !categoriesButtonRef.current.contains(event.target as Node) &&
+        mobileMenuRef.current && 
+        !mobileMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowCategories(false);
+        setHoveredCategory(null);
+      }
+    }
+    if (showCategories) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showCategories]);
+
+  // Navigate to previous slide
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
+  };
+
+  // Navigate to next slide
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+  };
+
+  // Handle categories button click based on whether we're on home page
+  const handleCategoriesClick = () => {
+    setShowCategories((prev) => !prev);
+  };
+
+  // Example mega menu data for 'Smartphones & Tablets'
+  const megaMenuData: Record<string, { title: string; columns: { title: string; items: string[] }[]; banner?: { img: string; title: string; subtitle: string; cta: string } }> = {
+    "Smartphones & Tablets": {
+      title: "Smartphones & Tablets",
+      columns: [
+        {
+          title: "Smartphones",
+          items: ["Apple iPhone", "Samsung", "Xiaomi", "Nokia", "Meizu"],
+        },
+        {
+          title: "Accessories",
+          items: [
+            "Accessory Kits",
+            "Batteries & Battery Packs",
+            "Cables",
+            "Car Accessories",
+            "Charges & Power Adapters",
+            "FM Transmitters",
+          ],
+        },
+        {
+          title: "Tablets",
+          items: ["Apple iPad", "Android Tablets", "Tablets with Keyboard"],
+        },
+      ],
+      banner: {
+        img: "/image-2.png",
+        title: "iPad Pro M1",
+        subtitle: "Deal of the week",
+        cta: "Shop now",
+      },
+    },
+    "Computers & Laptops": {
+      title: "Computers & Laptops",
+      columns: [
+        {
+          title: "Laptops",
+          items: ["MacBooks", "Windows Laptops", "Chromebooks", "Gaming Laptops"],
+        },
+        {
+          title: "Desktop Computers",
+          items: [
+            "All-in-One PCs",
+            "Gaming Desktops",
+            "Mac Desktops",
+            "PC Components"
+          ],
+        },
+        {
+          title: "Accessories",
+          items: ["Monitors", "Keyboards", "Mice", "Docking Stations", "External Storage"],
+        },
+      ],
+      banner: {
+        img: "/image-1.png",
+        title: "MacBook Pro",
+        subtitle: "New Release",
+        cta: "Shop now",
+      },
+    },
+    "Audio & Headphones": {
+      title: "Audio & Headphones",
+      columns: [
+        {
+          title: "Headphones",
+          items: ["Over-ear", "On-ear", "In-ear", "Wireless", "Noise Cancelling"],
+        },
+        {
+          title: "Speakers",
+          items: [
+            "Bluetooth Speakers",
+            "Smart Speakers",
+            "Soundbars",
+            "Home Theater"
+          ],
+        }
+      ],
+      banner: {
+        img: "/image.png",
+        title: "Headphones ProMax",
+        subtitle: "Feel the real quality sound",
+        cta: "Shop now",
+      },
+    }
+    // Add more categories as needed
+  };
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const data = await categoryService.getAll();
+        if (data && data.results && data.results.length > 0) {
+          setCategories(data.results);
+          setCategoriesError(null);
+        } else {
+          setCategories(defaultCategories);
+          setCategoriesError('No categories found.');
+        }
+      } catch (err) {
+        setCategoriesError('Failed to load categories.');
+        setCategories(defaultCategories);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Fetch header promo
+  useEffect(() => {
+    const fetchHeaderPromo = async () => {
+      try {
+        setHeaderPromoLoading(true);
+        const data = await promotionsService.getHeaderPromo();
+        setHeaderPromo(data);
+      } catch (error) {
+        console.error('Failed to load header promo:', error);
+        setHeaderPromo(null);
+      } finally {
+        setHeaderPromoLoading(false);
+      }
+    };
+    
+    fetchHeaderPromo();
+  }, []);
+
+  // Fetch hero slides
+  useEffect(() => {
+    const fetchHeroSlides = async () => {
+      if (showHeroSection) {
+        try {
+          setHeroSlidesLoading(true);
+          const data = await promotionsService.getHeroSlides();
+          console.log('Fetched hero slides:', data);
+          if (Array.isArray(data) && data.length > 0) {
+            setHeroSlides(data);
+          } else {
+            console.warn('No hero slides returned from API, using fallback data');
+            setHeroSlides(defaultHeroSlides as HeroSlide[]);
+          }
+        } catch (error) {
+          console.error('Failed to load hero slides:', error);
+          setHeroSlides(defaultHeroSlides as HeroSlide[]);
+        } finally {
+          setHeroSlidesLoading(false);
+        }
+      }
+    };
+    
+    fetchHeroSlides();
+  }, [showHeroSection]);
+
+  // Use the cart context to get cart information
+  const { cart, isAuthenticated, fetchCart } = useCart();
+  const cartItemCount = cart?.items.length || 0;
+  
+  // Fetch cart when the component mounts
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCart();
+    }
+  }, [isAuthenticated, fetchCart]);
+
+  // Get site settings for logo
+  const { settings } = useSiteSettings();
+
+  return (
+    <header className="flex flex-col items-center w-full">
+      {/* Top navigation bar */}
+      <div className="w-full flex flex-col items-center bg-gray-800">
+        <div className="w-full max-w-[1296px] h-auto sm:h-[88px] relative flex flex-wrap sm:flex-nowrap items-center justify-between px-4 sm:px-6 py-3 sm:py-0">
+          {/* Mobile menu button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full p-3 sm:hidden text-white z-[100]"
+            onClick={() => {
+              console.log(`[DEBUG] Hamburger menu clicked. Current state: ${mobileMenuOpen ? 'open' : 'closed'}, toggling to ${!mobileMenuOpen ? 'open' : 'closed'}`);
+              setMobileMenuOpen(!mobileMenuOpen);
+              // When closing the menu, also close categories
+              if (mobileMenuOpen) {
+                setShowCategories(false);
+              }
+            }}
+          >
+            {mobileMenuOpen ? <XIcon className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
+          </Button>
+
+          {/* Logo */}
+import {
+  BellIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  HeartIcon,
+  MenuIcon,
+  SearchIcon,
+  ShoppingCartIcon,
+  UserIcon,
+  XIcon,
+  LayoutGridIcon
+} from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Badge } from "../../../../components/ui/badge";
+import { Button } from "../../../../components/ui/button";
+import { Input } from "../../../../components/ui/input";
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+} from "../../../../components/ui/navigation-menu";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { categoryService, promotionsService } from '../../../../services/api';
+import { useCart } from "../../../../context/CartContext";
+import { SearchBar } from '../../../../components/SearchBar/SearchBar';
 
 // Define an interface for the header promo banner
 interface HeaderPromo {

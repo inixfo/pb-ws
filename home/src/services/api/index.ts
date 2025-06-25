@@ -10,6 +10,7 @@ import promotionsService from './promotionsService';
 import categoryService from './categoryService';
 import brandService from './brandService';
 import smsService from './smsService';
+import siteSettingsService from './siteSettingsService';
 
 export {
   productService,
@@ -23,5 +24,6 @@ export {
   promotionsService,
   categoryService,
   brandService,
-  smsService
+  smsService,
+  siteSettingsService
 }; 

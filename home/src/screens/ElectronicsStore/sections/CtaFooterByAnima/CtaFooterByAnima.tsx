@@ -13,6 +13,7 @@ import {
   HelpCircleIcon,
   CreditCard
 } from "lucide-react";
+import { useSiteSettings } from '../../../../contexts/SiteSettingsContext';
 
 // Card logo components to prevent duplicate rendering
 const VisaLogo = () => (
@@ -68,6 +69,9 @@ export const CtaFooterByAnima = (): JSX.Element => {
   
   // Contact info state for social media links
   const [contactInfo, setContactInfo] = useState<any>(null);
+
+  // Get site settings for logo
+  const { settings } = useSiteSettings();
   
   // Footer links data
   const footerLinks = {
@@ -254,7 +258,15 @@ export const CtaFooterByAnima = (): JSX.Element => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 md:gap-12 lg:gap-[134px]">
             {/* Company Info */}
             <div className="flex flex-col gap-6">
-              <img className="w-24 h-10" alt="Logo" src="/logo.png" />
+              <img 
+                className="w-24 h-10" 
+                alt={`${settings.site_name || 'Phone Bay'} Logo`} 
+                src={settings.footer_logo || "/logo.png"} 
+                onError={(e) => {
+                  console.log('[Footer] Logo failed to load, using fallback');
+                  e.currentTarget.src = "/logo.png";
+                }}
+              />
               <div className="flex flex-col gap-4">
                 <p className="text-sm text-gray-300">
                   Got question? Contact us 24/7
