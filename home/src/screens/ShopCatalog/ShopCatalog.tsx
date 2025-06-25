@@ -146,6 +146,7 @@ export const ShopCatalog = (): JSX.Element => {
 
   // Effect to fetch products when filters change
   useEffect(() => {
+    console.log('Filter/sort dependency changed, fetching products. Sort:', sort);
     fetchProducts();
   }, [
     slug, 
@@ -480,22 +481,28 @@ export const ShopCatalog = (): JSX.Element => {
       };
       
       // Add sorting parameter based on selected sort option
+      console.log('[ShopCatalog fetchProducts] Setting sort ordering for:', sort);
       switch (sort) {
         case 'popular':
           baseParams.ordering = '-popularity_score';
+          console.log('[ShopCatalog fetchProducts] Using popularity sort: -popularity_score');
           break;
         case 'new':
           baseParams.ordering = '-created_at';
+          console.log('[ShopCatalog fetchProducts] Using newest sort: -created_at');
           break;
         case 'price_low':
           baseParams.ordering = 'base_price';
+          console.log('[ShopCatalog fetchProducts] Using price ascending sort: base_price');
           break;
         case 'price_high':
           baseParams.ordering = '-base_price';
+          console.log('[ShopCatalog fetchProducts] Using price descending sort: -base_price');
           break;
         default:
           // Default sorting
           baseParams.ordering = '-popularity_score';
+          console.log('[ShopCatalog fetchProducts] Using default sort: -popularity_score');
       }
       
       // Add brand filter if brands are selected
@@ -593,6 +600,9 @@ export const ShopCatalog = (): JSX.Element => {
         // Add sorting parameter
         if (baseParams.ordering) {
           endpoint += `&ordering=${encodeURIComponent(baseParams.ordering)}`;
+          console.log(`[ShopCatalog fetchProducts] Adding sort parameter to direct API call: ordering=${baseParams.ordering}`);
+        } else {
+          console.warn('[ShopCatalog fetchProducts] No ordering parameter found in baseParams');
         }
         
         // Add other filter parameters
@@ -1051,12 +1061,22 @@ export const ShopCatalog = (): JSX.Element => {
           
           <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
             <span className="text-sm text-gray-900">Sort by:</span>
-            <Select
-              options={sortOptions}
+            <select
               value={sort}
-              onChange={e => setSort(e.target.value)}
-              className="w-[140px] border-none shadow-none text-sm"
-            />
+              onChange={(e) => {
+                console.log('Sort changed to:', e.target.value);
+                setSort(e.target.value);
+                // Reset to page 1 when sorting changes
+                setCurrentPage(1);
+              }}
+              className="w-[140px] border-none shadow-none text-sm rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
         
