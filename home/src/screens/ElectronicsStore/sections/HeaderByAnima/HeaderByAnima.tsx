@@ -397,6 +397,9 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
       fetchCart();
     }
   }, [isAuthenticated, fetchCart]);
+  
+  // Get site settings for logo
+  const { settings } = useSiteSettings();
 
   // Get site settings for logo
   const { settings } = useSiteSettings();
@@ -847,7 +850,15 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
 
           {/* Logo */}
           <Link to="/">
-            <img className="h-8 sm:h-10 w-auto sm:w-[141px]" alt="Phone Bay Logo" src="/logo.png" />
+            <img 
+              className="h-8 sm:h-10 w-auto sm:w-[141px]" 
+              alt={`${settings.site_name || 'Phone Bay'} Logo`} 
+              src={settings.header_logo || "/logo.png"} 
+              onError={(e) => {
+                console.log('[Header] Logo failed to load, using fallback');
+                e.currentTarget.src = "/logo.png";
+              }}
+            />
           </Link>
 
           {/* Mobile search toggle */}
