@@ -747,14 +747,48 @@ export const ShopCatalog = (): JSX.Element => {
           variations: product.variations || []
         }));
         
-        console.log(`[ShopCatalog fetchProducts] Got sorted products with sort=${sort}:`, typedResults.map(p => ({id: p.id, price: p.price, name: p.name})));
+        console.log(`[ShopCatalog fetchProducts] Got products with sort=${sort}:`, typedResults.map(p => ({id: p.id, price: p.price, name: p.name})));
+        
+        // Apply client-side sorting as a fallback to ensure correct order
+        const sortedProducts = [...typedResults].sort((a, b) => {
+          // Apply the correct sorting logic based on the selected sort option
+          switch (sort) {
+            case 'popular':
+              // Popularity sort (fallback to rating if popularity_score not available)
+              const aPopularity = a.popularity_score || a.rating || 0;
+              const bPopularity = b.popularity_score || b.rating || 0;
+              return bPopularity - aPopularity; // Descending
+            case 'new':
+              // Sort by creation date (newest first)
+              const aDate = new Date(a.created_at || '').getTime();
+              const bDate = new Date(b.created_at || '').getTime();
+              return bDate - aDate; // Descending
+            case 'price_low':
+              // Sort by price (lowest first)
+              const aPrice = Number(a.sale_price || a.price || 0);
+              const bPrice = Number(b.sale_price || b.price || 0);
+              return aPrice - bPrice; // Ascending
+            case 'price_high':
+              // Sort by price (highest first)
+              const aHighPrice = Number(a.sale_price || a.price || 0);
+              const bHighPrice = Number(b.sale_price || b.price || 0);
+              return bHighPrice - aHighPrice; // Descending
+            default:
+              return 0;
+          }
+        });
+        
+        console.log(`[ShopCatalog fetchProducts] Client-side sorted products:`, 
+          sortedProducts.map(p => ({id: p.id, price: p.price, name: p.name}))
+        );
         
         // Clear products first to ensure UI updates properly
         setProducts([]);
         
         // Use setTimeout to ensure state update has a chance to clear before setting new data
         setTimeout(() => {
-          setProducts(typedResults);
+          // Use the client-side sorted products instead of the original typedResults
+          setProducts(sortedProducts);
           setTotalPages(data.total_pages || data.num_pages || Math.ceil(data.count / 12) || 1);
           setTotalProducts(data.count || data.results.length || 0);
           
@@ -762,7 +796,17 @@ export const ShopCatalog = (): JSX.Element => {
             setError("Some filters were ignored to show you products.");
           }
           
-          console.log('[ShopCatalog fetchProducts SUCCESS] Products loaded:', data.results.length, 'Total pages:', data.total_pages || data.num_pages || Math.ceil(data.count / 12) || 1);
+          console.log('[ShopCatalog fetchProducts SUCCESS] Products loaded and sorted:', sortedProducts.length, 'Total pages:', data.total_pages || data.num_pages || Math.ceil(data.count / 12) || 1);
+          
+          // Display the first 5 products with their prices to verify sort order in the console
+          console.log('[ShopCatalog fetchProducts SORT VERIFICATION]', sort, 'order:',
+            sortedProducts.slice(0, 5).map(p => ({
+              id: p.id,
+              name: p.name,
+              price: p.sale_price || p.price,
+              created: p.created_at
+            }))
+          );
         }, 50);
       } else {
         console.warn('[ShopCatalog fetchProducts WARN] No results in data or empty array', data);
