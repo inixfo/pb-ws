@@ -488,10 +488,10 @@ export const ShopCatalog = (): JSX.Element => {
           baseParams.ordering = '-created_at';
           break;
         case 'price_low':
-          baseParams.ordering = 'price';
+          baseParams.ordering = 'base_price';
           break;
         case 'price_high':
-          baseParams.ordering = '-price';
+          baseParams.ordering = '-base_price';
           break;
         default:
           // Default sorting
