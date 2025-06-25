@@ -64,7 +64,7 @@ AUTH_USER_MODEL = 'users.User'
 
 # Google OAuth Settings
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '988564065705-pat9e6cesim147njv6ddof095gmk7hhn.apps.googleusercontent.com'  # Google Client ID
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'  # Google Client Secret - set this in production
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'  # Google Client Secret - set this in production
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email', 'profile']
 
 # Authentication backends
