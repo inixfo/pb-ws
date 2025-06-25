@@ -258,15 +258,29 @@ export const CtaFooterByAnima = (): JSX.Element => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 md:gap-12 lg:gap-[134px]">
             {/* Company Info */}
             <div className="flex flex-col gap-6">
-              <img 
-                className="w-24 h-10" 
-                alt={`${settings.site_name || 'Phone Bay'} Logo`} 
-                src={settings.footer_logo || "/logo.png"} 
-                onError={(e) => {
-                  console.log('[Footer] Logo failed to load, using fallback');
-                  e.currentTarget.src = "/logo.png";
-                }}
-              />
+              {settings?.footer_logo ? (
+                <img 
+                  className="w-24 h-10" 
+                  alt={`${settings.site_name || 'Phone Bay'} Logo`} 
+                  src={settings.footer_logo} 
+                  onError={(e) => {
+                    console.log('[Footer] Logo failed to load, using site name');
+                    e.currentTarget.style.display = 'none';
+                    // The site name will be shown by the fallback div below
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      const nameDiv = document.createElement('div');
+                      nameDiv.className = "text-white font-bold text-lg";
+                      nameDiv.textContent = settings.site_name || 'Phone Bay';
+                      parent.appendChild(nameDiv);
+                    }
+                  }}
+                />
+              ) : (
+                <div className="text-white font-bold text-lg">
+                  {settings.site_name || 'Phone Bay'}
+                </div>
+              )}
               <div className="flex flex-col gap-4">
                 <p className="text-sm text-gray-300">
                   Got question? Contact us 24/7

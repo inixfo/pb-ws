@@ -515,6 +515,23 @@ class SiteSettingsView(APIView):
     
     def get(self, request):
         """Get site settings."""
-        settings = SiteSettings.get_settings()
-        serializer = SiteSettingsSerializer(settings)
-        return Response(serializer.data)
+        try:
+            # Get or create site settings
+            settings = SiteSettings.get_settings()
+            serializer = SiteSettingsSerializer(settings)
+            
+            # Add full URLs for images
+            data = serializer.data
+            
+            # Debug info
+            print(f"SiteSettings retrieved: {settings}")
+            print(f"Serialized data: {data}")
+            
+            # Return the serialized data
+            return Response(data)
+        except Exception as e:
+            print(f"Error in SiteSettingsView.get: {e}")
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

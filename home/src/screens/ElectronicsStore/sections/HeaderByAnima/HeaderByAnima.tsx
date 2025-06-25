@@ -326,9 +326,13 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
     const fetchCategories = async () => {
       try {
         setCategoriesLoading(true);
-        const data = await categoryService.getAllCategories();
-        if (Array.isArray(data) && data.length > 0) {
-          setCategories(data);
+        // Use getAll() instead of getAllCategories() and extract results
+        const response = await categoryService.getAll();
+        const categoriesData = response?.results || [];
+        
+        if (Array.isArray(categoriesData) && categoriesData.length > 0) {
+          console.log('Categories loaded successfully:', categoriesData);
+          setCategories(categoriesData);
         } else {
           console.warn('No categories returned from API, using fallback data');
           setCategories(defaultCategories);
@@ -431,15 +435,18 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
               {settings?.header_logo ? (
                 <img 
                   src={settings.header_logo} 
-                  alt="Phone Bay Logo"
+                  alt={`${settings.site_name || 'Phone Bay'} Logo`}
                   className="h-8 sm:h-10 w-auto"
+                  onError={(e) => {
+                    console.log('[Header] Logo failed to load, using site name');
+                    e.currentTarget.style.display = 'none';
+                    // The site name will be shown by the fallback div
+                  }}
                 />
               ) : (
-                <img 
-                  src="/logo.png" 
-                  alt="Phone Bay Logo"
-                  className="h-8 sm:h-10 w-auto"
-                />
+                <div className="text-white font-bold text-lg sm:text-xl">
+                  {settings.site_name || 'Phone Bay'}
+                </div>
               )}
             </Link>
           </div>

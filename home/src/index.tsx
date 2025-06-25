@@ -31,16 +31,29 @@ const FaviconUpdater = () => {
   const { settings } = useSiteSettings();
   
   useEffect(() => {
-    if (settings.favicon) {
+    // Get existing favicon link or create a new one
+    const link: HTMLLinkElement = document.querySelector("link[rel*='icon']") || document.createElement('link');
+    link.type = 'image/png';
+    link.rel = 'shortcut icon';
+    
+    if (settings?.favicon) {
       // Update favicon if available in site settings
-      const link: HTMLLinkElement = document.querySelector("link[rel*='icon']") || document.createElement('link');
-      link.type = 'image/png';
-      link.rel = 'shortcut icon';
       link.href = settings.favicon;
       document.getElementsByTagName('head')[0].appendChild(link);
       console.log('[FaviconUpdater] Updated favicon to:', settings.favicon);
+    } else {
+      // Use default favicon if not available in settings
+      link.href = '/favicon.ico';
+      document.getElementsByTagName('head')[0].appendChild(link);
+      console.log('[FaviconUpdater] Using default favicon');
+      
+      // Also update the page title with the site name
+      if (settings?.site_name) {
+        document.title = settings.site_name;
+        console.log('[FaviconUpdater] Updated page title to:', settings.site_name);
+      }
     }
-  }, [settings.favicon]);
+  }, [settings]);
   
   // This component doesn't render anything
   return null;

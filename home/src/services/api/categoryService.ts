@@ -43,6 +43,16 @@ class CategoryService {
     }
   }
 
+  async getById(id: string | number) {
+    try {
+      const response = await axios.get(`${config.API_URL}/products/categories/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching category with ID ${id}:`, error);
+      return null;
+    }
+  }
+
   async getBySlug(slug: string) {
     try {
       const response = await axios.get(`${config.API_URL}/products/categories/${slug}/`);
