@@ -59,8 +59,9 @@ export const CART_CONFIG = {
 };
 
 const config = {
-  BASE_URL: 'https://phonebay.xyz',
-  API_URL: 'https://phonebay.xyz/api',
+  BASE_URL: 'https://phonebay.xyz',  // Base URL for the website
+  MEDIA_URL: 'https://phonebay.xyz/media',  // Full URL to media files
+  API_URL: 'https://phonebay.xyz/api',  // Full URL to API
   STRIPE_PUBLIC_KEY: 'pk_test_51OJlMsITKMzQFQGt7yYxM0NxUJlmUXFCuAJQA4yjNnBzMRmGgvfQFdtpCrZWjjJPkMEVF6jcGFVdkfSLyYbMZGsj00QUBvn9Dn',
   RAZORPAY_KEY_ID: 'rzp_test_8VVN5vUzTCBg8p',
   GOOGLE_CLIENT_ID: '988564065705-pat9e6cesim147njv6ddof095gmk7hhn.apps.googleusercontent.com',  // Set this during build or deployment

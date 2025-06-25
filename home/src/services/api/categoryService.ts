@@ -1,11 +1,11 @@
 import axios from 'axios';
-import { API_URL } from '../../config';
+import config from '../../config';
 
 class CategoryService {
   async getAll(params = {}) {
     try {
       console.log('Fetching categories with params:', params);
-      const response = await axios.get(`${API_URL}/products/categories/`, { 
+      const response = await axios.get(`${config.API_URL}/products/categories/`, { 
         params,
         headers: {
           'Accept': 'application/json',
@@ -32,9 +32,20 @@ class CategoryService {
     }
   }
 
+  async getAllCategories() {
+    try {
+      console.log('Fetching all categories');
+      const response = await this.getAll();
+      return response.results || [];
+    } catch (error) {
+      console.error('Error in getAllCategories:', error);
+      return [];
+    }
+  }
+
   async getBySlug(slug: string) {
     try {
-      const response = await axios.get(`${API_URL}/products/categories/${slug}/`);
+      const response = await axios.get(`${config.API_URL}/products/categories/${slug}/`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching category with slug ${slug}:`, error);

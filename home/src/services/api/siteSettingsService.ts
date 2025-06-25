@@ -38,32 +38,86 @@ class SiteSettingsService {
    */
   async getSettings(): Promise<SiteSettings> {
     try {
-      console.log('[SiteSettingsService] Getting site settings');
-      const response = await publicApi.get(`${config.API_URL}/admin/settings/`);
+      // Try multiple endpoints in case one fails
+      const endpoints = [
+        `${config.API_URL}/admin/settings/`,
+        `${config.API_URL}/adminpanel/settings/`
+      ];
       
-      if (response.data) {
-        console.log('[SiteSettingsService] Got site settings:', response.data);
-        
-        // Process logo URLs to ensure they are absolute
-        const settings = { ...response.data };
-        
-        // Convert relative URLs to absolute URLs for logos
-        if (settings.header_logo && !settings.header_logo.startsWith('http')) {
-          settings.header_logo = `${config.BASE_URL}${settings.header_logo}`;
+      console.log('[SiteSettingsService] Trying to fetch site settings from multiple endpoints');
+      
+      let response = null;
+      let error = null;
+      
+      // Try each endpoint until one works
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`[SiteSettingsService] Trying endpoint: ${endpoint}`);
+          response = await publicApi.get(endpoint);
+          if (response.data) {
+            console.log(`[SiteSettingsService] Successfully fetched from ${endpoint}`, response.data);
+            break;
+          }
+        } catch (err) {
+          console.log(`[SiteSettingsService] Failed to fetch from ${endpoint}`, err);
+          error = err;
         }
-        
-        if (settings.footer_logo && !settings.footer_logo.startsWith('http')) {
-          settings.footer_logo = `${config.BASE_URL}${settings.footer_logo}`;
-        }
-        
-        if (settings.favicon && !settings.favicon.startsWith('http')) {
-          settings.favicon = `${config.BASE_URL}${settings.favicon}`;
-        }
-        
-        return settings;
       }
       
-      return DEFAULT_SETTINGS;
+      if (!response || !response.data) {
+        console.error('[SiteSettingsService] All endpoints failed, using default settings');
+        throw error || new Error('Failed to fetch site settings from any endpoint');
+      }
+      
+      // Process logo URLs to ensure they are absolute
+      const settings = { ...response.data };
+      
+      console.log('[SiteSettingsService] Raw settings data:', settings);
+      
+      // Convert relative URLs to absolute URLs for logos
+      if (settings.header_logo) {
+        // Check if it's a relative URL (doesn't start with http or //)
+        if (!settings.header_logo.startsWith('http') && !settings.header_logo.startsWith('//')) {
+          // If it starts with a slash, remove it
+          const path = settings.header_logo.startsWith('/') 
+            ? settings.header_logo.substring(1) 
+            : settings.header_logo;
+          
+          settings.header_logo = `${config.MEDIA_URL}/${path}`;
+        }
+        console.log('[SiteSettingsService] Processed header_logo:', settings.header_logo);
+      } else {
+        console.log('[SiteSettingsService] Header logo not found, using default');
+        settings.header_logo = DEFAULT_SETTINGS.header_logo;
+      }
+      
+      if (settings.footer_logo) {
+        if (!settings.footer_logo.startsWith('http') && !settings.footer_logo.startsWith('//')) {
+          const path = settings.footer_logo.startsWith('/') 
+            ? settings.footer_logo.substring(1) 
+            : settings.footer_logo;
+          
+          settings.footer_logo = `${config.MEDIA_URL}/${path}`;
+        }
+        console.log('[SiteSettingsService] Processed footer_logo:', settings.footer_logo);
+      } else {
+        settings.footer_logo = DEFAULT_SETTINGS.footer_logo;
+      }
+      
+      if (settings.favicon) {
+        if (!settings.favicon.startsWith('http') && !settings.favicon.startsWith('//')) {
+          const path = settings.favicon.startsWith('/') 
+            ? settings.favicon.substring(1) 
+            : settings.favicon;
+          
+          settings.favicon = `${config.MEDIA_URL}/${path}`;
+        }
+        console.log('[SiteSettingsService] Processed favicon:', settings.favicon);
+      } else {
+        settings.favicon = DEFAULT_SETTINGS.favicon;
+      }
+      
+      return settings;
     } catch (error) {
       console.error('[SiteSettingsService] Error getting site settings:', error);
       return DEFAULT_SETTINGS;

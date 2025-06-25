@@ -62,6 +62,7 @@ export const CART_CONFIG: CART_CONFIG_TYPE;
 interface Config {
   BASE_URL: string;
   API_URL: string;
+  MEDIA_URL: string;
   STRIPE_PUBLIC_KEY: string;
   RAZORPAY_KEY_ID: string;
   GOOGLE_CLIENT_ID: string;
