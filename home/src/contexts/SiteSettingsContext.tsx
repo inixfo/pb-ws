@@ -31,11 +31,25 @@ export const SiteSettingsProvider: React.FC<SiteSettingsProviderProps> = ({ chil
     try {
       setIsLoading(true);
       setError(null);
+      console.log('[SiteSettingsContext] Fetching site settings...');
       const data = await siteSettingsService.getSettings();
+      console.log('[SiteSettingsContext] Received settings:', data);
+      
+      // Log specific information about the logo
+      if (data.header_logo) {
+        console.log('[SiteSettingsContext] Header logo URL:', data.header_logo);
+      } else {
+        console.log('[SiteSettingsContext] No header logo in settings, using default');
+      }
+      
       setSettings(data);
     } catch (err) {
-      console.error('Error fetching site settings:', err);
-      setError('Failed to load site settings');
+      console.error('[SiteSettingsContext] Error fetching site settings:', err);
+      if (err instanceof Error) {
+        setError(`Failed to load site settings: ${err.message}`);
+      } else {
+        setError('Failed to load site settings: Unknown error');
+      }
     } finally {
       setIsLoading(false);
     }

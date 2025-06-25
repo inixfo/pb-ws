@@ -39,7 +39,7 @@ class SiteSettingsService {
   async getSettings(): Promise<SiteSettings> {
     try {
       console.log('[SiteSettingsService] Getting site settings');
-      const response = await publicApi.get(`${config.API_URL}/adminpanel/settings/`);
+      const response = await publicApi.get(`${config.API_URL}/admin/settings/`);
       
       if (response.data) {
         console.log('[SiteSettingsService] Got site settings:', response.data);
