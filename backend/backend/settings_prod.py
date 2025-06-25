@@ -43,7 +43,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
-    'http://52.62.201.84',
+    'https://phonebay.xyz',
+    'https://www.phonebay.xyz',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
 ]
