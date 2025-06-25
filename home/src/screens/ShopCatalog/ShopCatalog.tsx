@@ -498,9 +498,15 @@ export const ShopCatalog = (): JSX.Element => {
           baseParams.ordering = '-popularity_score';
       }
       
-      // Only add brand filter if brands are selected - use brand parameter with comma-separated IDs
+      // Add brand filter if brands are selected
       if (selectedBrandIds.length > 0) {
-        baseParams.brand = selectedBrandIds.join(',');
+        if (selectedBrandIds.length === 1) {
+          // Use brand parameter for single brand
+          baseParams.brand = selectedBrandIds[0];
+        } else {
+          // Use brand__in parameter for multiple brands
+          baseParams.brand__in = selectedBrandIds.join(',');
+        }
       }
       
       // Only add price filters if they're different from the default range
