@@ -498,9 +498,9 @@ export const ShopCatalog = (): JSX.Element => {
           baseParams.ordering = '-popularity_score';
       }
       
-      // Only add brand filter if brands are selected - use brand__in parameter for multiple brands
+      // Only add brand filter if brands are selected - use brand parameter with comma-separated IDs
       if (selectedBrandIds.length > 0) {
-        baseParams.brand__in = selectedBrandIds.join(',');
+        baseParams.brand = selectedBrandIds.join(',');
       }
       
       // Only add price filters if they're different from the default range
@@ -563,15 +563,8 @@ export const ShopCatalog = (): JSX.Element => {
         // Add other filter parameters
         Object.entries(baseParams).forEach(([key, value]) => {
           if (key !== 'page' && key !== 'ordering') {
-            // Special case for brand IDs - use brand__in
-            if (key === 'brand__in') {
-              endpoint += `&${key}=${encodeURIComponent(String(value))}`;
-            } else if (key === 'brand') {
-              // Single brand ID
-              endpoint += `&brand=${encodeURIComponent(String(value))}`;
-            } else {
-              endpoint += `&${key}=${encodeURIComponent(String(value))}`;
-            }
+            // For all parameters, just use the key-value pair directly
+            endpoint += `&${key}=${encodeURIComponent(String(value))}`;
           }
         });
         
@@ -727,7 +720,8 @@ export const ShopCatalog = (): JSX.Element => {
         try {
           const filterOptions = await productService.getFilterOptions(undefined, slug);
           if (filterOptions && Array.isArray(filterOptions.brands)) {
-            brandsWithCounts = filterOptions.brands as Brand[];
+            // Only include brands with products
+            brandsWithCounts = (filterOptions.brands as Brand[]).filter(brand => brand.count && brand.count > 0);
             console.log('Got category-specific brands with counts:', brandsWithCounts);
           }
         } catch (err) {
@@ -737,34 +731,28 @@ export const ShopCatalog = (): JSX.Element => {
       
       // If we couldn't get brands with counts from filter options, fall back to regular brand list
       if (brandsWithCounts.length === 0) {
-        const data = await brandService.getAll();
-        if (data && data.results) {
-          // Try to get brand counts from filter options
+        try {
+          // Get filter options to get brands with product counts
+          const filterOptions = await productService.getFilterOptions();
+          if (filterOptions && Array.isArray(filterOptions.brands)) {
+            // Only include brands with products
+            brandsWithCounts = (filterOptions.brands as Brand[]).filter(brand => brand.count && brand.count > 0);
+            console.log('Got brands with counts from filter options:', brandsWithCounts);
+          }
+        } catch (err) {
+          console.error('Failed to get brands with counts from filter options:', err);
+          
+          // Last resort: get all brands and assume they all have products
           try {
-            const filterOptions = await productService.getFilterOptions();
-            if (filterOptions && Array.isArray(filterOptions.brands)) {
-              // Map counts to brands
-              const brandCounts: Record<string, number> = {};
-              filterOptions.brands.forEach((brand: any) => {
-                brandCounts[brand.name] = brand.count;
-              });
-              
+            const data = await brandService.getAll();
+            if (data && data.results) {
               brandsWithCounts = data.results.map((brand: Brand) => ({
                 ...brand,
-                count: brandCounts[brand.name] || 0
-              }));
-            } else {
-              brandsWithCounts = data.results.map((brand: Brand) => ({
-                ...brand,
-                count: 0
+                count: 1 // Assume at least one product
               }));
             }
-          } catch (err) {
-            console.error('Failed to get brand counts:', err);
-            brandsWithCounts = data.results.map((brand: Brand) => ({
-              ...brand,
-              count: 0
-            }));
+          } catch (brandErr) {
+            console.error('Failed to load brands:', brandErr);
           }
         }
       }
@@ -772,7 +760,10 @@ export const ShopCatalog = (): JSX.Element => {
       // Sort brands by count (descending)
       brandsWithCounts.sort((a: Brand, b: Brand) => (b.count || 0) - (a.count || 0));
       
-      setBrands(brandsWithCounts);
+      // Only set brands if we have some
+      if (brandsWithCounts.length > 0) {
+        setBrands(brandsWithCounts);
+      }
     } catch (err) {
       console.error('Failed to load brands:', err);
     }
