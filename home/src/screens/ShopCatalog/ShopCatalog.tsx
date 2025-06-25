@@ -552,31 +552,7 @@ export const ShopCatalog = (): JSX.Element => {
       }
       
       // Check if we got valid results
-      if (!data || !data.results || !Array.isArray(data.results) || data.results.length === 0) {
-        console.warn('[ShopCatalog fetchProducts] No results with filters, trying without filters');
-        
-        // Try again with minimal params (just page)
-        const minimalParams: Record<string, any> = {
-          page: currentPage
-        };
-        
-        // If we have a category slug, keep that
-        if (slug) {
-          minimalParams['category_slug'] = slug;
-        }
-        
-        data = await fetchWithParams(minimalParams);
-        usedFallback = true;
-        console.log('[ShopCatalog fetchProducts] Fallback API response:', data);
-      }
-
-      if (data && data.results && Array.isArray(data.results) && data.results.length > 0) {
-        console.log('[ShopCatalog fetchProducts SUCCESS] Products data structure:', {
-          resultsLength: data.results.length,
-          totalPages: data.total_pages || data.num_pages || 1,
-          count: data.count || 0,
-          sampleProduct: data.results.length > 0 ? data.results[0] : null
-        });
+      if (data && data.results && data.results.length > 0) {
         
         setProducts(data.results);
         setTotalPages(data.total_pages || data.num_pages || 1);
@@ -588,11 +564,21 @@ export const ShopCatalog = (): JSX.Element => {
         
         console.log('[ShopCatalog fetchProducts SUCCESS] Products loaded:', data.results.length, 'Total pages:', data.total_pages || data.num_pages);
       } else {
-        console.warn('[ShopCatalog fetchProducts WARN] No results in data or empty array, using fallback.', data);
-        setProducts(FALLBACK_PRODUCTS);
-        setTotalPages(1);
-        setTotalProducts(FALLBACK_PRODUCTS.length);
-        setError("Couldn't load products from the server. Showing sample products instead.");
+        console.warn('[ShopCatalog fetchProducts WARN] No results in data or empty array', data);
+        
+        // Only use fallback products when not searching for a specific category
+        if (!slug) {
+          setProducts(FALLBACK_PRODUCTS);
+          setTotalPages(1);
+          setTotalProducts(FALLBACK_PRODUCTS.length);
+          setError("Couldn't load products from the server. Showing sample products instead.");
+        } else {
+          // For category pages, show empty results instead of fallback products
+          setProducts([]);
+          setTotalPages(0);
+          setTotalProducts(0);
+          setError(null); // Clear error message since we'll show the "No Products Available" UI
+        }
       }
     } catch (err: any) {
       console.error('[ShopCatalog fetchProducts ERROR]', err.response?.data || err.message || err);
