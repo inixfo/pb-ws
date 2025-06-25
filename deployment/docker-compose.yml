@@ -25,11 +25,14 @@ services:
     restart: always
     ports:
       - "80:80"
+      - "443:443"
     env_file:
       - frontend.env
     volumes:
       - ./media:/usr/share/nginx/html/media
       - ./static:/usr/share/nginx/html/static
+      - /etc/letsencrypt/live/phonebay.xyz/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
+      - /etc/letsencrypt/live/phonebay.xyz/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
     depends_on:
       - backend
     networks:

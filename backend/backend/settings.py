@@ -22,7 +22,7 @@ SECRET_KEY = 'django-insecure-oqib9m00m3$=h@-3k@ap7#9me%hz3xixo39n-e=xik&^i)=^f(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['52.62.201.84', 'localhost', '127.0.0.1', 'phonebay.xyz', 'www.phonebay.xyz']
 
 
 # Application definition
@@ -63,8 +63,8 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'users.User'
 
 # Google OAuth Settings
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '1075587028998-u8no2hgm541gbodc6sqhe57cni77qkj0.apps.googleusercontent.com'  # Google Client ID
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = ''  # Google Client Secret - set this in production
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '988564065705-pat9e6cesim147njv6ddof095gmk7hhn.apps.googleusercontent.com'  # Google Client ID
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'  # Google Client Secret - set this in production
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email', 'profile']
 
 # Authentication backends
@@ -90,12 +90,15 @@ SOCIAL_AUTH_PIPELINE = (
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     'http://52.62.201.84',
+    'https://52.62.201.84',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5174',
     'http://localhost:5173',
     'http://phonebay.xyz',
     'https://phonebay.xyz',
+    'http://www.phonebay.xyz',
+    'https://www.phonebay.xyz',
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = [

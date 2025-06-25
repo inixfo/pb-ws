@@ -1,7 +1,7 @@
 // Configuration variables for the application
 
 // API base URL - use absolute URL for more reliable connection
-export const API_URL = 'http://52.62.201.84/api';  // Production API URL with /api path
+export const API_URL = 'https://phonebay.xyz/api';  // Production API URL with /api path
 // export const API_URL = '';  // Relative URL (works with proxy in development)
 
 // Application name
@@ -59,8 +59,8 @@ export const CART_CONFIG = {
 };
 
 const config = {
-  BASE_URL: 'http://52.62.201.84',
-  API_URL: 'http://52.62.201.84/api',
+  BASE_URL: 'https://phonebay.xyz',
+  API_URL: 'https://phonebay.xyz/api',
   STRIPE_PUBLIC_KEY: 'pk_test_51OJlMsITKMzQFQGt7yYxM0NxUJlmUXFCuAJQA4yjNnBzMRmGgvfQFdtpCrZWjjJPkMEVF6jcGFVdkfSLyYbMZGsj00QUBvn9Dn',
   RAZORPAY_KEY_ID: 'rzp_test_8VVN5vUzTCBg8p',
   GOOGLE_CLIENT_ID: '988564065705-pat9e6cesim147njv6ddof095gmk7hhn.apps.googleusercontent.com',  // Set this during build or deployment
