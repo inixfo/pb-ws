@@ -1938,12 +1938,12 @@ export const DeliveryInfoContent = (): JSX.Element => {
                               <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">Total Product Amount:</span>
-                                  <span className="font-medium">{formatCurrency(activeCardlessEMIBasePrice || 0)}</span>
+                                  <span className="font-medium">{formatCurrency(cart.total_price || 0)}</span>
                                 </div>
                                 
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">Down Payment (Now):</span>
-                                  <span className="font-medium">{formatCurrency(activeCardlessEMIDownpayment || 0)}</span>
+                                  <span className="font-medium">{formatCurrency((activeCardlessEMIDownpayment || 0) + shippingCost)}</span>
                                 </div>
                                 
                                 <div className="flex justify-between">
@@ -2046,24 +2046,6 @@ export const DeliveryInfoContent = (): JSX.Element => {
                   {paymentDetails.payment_method === "SSLCOMMERZ_CARDLESS_EMI" && selectedCardlessEMIPlanDetails && (
                     <div className="space-y-4">
                       <h3 className="text-base font-semibold">Cardless EMI - Required Information</h3>
-                       {activeCardlessEMIDownpayment !== null && activeCardlessEMIMonthly !== null && activeCardlessEMIBasePrice !== null && activeCardlessEMIFinancedAmount !== null && selectedCardlessEMIPlanDetails && (
-                         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 space-y-2 mb-4">
-                            <h4 className="text-base font-semibold text-blue-800">EMI Details ({selectedCardlessEMIPlanDetails.plan_name || `${selectedCardlessEMIPlanDetails.duration_months}-month Plan`})</h4>
-                            <div className="flex justify-between"><span>Product Price:</span> <span>{formatCurrency(activeCardlessEMIBasePrice)}</span></div>
-                            <div className="flex justify-between"><span>Interest Rate:</span> <span>{Number(selectedCardlessEMIPlanDetails.interest_rate).toFixed(2)}% (flat rate)</span></div>
-                            <div className="flex justify-between"><span>Total Interest:</span> <span>{formatCurrency(activeCardlessEMIFinancedAmount * (selectedCardlessEMIPlanDetails.interest_rate / 100))}</span></div>
-                            <div className="flex justify-between font-semibold border-t pt-2"><span>Total Amount (with Interest):</span> <span>{formatCurrency(activeCardlessEMIBasePrice + (activeCardlessEMIFinancedAmount * (selectedCardlessEMIPlanDetails.interest_rate / 100)))}</span></div>
-                            {(selectedCardlessEMIPlanDetails.down_payment_percentage || 0) > 0 && 
-                              <div className="flex justify-between text-green-700"><span>Down Payment (Pay Now) ({(selectedCardlessEMIPlanDetails.down_payment_percentage || 0)}%):</span> <span className="font-semibold">{formatCurrency(activeCardlessEMIDownpayment)}</span></div>
-                            }
-                            <div className="flex justify-between"><span>Financed Amount:</span> <span>{formatCurrency(activeCardlessEMIFinancedAmount)}</span></div>
-                            <div className="flex justify-between font-semibold"><span>Monthly Installment:</span> <span>{formatCurrency(activeCardlessEMIMonthly)} for {selectedCardlessEMIPlanDetails.duration_months} months</span></div>
-                            <p className="text-xs pt-2 text-gray-700 flex items-center gap-1">
-                                <InfoIcon className="h-4 w-4 flex-shrink-0" />
-                                You will pay only the down payment now. Remaining installments managed by our EMI provider after approval.
-                            </p>
-                    </div>
-                  )}
                       <p className="text-gray-600 text-sm mb-4">
                         Please provide your employment details and upload your NID for verification. This information will be securely processed.
                       </p>
