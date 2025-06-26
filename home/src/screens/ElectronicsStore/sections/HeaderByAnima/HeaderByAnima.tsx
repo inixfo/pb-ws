@@ -433,24 +433,37 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
           <div className="flex-shrink-0 flex items-center ml-auto sm:ml-0 mr-auto">
             <Link to="/" className="flex items-center">
               {settings?.header_logo ? (
-                <img 
-                  src={settings.header_logo} 
-                  alt={`${settings.site_name || 'Phone Bay'} Logo`}
-                  className="h-8 sm:h-10 w-auto"
-                  onError={(e) => {
-                    console.log('[Header] Logo failed to load, using site name');
-                    e.currentTarget.style.display = 'none';
-                    
-                    // Create a fallback text element
-                    const parent = e.currentTarget.parentElement;
-                    if (parent) {
-                      const nameDiv = document.createElement('div');
-                      nameDiv.className = "text-white font-bold text-lg sm:text-xl";
-                      nameDiv.textContent = settings.site_name || 'Phone Bay';
-                      parent.appendChild(nameDiv);
-                    }
-                  }}
-                />
+                <React.Fragment>
+                  <img 
+                    src={settings.header_logo} 
+                    alt={`${settings.site_name || 'Phone Bay'} Logo`}
+                    className="h-8 sm:h-10 w-auto"
+                    onError={(e) => {
+                      console.log('[Header] Logo failed to load:', settings.header_logo);
+                      e.currentTarget.style.display = 'none';
+                      
+                      // Find the fallback element
+                      const parent = e.currentTarget.parentElement;
+                      const fallbackEl = parent?.querySelector('.logo-text-fallback');
+                      
+                      if (fallbackEl) {
+                        // Show existing fallback
+                        console.log('[Header] Showing existing fallback element');
+                        fallbackEl.classList.remove('hidden');
+                      } else if (parent) {
+                        // Create a fallback text element if it doesn't exist
+                        console.log('[Header] Creating new fallback element');
+                        const nameDiv = document.createElement('div');
+                        nameDiv.className = "text-white font-bold text-lg sm:text-xl logo-text-fallback";
+                        nameDiv.textContent = settings.site_name || 'Phone Bay';
+                        parent.appendChild(nameDiv);
+                      }
+                    }}
+                  />
+                  <div className="text-white font-bold text-lg sm:text-xl logo-text-fallback hidden">
+                    {settings.site_name || 'Phone Bay'}
+                  </div>
+                </React.Fragment>
               ) : (
                 <div className="text-white font-bold text-lg sm:text-xl">
                   {settings.site_name || 'Phone Bay'}

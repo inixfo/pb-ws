@@ -259,24 +259,37 @@ export const CtaFooterByAnima = (): JSX.Element => {
             {/* Company Info */}
             <div className="flex flex-col gap-6">
               {settings?.footer_logo ? (
-                <img 
-                  className="w-24 h-10" 
-                  alt={`${settings.site_name || 'Phone Bay'} Logo`} 
-                  src={settings.footer_logo} 
-                  onError={(e) => {
-                    console.log('[Footer] Logo failed to load, using site name');
-                    e.currentTarget.style.display = 'none';
-                    
-                    // Create a fallback text element
-                    const parent = e.currentTarget.parentElement;
-                    if (parent) {
-                      const nameDiv = document.createElement('div');
-                      nameDiv.className = "text-white font-bold text-lg";
-                      nameDiv.textContent = settings.site_name || 'Phone Bay';
-                      parent.appendChild(nameDiv);
-                    }
-                  }}
-                />
+                <React.Fragment>
+                  <img 
+                    className="w-24 h-10" 
+                    alt={`${settings.site_name || 'Phone Bay'} Logo`} 
+                    src={settings.footer_logo} 
+                    onError={(e) => {
+                      console.log('[Footer] Logo failed to load:', settings.footer_logo);
+                      e.currentTarget.style.display = 'none';
+                      
+                      // Find the fallback element
+                      const parent = e.currentTarget.parentElement;
+                      const fallbackEl = parent?.querySelector('.logo-text-fallback');
+                      
+                      if (fallbackEl) {
+                        // Show existing fallback
+                        console.log('[Footer] Showing existing fallback element');
+                        fallbackEl.classList.remove('hidden');
+                      } else if (parent) {
+                        // Create a fallback text element if it doesn't exist
+                        console.log('[Footer] Creating new fallback element');
+                        const nameDiv = document.createElement('div');
+                        nameDiv.className = "text-white font-bold text-lg logo-text-fallback";
+                        nameDiv.textContent = settings.site_name || 'Phone Bay';
+                        parent.appendChild(nameDiv);
+                      }
+                    }}
+                  />
+                  <div className="text-white font-bold text-lg logo-text-fallback hidden">
+                    {settings.site_name || 'Phone Bay'}
+                  </div>
+                </React.Fragment>
               ) : (
                 <div className="text-white font-bold text-lg">
                   {settings.site_name || 'Phone Bay'}

@@ -523,19 +523,26 @@ class SiteSettingsView(APIView):
             # Add full URLs for images
             data = serializer.data.copy()
             
-            # Construct the base URL for media files
-            base_url = request.build_absolute_uri('/')[:-1]  # Remove trailing slash
+            # Construct the base URL for media files using the request's host
+            scheme = request.scheme  # 'http' or 'https'
+            host = request.get_host()  # This will be either 'phonebay.xyz' or 'www.phonebay.xyz'
+            base_url = f"{scheme}://{host}"
             media_url = f"{base_url}/media/"
+            
+            print(f"Constructing media URLs with base: {base_url}")
             
             # Process image URLs to make them absolute
             if data['header_logo'] and not data['header_logo'].startswith('http'):
                 data['header_logo'] = f"{media_url}{data['header_logo']}"
+                print(f"Set header_logo URL to: {data['header_logo']}")
             
             if data['footer_logo'] and not data['footer_logo'].startswith('http'):
                 data['footer_logo'] = f"{media_url}{data['footer_logo']}"
+                print(f"Set footer_logo URL to: {data['footer_logo']}")
                 
             if data['favicon'] and not data['favicon'].startswith('http'):
                 data['favicon'] = f"{media_url}{data['favicon']}"
+                print(f"Set favicon URL to: {data['favicon']}")
             
             # Debug info
             print(f"SiteSettings retrieved: {settings}")

@@ -74,30 +74,60 @@ class SiteSettingsService {
       
       console.log('[SiteSettingsService] Raw settings data:', settings);
       
-      // Use the URLs as provided by the backend (now they should be absolute)
-      // But if they're not set, use defaults
+      // Validate logo URLs
+      const validateImageUrl = (url: string | null): string | null => {
+        if (!url) return null;
+        
+        // Log the URL for debugging
+        console.log(`[SiteSettingsService] Validating image URL: ${url}`);
+        
+        try {
+          // Check if it's already a valid URL with hostname
+          new URL(url);
+          console.log(`[SiteSettingsService] URL is valid with hostname: ${url}`);
+          return url;
+        } catch (e) {
+          // If not a valid URL, it might be a relative path
+          if (url.startsWith('/')) {
+            // It's already a root-relative path, can use as is
+            console.log(`[SiteSettingsService] URL is relative path: ${url}`);
+            return url;
+          } else {
+            // It's a relative path without leading slash, add it
+            console.log(`[SiteSettingsService] Adding leading slash to relative URL: ${url}`);
+            return `/${url}`;
+          }
+        }
+      };
+      
+      // Process and validate image URLs
       if (!settings.header_logo) {
         console.log('[SiteSettingsService] Header logo not found, using default');
         settings.header_logo = DEFAULT_SETTINGS.header_logo;
       } else {
-        console.log('[SiteSettingsService] Using header_logo from server:', settings.header_logo);
+        settings.header_logo = validateImageUrl(settings.header_logo);
+        console.log('[SiteSettingsService] Using header_logo:', settings.header_logo);
       }
       
       if (!settings.footer_logo) {
         console.log('[SiteSettingsService] Footer logo not found, using default');
         settings.footer_logo = DEFAULT_SETTINGS.footer_logo;
       } else {
-        console.log('[SiteSettingsService] Using footer_logo from server:', settings.footer_logo);
+        settings.footer_logo = validateImageUrl(settings.footer_logo);
+        console.log('[SiteSettingsService] Using footer_logo:', settings.footer_logo);
       }
       
       if (!settings.favicon) {
         console.log('[SiteSettingsService] Favicon not found, using default');
         settings.favicon = DEFAULT_SETTINGS.favicon;
       } else {
-        console.log('[SiteSettingsService] Using favicon from server:', settings.favicon);
+        settings.favicon = validateImageUrl(settings.favicon);
+        console.log('[SiteSettingsService] Using favicon:', settings.favicon);
         
         // If we have a favicon URL, set it as the page favicon
-        this.setPageFavicon(settings.favicon);
+        if (settings.favicon) {
+          this.setPageFavicon(settings.favicon);
+        }
       }
       
       return settings;
@@ -112,6 +142,8 @@ class SiteSettingsService {
    */
   private setPageFavicon(faviconUrl: string): void {
     try {
+      console.log('[SiteSettingsService] Setting favicon to:', faviconUrl);
+      
       // Find existing favicon link element or create a new one
       let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
       if (!link) {
@@ -123,7 +155,7 @@ class SiteSettingsService {
       // Update the href attribute to point to the new favicon
       link.href = faviconUrl;
       
-      console.log('[SiteSettingsService] Favicon updated to:', faviconUrl);
+      console.log('[SiteSettingsService] Favicon updated successfully');
     } catch (err) {
       console.error('[SiteSettingsService] Failed to set favicon:', err);
     }
