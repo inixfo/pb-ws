@@ -23,7 +23,7 @@ export const SpecialOffersByAnima = (): JSX.Element => {
     const fetchSpecialOffers = async () => {
       try {
         setLoading(true);
-        const data = await productService.getSpecialOffers(4);
+        const data = await productService.getSpecialOffers(2);
         const products = Array.isArray(data) ? data : data.results || [];
         if (products.length > 0) {
           setProducts(products);

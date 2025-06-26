@@ -159,13 +159,8 @@ export const productService = {
   getTrending: async (limit?: number) => {
     try {
       console.log(`Fetching trending products with limit: ${limit}`);
-      const timestamp = new Date().getTime(); // Add cache-busting timestamp
       const response = await publicApi.get('/products/products/trending/', { 
-        params: { 
-          limit,
-          ordering: '-created_at', // Order by newest first
-          _cache_bust: timestamp // Cache-busting parameter
-        } 
+        params: { limit } 
       });
       console.log('Trending products response:', response.data);
       return response.data;
@@ -179,13 +174,8 @@ export const productService = {
   getSpecialOffers: async (limit?: number) => {
     try {
       console.log(`Fetching special offers with limit: ${limit}`);
-      const timestamp = new Date().getTime(); // Add cache-busting timestamp
       const response = await publicApi.get('/products/products/special_offers/', { 
-        params: { 
-          limit,
-          ordering: '-created_at', // Order by newest first
-          _cache_bust: timestamp // Cache-busting parameter
-        } 
+        params: { limit } 
       });
       console.log('Special offers response:', response.data);
       return response.data;
