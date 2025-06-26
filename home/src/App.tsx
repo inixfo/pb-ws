@@ -60,7 +60,7 @@ const FaviconUpdater = () => {
         document.getElementsByTagName('head')[0].appendChild(link);
       }
       
-      if (settings?.favicon && settings.favicon.startsWith('http')) {
+      if (settings?.favicon && (settings.favicon.startsWith('http') || settings.favicon.startsWith('/media'))) {
         // Clean the URL to fix any issues with double slashes or media paths
         let faviconUrl = settings.favicon;
         
@@ -74,6 +74,19 @@ const FaviconUpdater = () => {
         faviconUrl = faviconUrl.replace(/(https?:\/\/)|(\/)+/g, (match, protocol) => {
           return protocol ? protocol : '/';
         });
+        
+        // Ensure URL is HTTPS - convert HTTP to HTTPS
+        if (faviconUrl.startsWith('http:')) {
+          faviconUrl = faviconUrl.replace('http:', 'https:');
+          console.log('[FaviconUpdater] Converted HTTP to HTTPS in favicon URL');
+        }
+        
+        // If it's a relative URL, make sure it's properly formatted
+        if (faviconUrl.startsWith('/media')) {
+          // Use the current origin to build an absolute HTTPS URL
+          faviconUrl = `${window.location.protocol}//${window.location.host}${faviconUrl}`;
+          console.log('[FaviconUpdater] Converted relative URL to absolute HTTPS URL');
+        }
         
         // Update favicon if available in site settings
         console.log('[FaviconUpdater] Setting favicon to:', faviconUrl);
