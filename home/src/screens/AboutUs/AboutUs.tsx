@@ -2,158 +2,115 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useSiteSettings } from '../../contexts/SiteSettingsContext';
 import { HomeIcon } from 'lucide-react';
+import { HeaderByAnima } from '../ElectronicsStore/sections/HeaderByAnima/HeaderByAnima';
+import { CtaFooterByAnima } from '../ElectronicsStore/sections/CtaFooterByAnima/CtaFooterByAnima';
 
 export const AboutUs = () => {
   const { settings } = useSiteSettings();
+  const siteName = settings?.site_name || 'Phone Bay';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Breadcrumb */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8">
-          <nav className="flex items-center text-sm">
-            <Link to="/" className="flex items-center text-gray-500 hover:text-gray-900">
-              <HomeIcon className="h-4 w-4 mr-1" />
-              Home
-            </Link>
-            <svg className="h-5 w-5 text-gray-400 mx-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-            </svg>
-            <span className="text-gray-900 font-medium">About Us</span>
-          </nav>
-        </div>
-      </div>
+    <div className="flex flex-col w-full bg-white-100">
+      <HeaderByAnima showHeroSection={false} />
       
-      {/* Page Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          {/* Header Section */}
-          <div className="relative bg-gradient-to-r from-blue-600 to-indigo-700 py-12 px-6 sm:px-12 lg:px-16">
-            <div className="relative max-w-3xl mx-auto text-center">
-              <h1 className="text-3xl font-extrabold text-white tracking-tight sm:text-4xl">
-                About {settings?.site_name || 'Phone Bay'}
-              </h1>
-              <p className="mt-6 max-w-2xl mx-auto text-lg text-blue-100">
-                Your trusted partner for high-quality electronics, exceptional service, and unbeatable value.
-              </p>
-            </div>
-            <div className="absolute inset-y-0 right-0 hidden lg:block lg:w-1/3">
-              <svg className="absolute inset-0 h-full w-full text-white text-opacity-10" fill="currentColor" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <polygon points="0,0 100,0 50,100 0,100" />
-              </svg>
-            </div>
-          </div>
-          
-          {/* Mission Section */}
-          <div className="px-6 py-10 sm:px-12 lg:px-16">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Our Mission</h2>
-            <div className="grid gap-8 md:grid-cols-3">
-              <div className="bg-white p-6 shadow-sm border border-gray-100 rounded-lg">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Quality Products</h3>
-                <p className="text-gray-600">We curate the best electronics from top brands, ensuring every product meets our high standards.</p>
-              </div>
-              
-              <div className="bg-white p-6 shadow-sm border border-gray-100 rounded-lg">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Affordable Pricing</h3>
-                <p className="text-gray-600">We believe everyone deserves access to technology through competitive pricing and flexible payment options.</p>
-              </div>
-              
-              <div className="bg-white p-6 shadow-sm border border-gray-100 rounded-lg">
-                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Outstanding Support</h3>
-                <p className="text-gray-600">Our dedicated team provides exceptional customer service before, during, and after your purchase.</p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Story Section */}
-          <div className="bg-gray-50 px-6 py-10 sm:px-12 lg:px-16">
-            <div className="max-w-3xl mx-auto">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Our Story</h2>
-              <div className="prose lg:prose-lg text-gray-600">
-                <p>
-                  Founded in 2020, {settings?.site_name || 'Phone Bay'} started with a simple mission: to provide consumers with high-quality electronics at affordable prices.
-                </p>
-                <p>
-                  What began as a small shop has grown into a trusted online destination for tech enthusiasts across the country. Our journey has been defined by our commitment to customer satisfaction and our passion for technology.
-                </p>
-                <p>
-                  Today, we offer a curated selection of the latest smartphones, laptops, and other electronics from the world's leading brands, along with flexible payment options and dedicated customer support.
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Team Section */}
-          <div className="px-6 py-10 sm:px-12 lg:px-16">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Our Team</h2>
-            <div className="grid gap-8 md:grid-cols-3">
-              {/* Team Member 1 */}
-              <div className="text-center">
-                <div className="w-32 h-32 rounded-full overflow-hidden mx-auto bg-gray-200">
-                  <svg className="w-full h-full text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
-                <h3 className="mt-4 text-lg font-medium text-gray-900">John Smith</h3>
-                <p className="text-sm text-gray-500">Founder & CEO</p>
-              </div>
-              
-              {/* Team Member 2 */}
-              <div className="text-center">
-                <div className="w-32 h-32 rounded-full overflow-hidden mx-auto bg-gray-200">
-                  <svg className="w-full h-full text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
-                <h3 className="mt-4 text-lg font-medium text-gray-900">Emily Johnson</h3>
-                <p className="text-sm text-gray-500">COO</p>
-              </div>
-              
-              {/* Team Member 3 */}
-              <div className="text-center">
-                <div className="w-32 h-32 rounded-full overflow-hidden mx-auto bg-gray-200">
-                  <svg className="w-full h-full text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
-                <h3 className="mt-4 text-lg font-medium text-gray-900">Michael Chen</h3>
-                <p className="text-sm text-gray-500">CTO</p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Contact Section */}
-          <div className="bg-gray-50 px-6 py-10 sm:px-12 lg:px-16">
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Get in Touch</h2>
-              <p className="text-lg text-gray-600 mb-8">
-                Have questions or want to learn more about our company? We'd love to hear from you.
-              </p>
-              <Link
-                to="/help-center"
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
-              >
-                Contact Us
+      <div className="min-h-screen">
+        {/* Breadcrumb */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8">
+            <nav className="flex items-center text-sm">
+              <Link to="/" className="flex items-center text-gray-500 hover:text-gray-900">
+                <HomeIcon className="h-4 w-4 mr-1" />
+                Home
               </Link>
+              <svg className="h-5 w-5 text-gray-400 mx-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+              <span className="text-gray-900 font-medium">About Us</span>
+            </nav>
+          </div>
+        </div>
+        
+        {/* Page Content */}
+        <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            {/* Header Section */}
+            <div className="relative bg-gradient-to-r from-blue-600 to-indigo-700 py-12 px-6 sm:px-12 lg:px-16">
+              <div className="relative max-w-3xl mx-auto text-center">
+                <h1 className="text-3xl font-extrabold text-white tracking-tight sm:text-4xl">
+                  About {siteName}
+                </h1>
+              </div>
+              <div className="absolute inset-y-0 right-0 hidden lg:block lg:w-1/3">
+                <svg className="absolute inset-0 h-full w-full text-white text-opacity-10" fill="currentColor" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  <polygon points="0,0 100,0 50,100 0,100" />
+                </svg>
+              </div>
+            </div>
+            
+            {/* About Content */}
+            <div className="px-6 py-10 sm:px-12 lg:px-16">
+              <div className="prose max-w-none lg:prose-lg text-gray-700">
+                <p>
+                  PhoneBay is a trusted and customer-focused tech retailer in Bangladesh, dedicated to offering premium smartphones, motor-bikes, cars, televisions, refrigerators, freezers, washing machines, air conditioners, home appliances, gadgets, accessories and all kinds of electronics at competitive prices. With a strong emphasis on authenticity, reliability, and user satisfaction, PhoneBay has quickly become a go-to destination for tech enthusiasts and everyday consumers seeking genuine products and transparent service.
+                </p>
+                
+                <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Our Mission</h2>
+                <p>
+                  Our mission is to make advanced technology accessible to everyone across Bangladesh, not just through pricing but also through flexible purchasing options and dedicated customer support, with thousands of options to choose.
+                </p>
+
+                <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Product Quality</h2>
+                <p>
+                  All our products are 100% original, sourced directly from authorized distributors and manufacturers. Whether you're in search smartphones, motor-bikes, cars, televisions, refrigerators, freezers, washing machines, air conditioners, home appliances, gadgets, accessories and all kinds of electronics at competitive prices of flagship smartphones, budget-friendly devices, or high-quality accessories, PhoneBay ensures each item is quality-checked and comes with a valid warranty for complete peace of mind.
+                </p>
+                
+                <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Delivery Options</h2>
+                <p>
+                  While we currently offer doorstep delivery, we make the collection process simple and safe. After placing an order, customers are required to collect their device from the nearest delivery point or in home.
+                </p>
+                
+                <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Flexible Payment Solutions</h2>
+                <p>
+                  PhoneBay is also recognized for offering flexible payment solutions. Among the most popular is our Cardless EMI option, which allows customers to purchase their desired products by paying only a confirmation amount upfront. The remaining balance can be paid in monthly instalments, making it easier than ever to own high-end technology without financial strain. Additionally, we offer other accessible payment options such as mobile banking and digital wallet payments.
+                </p>
+
+                <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">User Experience</h2>
+                <p>
+                  Our website is designed with user convenience in mind—featuring clear product descriptions, real customer reviews, and up-to-date information on pricing, stock status, and specifications. We also have a responsive customer service team ready to assist with queries, order tracking, and post-purchase support.
+                </p>
+                
+                <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Customer Satisfaction</h2>
+                <p>
+                  Customer satisfaction is central to everything we do. PhoneBay follows clear Return, Refund, and Cancellation policies to ensure customers feel confident while shopping. If a customer needs to cancel an order before it is processed, or faces a product issue, we offer prompt resolutions in accordance with our policy guidelines.
+                </p>
+                
+                <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Data Protection</h2>
+                <p>
+                  PhoneBay also protects your data and privacy with advanced security measures. Whether you're creating an account or making a transaction, your personal and financial information is encrypted and handled with utmost confidentiality.
+                </p>
+                
+                <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Exclusive Offers</h2>
+                <p>
+                  We frequently run promotional campaigns, seasonal discounts, and exclusive offers that allow customers to get the best value for their money. All promotions are time-bound and stock-dependent, with terms clearly outlined to ensure transparency.
+                </p>
+
+                <p className="text-lg font-medium mt-8">
+                  PhoneBay is your trusted online destination for the smartphones, motor-bikes, cars, televisions, refrigerators, freezers, washing machines, air conditioners, home appliances, gadgets, accessories and all kinds of electronics.
+                </p>
+
+                <div className="bg-gray-50 p-6 rounded-lg mt-8">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Company Information</h3>
+                  <p className="mb-1"><strong>Trade License No.-</strong> 20242628005022236</p>
+                  <p className="mb-1"><strong>Address 1-</strong> Dhanmondi 27, Level 7, 27 Shaptak Square, Plot 380, Road 27, Dhanmondi, Dhaka 1207, Dhaka, Bangladesh.</p>
+                  <p><strong>Address 2-</strong> B-124, Bazar Road, Savar, Dhaka-1340.</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      <CtaFooterByAnima />
     </div>
   );
 };
