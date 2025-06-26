@@ -26,7 +26,9 @@ export const SpecialOffersByAnima = (): JSX.Element => {
         const data = await productService.getSpecialOffers(2);
         const products = Array.isArray(data) ? data : data.results || [];
         if (products.length > 0) {
-          setProducts(products);
+          // Sort products by ID in descending order (newest first)
+          const sortedProducts = [...products].sort((a, b) => b.id - a.id);
+          setProducts(sortedProducts);
         } else {
           // Use fallback data if API returns empty
           console.warn('No special offers returned from API, using fallback data');

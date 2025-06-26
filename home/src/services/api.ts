@@ -162,7 +162,9 @@ export const productService = {
       const response = await publicApi.get('/products/products/trending/', { 
         params: { 
           limit,
-          ordering: '-id' // Use descending order by ID to get newest first
+          ordering: '-id', // Try standard Django REST Framework ordering
+          order_by: '-id', // Alternative parameter name
+          sort: '-id'      // Another alternative parameter name
         } 
       });
       console.log('Trending products response:', response.data);
@@ -180,7 +182,9 @@ export const productService = {
       const response = await publicApi.get('/products/products/special_offers/', { 
         params: { 
           limit,
-          ordering: '-id' // Use descending order by ID to get newest first
+          ordering: '-id', // Try standard Django REST Framework ordering
+          order_by: '-id', // Alternative parameter name
+          sort: '-id'      // Another alternative parameter name
         } 
       });
       console.log('Special offers response:', response.data);

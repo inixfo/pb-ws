@@ -26,11 +26,14 @@ export const TrendingProductsByAnima = (): JSX.Element => {
         const data = await productService.getTrending(8);
         const products = Array.isArray(data) ? data : data.results || [];
         if (products.length > 0) {
-          setProducts(products);
+          // Sort products by ID in descending order (newest first)
+          const sortedProducts = [...products].sort((a, b) => b.id - a.id);
+          setProducts(sortedProducts);
+          
           // Log the first product to debug image structure
-          if (products[0]) {
-            console.log('First product data:', products[0]);
-            console.log('Image URL using utility:', getProductImageUrl(products[0]));
+          if (sortedProducts[0]) {
+            console.log('First product data:', sortedProducts[0]);
+            console.log('Image URL using utility:', getProductImageUrl(sortedProducts[0]));
           }
         } else {
           // Use fallback data if API returns empty
