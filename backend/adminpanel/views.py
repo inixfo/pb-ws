@@ -535,15 +535,21 @@ class SiteSettingsView(APIView):
                 if not path:
                     return None
                 
+                # Log the original path for debugging
+                print(f"Original media path: '{path}'")
+                
                 # Strip any leading slashes
                 path = path.lstrip('/')
                 
                 # If path starts with media/, remove it to prevent duplication
                 if path.startswith('media/'):
                     path = path[6:]  # Remove 'media/'
+                    print(f"Removed leading 'media/' prefix: '{path}'")
                 
                 # Return properly constructed URL
-                return f"{base_url}/media/{path}"
+                final_url = f"{base_url}/media/{path}"
+                print(f"Final URL: '{final_url}'")
+                return final_url
             
             # Process image URLs to make them absolute
             if data['header_logo']:

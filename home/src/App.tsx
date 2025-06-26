@@ -38,7 +38,14 @@ const FaviconUpdater = () => {
       console.log('[FaviconUpdater] Current favicon link:', existingLink?.href);
       console.log('[FaviconUpdater] Settings favicon:', settings?.favicon);
       
-      if (settings?.favicon) {
+      // First always try to use the default favicon
+      // This ensures something will show while we try the custom one
+      link.href = '/favicon.ico';
+      if (!existingLink) {
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      
+      if (settings?.favicon && settings.favicon.startsWith('http')) {
         // Clean the URL to fix any issues with double slashes or media paths
         let faviconUrl = settings.favicon;
         
@@ -54,37 +61,21 @@ const FaviconUpdater = () => {
         });
         
         // Update favicon if available in site settings
-        link.href = faviconUrl;
-        if (!existingLink) {
-          document.getElementsByTagName('head')[0].appendChild(link);
-          console.log('[FaviconUpdater] Created new favicon link element');
-        }
-        console.log('[FaviconUpdater] Updated favicon to:', faviconUrl);
+        console.log('[FaviconUpdater] Setting favicon to:', faviconUrl);
         
-        // Also attempt to preload the favicon to ensure it's cached
-        const preloadLink = document.createElement('link');
-        preloadLink.rel = 'preload';
-        preloadLink.as = 'image';
-        preloadLink.href = faviconUrl;
-        document.getElementsByTagName('head')[0].appendChild(preloadLink);
-        console.log('[FaviconUpdater] Added preload link for favicon');
-        
-        // Check if favicon loads
+        // Use an image to test if the favicon is loadable
         const img = new Image();
-        img.onload = () => console.log('[FaviconUpdater] Favicon loaded successfully');
+        img.onload = () => {
+          console.log('[FaviconUpdater] Favicon loaded successfully, updating link');
+          link.href = faviconUrl;
+        };
         img.onerror = () => {
           console.error('[FaviconUpdater] Favicon failed to load:', faviconUrl);
-          // Fallback to default favicon if custom one fails
-          link.href = '/favicon.ico';
-          console.log('[FaviconUpdater] Falling back to default favicon');
+          // Keep default favicon if custom one fails
+          console.log('[FaviconUpdater] Keeping default favicon');
         };
         img.src = faviconUrl;
       } else {
-        // Use default favicon if not available in settings
-        link.href = '/favicon.ico';
-        if (!existingLink) {
-          document.getElementsByTagName('head')[0].appendChild(link);
-        }
         console.log('[FaviconUpdater] Using default favicon');
       }
       

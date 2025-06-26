@@ -263,9 +263,16 @@ export const CtaFooterByAnima = (): JSX.Element => {
                 <img 
                   className="w-24 h-10 sm:w-32 sm:h-12 md:w-40 md:h-14 object-contain" 
                   alt={`${settings.site_name || 'Phone Bay'} Logo`} 
-                  src={settings.footer_logo} 
+                  src={settings.footer_logo?.startsWith('http') ? settings.footer_logo : `/logo.png`}
                   onError={(e) => {
                       console.log('[Footer] Logo failed to load:', settings.footer_logo);
+                      console.log('[Footer] Attempting to load default logo');
+                      
+                      if (settings.footer_logo && !settings.footer_logo.includes('/logo.png')) {
+                        e.currentTarget.src = '/logo.png';
+                        return;
+                      }
+                      
                     e.currentTarget.style.display = 'none';
                     
                       // Find the fallback element

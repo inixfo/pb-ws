@@ -436,7 +436,7 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                 <React.Fragment>
                   {console.log('[Header] Attempting to show header logo:', settings.header_logo)}
                   <img 
-                    src={settings.header_logo} 
+                    src={settings.header_logo?.startsWith('http') ? settings.header_logo : `/logo.png`} 
                     alt={`${settings.site_name || 'Phone Bay'} Logo`}
                     className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto object-contain"
                     onLoad={() => console.log('[Header] Successfully loaded logo:', settings.header_logo)}
@@ -446,15 +446,11 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                       console.log('[Header] Host:', window.location.host);
                       console.log('[Header] Protocol:', window.location.protocol);
                       
-                      // Try to fetch the image directly to see the exact error
-                      if (settings.header_logo) {
-                        fetch(settings.header_logo)
-                          .then(resp => {
-                            console.log(`[Header] Fetch response for logo: ${resp.status} ${resp.statusText}`);
-                            return resp.blob();
-                          })
-                          .then(blob => console.log('[Header] Fetch successful, blob size:', blob.size))
-                          .catch(err => console.error('[Header] Fetch error:', err));
+                      // Try to load the default logo if the custom one fails
+                      if (settings.header_logo && !settings.header_logo.includes('/logo.png')) {
+                        console.log('[Header] Attempting to load default logo');
+                        e.currentTarget.src = '/logo.png';
+                        return;
                       }
                           
                       e.currentTarget.style.display = 'none';
