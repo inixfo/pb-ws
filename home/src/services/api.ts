@@ -1,6 +1,8 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { OrderCreateRequest, OrderResponse, ShippingMethod, OrderListItem } from '../types/order';
-import { API_URL } from '../config';
+import config from '../config';
+
+const API_URL = config.API_URL;
 
 // Helper function to get authentication token
 const getToken = () => localStorage.getItem('auth_token');
@@ -159,12 +161,14 @@ export const productService = {
   getTrending: async (limit?: number) => {
     try {
       console.log(`Fetching trending products with limit: ${limit}`);
+      const timestamp = new Date().getTime(); // Add timestamp for cache busting
       const response = await publicApi.get('/products/products/trending/', { 
         params: { 
           limit,
           ordering: '-id', // Try standard Django REST Framework ordering
           order_by: '-id', // Alternative parameter name
-          sort: '-id'      // Another alternative parameter name
+          sort: '-id',     // Another alternative parameter name
+          _t: timestamp    // Cache busting parameter
         } 
       });
       console.log('Trending products response:', response.data);
@@ -179,12 +183,14 @@ export const productService = {
   getSpecialOffers: async (limit?: number) => {
     try {
       console.log(`Fetching special offers with limit: ${limit}`);
+      const timestamp = new Date().getTime(); // Add timestamp for cache busting
       const response = await publicApi.get('/products/products/special_offers/', { 
         params: { 
           limit,
           ordering: '-id', // Try standard Django REST Framework ordering
           order_by: '-id', // Alternative parameter name
-          sort: '-id'      // Another alternative parameter name
+          sort: '-id',     // Another alternative parameter name
+          _t: timestamp    // Cache busting parameter
         } 
       });
       console.log('Special offers response:', response.data);
@@ -211,8 +217,13 @@ export const productService = {
   getTodaysDeals: async (limit?: number) => {
     try {
       console.log(`Fetching today's deals with limit: ${limit}`);
+      const timestamp = new Date().getTime(); // Add timestamp for cache busting
       const response = await publicApi.get('/products/products/todays_deal/', { 
-        params: { limit } 
+        params: { 
+          limit,
+          ordering: '-id', // Add ordering parameter
+          _t: timestamp    // Cache busting parameter
+        } 
       });
       console.log("Today's deals response:", response.data);
       return response.data;
@@ -226,8 +237,13 @@ export const productService = {
   getBestSellers: async (limit?: number) => {
     try {
       console.log(`Fetching best sellers with limit: ${limit}`);
+      const timestamp = new Date().getTime(); // Add timestamp for cache busting
       const response = await publicApi.get('/products/products/best_sellers/', { 
-        params: { limit } 
+        params: { 
+          limit,
+          ordering: '-id', // Add ordering parameter
+          _t: timestamp    // Cache busting parameter
+        } 
       });
       console.log('Best sellers response:', response.data);
       return response.data;
@@ -241,12 +257,14 @@ export const productService = {
   getNewArrivals: async (limit?: number) => {
     try {
       console.log(`Fetching new arrivals with limit: ${limit}`);
+      const timestamp = new Date().getTime(); // Add timestamp for cache busting
       const response = await publicApi.get('/products/products/new_arrivals/', { 
         params: { 
           limit,
           ordering: '-id', // Try standard Django REST Framework ordering
           order_by: '-id', // Alternative parameter name
-          sort: '-id'      // Another alternative parameter name
+          sort: '-id',     // Another alternative parameter name
+          _t: timestamp    // Cache busting parameter
         } 
       });
       console.log('New arrivals response:', response.data);

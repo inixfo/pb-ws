@@ -530,10 +530,20 @@ class ProductViewSet(viewsets.ModelViewSet):
             page = self.paginate_queryset(queryset)
             if page is not None:
                 serializer = self.get_serializer(page, many=True)
-                return self.get_paginated_response(serializer.data)
+                response = self.get_paginated_response(serializer.data)
+                # Add cache control headers
+                response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                response["Pragma"] = "no-cache"
+                response["Expires"] = "0"
+                return response
             
             serializer = self.get_serializer(queryset, many=True)
-            return Response(serializer.data)
+            response = Response(serializer.data)
+            # Add cache control headers
+            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response["Pragma"] = "no-cache"
+            response["Expires"] = "0"
+            return response
         except Exception as e:
             import traceback
             print(f"Error in trending products: {str(e)}")
@@ -551,10 +561,20 @@ class ProductViewSet(viewsets.ModelViewSet):
             page = self.paginate_queryset(queryset)
             if page is not None:
                 serializer = self.get_serializer(page, many=True)
-                return self.get_paginated_response(serializer.data)
+                response = self.get_paginated_response(serializer.data)
+                # Add cache control headers
+                response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                response["Pragma"] = "no-cache"
+                response["Expires"] = "0"
+                return response
             
             serializer = self.get_serializer(queryset, many=True)
-            return Response(serializer.data)
+            response = Response(serializer.data)
+            # Add cache control headers
+            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response["Pragma"] = "no-cache"
+            response["Expires"] = "0"
+            return response
         except Exception as e:
             import traceback
             print(f"Error in special offers: {str(e)}")
@@ -572,10 +592,20 @@ class ProductViewSet(viewsets.ModelViewSet):
             page = self.paginate_queryset(queryset)
             if page is not None:
                 serializer = self.get_serializer(page, many=True)
-                return self.get_paginated_response(serializer.data)
+                response = self.get_paginated_response(serializer.data)
+                # Add cache control headers
+                response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                response["Pragma"] = "no-cache"
+                response["Expires"] = "0"
+                return response
             
             serializer = self.get_serializer(queryset, many=True)
-            return Response(serializer.data)
+            response = Response(serializer.data)
+            # Add cache control headers
+            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response["Pragma"] = "no-cache"
+            response["Expires"] = "0"
+            return response
         except Exception as e:
             import traceback
             print(f"Error in best sellers: {str(e)}")
@@ -593,10 +623,20 @@ class ProductViewSet(viewsets.ModelViewSet):
             page = self.paginate_queryset(queryset)
             if page is not None:
                 serializer = self.get_serializer(page, many=True)
-                return self.get_paginated_response(serializer.data)
+                response = self.get_paginated_response(serializer.data)
+                # Add cache control headers
+                response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                response["Pragma"] = "no-cache"
+                response["Expires"] = "0"
+                return response
             
             serializer = self.get_serializer(queryset, many=True)
-            return Response(serializer.data)
+            response = Response(serializer.data)
+            # Add cache control headers
+            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response["Pragma"] = "no-cache"
+            response["Expires"] = "0"
+            return response
         except Exception as e:
             import traceback
             print(f"Error in today's deals: {str(e)}")
@@ -610,7 +650,12 @@ class ProductViewSet(viewsets.ModelViewSet):
         try:
             queryset = self.get_queryset().order_by('-created_at')[:10]
             serializer = self.get_serializer(queryset, many=True)
-            return Response(serializer.data)
+            response = Response(serializer.data)
+            # Add cache control headers
+            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response["Pragma"] = "no-cache"
+            response["Expires"] = "0"
+            return response
         except Exception as e:
             import traceback
             print(f"Error in new arrivals: {str(e)}")
