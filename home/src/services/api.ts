@@ -160,7 +160,10 @@ export const productService = {
     try {
       console.log(`Fetching trending products with limit: ${limit}`);
       const response = await publicApi.get('/products/products/trending/', { 
-        params: { limit } 
+        params: { 
+          limit,
+          ordering: '-id' // Use descending order by ID to get newest first
+        } 
       });
       console.log('Trending products response:', response.data);
       return response.data;
@@ -175,7 +178,10 @@ export const productService = {
     try {
       console.log(`Fetching special offers with limit: ${limit}`);
       const response = await publicApi.get('/products/products/special_offers/', { 
-        params: { limit } 
+        params: { 
+          limit,
+          ordering: '-id' // Use descending order by ID to get newest first
+        } 
       });
       console.log('Special offers response:', response.data);
       return response.data;
