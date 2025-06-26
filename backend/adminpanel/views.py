@@ -521,13 +521,27 @@ class SiteSettingsView(APIView):
             serializer = SiteSettingsSerializer(settings)
             
             # Add full URLs for images
-            data = serializer.data
+            data = serializer.data.copy()
+            
+            # Construct the base URL for media files
+            base_url = request.build_absolute_uri('/')[:-1]  # Remove trailing slash
+            media_url = f"{base_url}/media/"
+            
+            # Process image URLs to make them absolute
+            if data['header_logo'] and not data['header_logo'].startswith('http'):
+                data['header_logo'] = f"{media_url}{data['header_logo']}"
+            
+            if data['footer_logo'] and not data['footer_logo'].startswith('http'):
+                data['footer_logo'] = f"{media_url}{data['footer_logo']}"
+                
+            if data['favicon'] and not data['favicon'].startswith('http'):
+                data['favicon'] = f"{media_url}{data['favicon']}"
             
             # Debug info
             print(f"SiteSettings retrieved: {settings}")
-            print(f"Serialized data: {data}")
+            print(f"Serialized data with absolute URLs: {data}")
             
-            # Return the serialized data
+            # Return the serialized data with absolute URLs
             return Response(data)
         except Exception as e:
             print(f"Error in SiteSettingsView.get: {e}")

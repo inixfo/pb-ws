@@ -266,7 +266,8 @@ export const CtaFooterByAnima = (): JSX.Element => {
                   onError={(e) => {
                     console.log('[Footer] Logo failed to load, using site name');
                     e.currentTarget.style.display = 'none';
-                    // The site name will be shown by the fallback div below
+                    
+                    // Create a fallback text element
                     const parent = e.currentTarget.parentElement;
                     if (parent) {
                       const nameDiv = document.createElement('div');

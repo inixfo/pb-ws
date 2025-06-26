@@ -440,7 +440,15 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                   onError={(e) => {
                     console.log('[Header] Logo failed to load, using site name');
                     e.currentTarget.style.display = 'none';
-                    // The site name will be shown by the fallback div
+                    
+                    // Create a fallback text element
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      const nameDiv = document.createElement('div');
+                      nameDiv.className = "text-white font-bold text-lg sm:text-xl";
+                      nameDiv.textContent = settings.site_name || 'Phone Bay';
+                      parent.appendChild(nameDiv);
+                    }
                   }}
                 />
               ) : (
