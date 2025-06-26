@@ -186,6 +186,40 @@ export const TodaysDeals = (): JSX.Element => {
     });
   }, [products, selectedCategories, selectedBrands, selectedColors, minPrice, maxPrice]);
 
+  // Get paginated products
+  const ITEMS_PER_PAGE = 9;
+  const paginatedProducts = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategories, selectedBrands, selectedColors, minPrice, maxPrice]);
+
+  // Sort products
+  React.useEffect(() => {
+    const sortedProducts = [...filteredProducts];
+    
+    switch (sort) {
+      case 'new':
+        sortedProducts.sort((a, b) => b.id - a.id);
+        break;
+      case 'price_low':
+        sortedProducts.sort((a, b) => (a.sale_price || a.price) - (b.sale_price || b.price));
+        break;
+      case 'price_high':
+        sortedProducts.sort((a, b) => (b.sale_price || b.price) - (a.sale_price || a.price));
+        break;
+      case 'popular':
+      default:
+        // Most popular based on ratings
+        sortedProducts.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0));
+        break;
+    }
+  }, [filteredProducts, sort]);
+
   // Handlers for filters, tags, etc.
   const handleBrandToggle = (brand: string) => {
     setSelectedBrands((prev) =>
@@ -751,7 +785,7 @@ export const TodaysDeals = (): JSX.Element => {
             {/* Products Grid */}
             {!loading && !error && filteredProducts.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProducts.map((product) => (
+                {paginatedProducts.map((product) => (
                   <Card key={product.id} className="rounded-lg overflow-hidden h-full flex flex-col">
                     <div className="relative overflow-hidden">
                       <img
