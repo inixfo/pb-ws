@@ -4,7 +4,7 @@ import App from './App';
 import './tailwind.css';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
-import { CartProvider } from './contexts/CartContext';
+import { CartProvider } from './context/CartContext';
 import { SiteSettingsProvider } from './contexts/SiteSettingsContext';
 
 const root = ReactDOM.createRoot(
