@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { ElectronicsStore } from "./screens/ElectronicsStore/ElectronicsStore";
 import { ShopCategories } from "./screens/ShopCategories/ShopCategories";
 import { ShopCatalog } from "./screens/ShopCatalog/ShopCatalog";
@@ -25,6 +25,18 @@ import { AboutUs } from "./screens/AboutUs/AboutUs";
 import { TermsAndConditions } from "./screens/TermsAndConditions/TermsAndConditions";
 import { PrivacyPolicy } from "./screens/PrivacyPolicy/PrivacyPolicy";
 import { useSiteSettings } from "./contexts/SiteSettingsContext";
+
+// ScrollToTop component to reset scroll position when navigating
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  
+  useEffect(() => {
+    // Scroll to top whenever pathname changes
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  
+  return null;
+};
 
 // FaviconUpdater component to update the favicon from site settings
 const FaviconUpdater = () => {
@@ -100,6 +112,7 @@ const App = () => {
   return (
     <>
       <FaviconUpdater />
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<ElectronicsStore />} />
         <Route path="/categories" element={<ShopCategories />} />
