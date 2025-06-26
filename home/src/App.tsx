@@ -28,27 +28,73 @@ const FaviconUpdater = () => {
   const { settings } = useSiteSettings();
   
   useEffect(() => {
-    // Get existing favicon link or create a new one
-    const link: HTMLLinkElement = document.querySelector("link[rel*='icon']") || document.createElement('link');
-    link.type = 'image/x-icon';
-    link.rel = 'shortcut icon';
-    
-    if (settings?.favicon) {
-      // Update favicon if available in site settings
-      link.href = settings.favicon;
-      document.getElementsByTagName('head')[0].appendChild(link);
-      console.log('[FaviconUpdater] Updated favicon to:', settings.favicon);
-    } else {
-      // Use default favicon if not available in settings
-      link.href = '/favicon.ico';
-      document.getElementsByTagName('head')[0].appendChild(link);
-      console.log('[FaviconUpdater] Using default favicon');
-    }
-    
-    // Also update the page title with the site name
-    if (settings?.site_name) {
-      document.title = settings.site_name;
-      console.log('[FaviconUpdater] Updated page title to:', settings.site_name);
+    try {
+      // Get existing favicon link or create a new one
+      const existingLink: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+      const link: HTMLLinkElement = existingLink || document.createElement('link');
+      link.type = 'image/x-icon';
+      link.rel = 'shortcut icon';
+      
+      console.log('[FaviconUpdater] Current favicon link:', existingLink?.href);
+      console.log('[FaviconUpdater] Settings favicon:', settings?.favicon);
+      
+      if (settings?.favicon) {
+        // Clean the URL to fix any issues with double slashes or media paths
+        let faviconUrl = settings.favicon;
+        
+        // Fix common URL issues
+        if (faviconUrl.includes('/media//media/')) {
+          faviconUrl = faviconUrl.replace('/media//media/', '/media/');
+          console.log('[FaviconUpdater] Fixed double media path in favicon URL');
+        }
+        
+        // Fix any double slashes in the path (except http:// or https://)
+        faviconUrl = faviconUrl.replace(/(https?:\/\/)|(\/)+/g, (match, protocol) => {
+          return protocol ? protocol : '/';
+        });
+        
+        // Update favicon if available in site settings
+        link.href = faviconUrl;
+        if (!existingLink) {
+          document.getElementsByTagName('head')[0].appendChild(link);
+          console.log('[FaviconUpdater] Created new favicon link element');
+        }
+        console.log('[FaviconUpdater] Updated favicon to:', faviconUrl);
+        
+        // Also attempt to preload the favicon to ensure it's cached
+        const preloadLink = document.createElement('link');
+        preloadLink.rel = 'preload';
+        preloadLink.as = 'image';
+        preloadLink.href = faviconUrl;
+        document.getElementsByTagName('head')[0].appendChild(preloadLink);
+        console.log('[FaviconUpdater] Added preload link for favicon');
+        
+        // Check if favicon loads
+        const img = new Image();
+        img.onload = () => console.log('[FaviconUpdater] Favicon loaded successfully');
+        img.onerror = () => {
+          console.error('[FaviconUpdater] Favicon failed to load:', faviconUrl);
+          // Fallback to default favicon if custom one fails
+          link.href = '/favicon.ico';
+          console.log('[FaviconUpdater] Falling back to default favicon');
+        };
+        img.src = faviconUrl;
+      } else {
+        // Use default favicon if not available in settings
+        link.href = '/favicon.ico';
+        if (!existingLink) {
+          document.getElementsByTagName('head')[0].appendChild(link);
+        }
+        console.log('[FaviconUpdater] Using default favicon');
+      }
+      
+      // Also update the page title with the site name
+      if (settings?.site_name) {
+        document.title = settings.site_name;
+        console.log('[FaviconUpdater] Updated page title to:', settings.site_name);
+      }
+    } catch (err) {
+      console.error('[FaviconUpdater] Error updating favicon:', err);
     }
   }, [settings]);
   

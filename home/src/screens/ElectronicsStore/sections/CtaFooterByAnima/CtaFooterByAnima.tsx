@@ -261,7 +261,7 @@ export const CtaFooterByAnima = (): JSX.Element => {
               {settings?.footer_logo ? (
                 <React.Fragment>
                 <img 
-                  className="w-24 h-10" 
+                  className="w-24 h-10 sm:w-32 sm:h-12 md:w-40 md:h-14 object-contain" 
                   alt={`${settings.site_name || 'Phone Bay'} Logo`} 
                   src={settings.footer_logo} 
                   onError={(e) => {

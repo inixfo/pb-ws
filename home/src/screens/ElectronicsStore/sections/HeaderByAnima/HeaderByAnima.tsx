@@ -438,7 +438,7 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                   <img 
                     src={settings.header_logo} 
                     alt={`${settings.site_name || 'Phone Bay'} Logo`}
-                    className="h-8 sm:h-10 w-auto"
+                    className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto object-contain"
                     onLoad={() => console.log('[Header] Successfully loaded logo:', settings.header_logo)}
                     onError={(e) => {
                       console.error('[Header] Logo failed to load:', settings.header_logo);
