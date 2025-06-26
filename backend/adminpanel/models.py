@@ -1,4 +1,6 @@
 from django.db import models
+import os
+from django.conf import settings
 
 # Create your models here.
 
@@ -38,6 +40,16 @@ class SiteSettings(models.Model):
     
     def __str__(self):
         return "Site Settings"
+    
+    def save(self, *args, **kwargs):
+        """Ensure upload directories exist before saving."""
+        # Make sure the upload directory exists
+        logo_dir = os.path.join(settings.MEDIA_ROOT, 'website', 'logos')
+        os.makedirs(logo_dir, exist_ok=True)
+        
+        print(f"SiteSettings save: Ensuring directory exists: {logo_dir}")
+        
+        super().save(*args, **kwargs)
     
     @classmethod
     def get_settings(cls):

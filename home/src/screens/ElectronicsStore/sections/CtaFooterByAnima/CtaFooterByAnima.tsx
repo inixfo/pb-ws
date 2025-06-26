@@ -260,16 +260,16 @@ export const CtaFooterByAnima = (): JSX.Element => {
             <div className="flex flex-col gap-6">
               {settings?.footer_logo ? (
                 <React.Fragment>
-                  <img 
-                    className="w-24 h-10" 
-                    alt={`${settings.site_name || 'Phone Bay'} Logo`} 
-                    src={settings.footer_logo} 
-                    onError={(e) => {
+                <img 
+                  className="w-24 h-10" 
+                  alt={`${settings.site_name || 'Phone Bay'} Logo`} 
+                  src={settings.footer_logo} 
+                  onError={(e) => {
                       console.log('[Footer] Logo failed to load:', settings.footer_logo);
-                      e.currentTarget.style.display = 'none';
-                      
+                    e.currentTarget.style.display = 'none';
+                    
                       // Find the fallback element
-                      const parent = e.currentTarget.parentElement;
+                    const parent = e.currentTarget.parentElement;
                       const fallbackEl = parent?.querySelector('.logo-text-fallback');
                       
                       if (fallbackEl) {
@@ -279,13 +279,13 @@ export const CtaFooterByAnima = (): JSX.Element => {
                       } else if (parent) {
                         // Create a fallback text element if it doesn't exist
                         console.log('[Footer] Creating new fallback element');
-                        const nameDiv = document.createElement('div');
+                      const nameDiv = document.createElement('div');
                         nameDiv.className = "text-white font-bold text-lg logo-text-fallback";
-                        nameDiv.textContent = settings.site_name || 'Phone Bay';
-                        parent.appendChild(nameDiv);
-                      }
-                    }}
-                  />
+                      nameDiv.textContent = settings.site_name || 'Phone Bay';
+                      parent.appendChild(nameDiv);
+                    }
+                  }}
+                />
                   <div className="text-white font-bold text-lg logo-text-fallback hidden">
                     {settings.site_name || 'Phone Bay'}
                   </div>

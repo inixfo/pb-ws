@@ -126,7 +126,7 @@ class SiteSettingsService {
         
         // If we have a favicon URL, set it as the page favicon
         if (settings.favicon) {
-          this.setPageFavicon(settings.favicon);
+        this.setPageFavicon(settings.favicon);
         }
       }
       

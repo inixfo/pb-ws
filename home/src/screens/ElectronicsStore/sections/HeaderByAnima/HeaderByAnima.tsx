@@ -434,12 +434,15 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
             <Link to="/" className="flex items-center">
               {settings?.header_logo ? (
                 <React.Fragment>
+                  {console.log('[Header] Attempting to show header logo:', settings.header_logo)}
                   <img 
                     src={settings.header_logo} 
                     alt={`${settings.site_name || 'Phone Bay'} Logo`}
                     className="h-8 sm:h-10 w-auto"
+                    onLoad={() => console.log('[Header] Successfully loaded logo:', settings.header_logo)}
                     onError={(e) => {
                       console.log('[Header] Logo failed to load:', settings.header_logo);
+                      console.log('[Header] Current URL:', window.location.href);
                       e.currentTarget.style.display = 'none';
                       
                       // Find the fallback element
