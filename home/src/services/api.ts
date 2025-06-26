@@ -903,7 +903,10 @@ export const promotionsService = {
   // Get active header promo banner
   getHeaderPromo: async () => {
     try {
-      const response = await publicApi.get('/promotions/header-promos/active/');
+      const timestamp = new Date().getTime(); // Add timestamp for cache busting
+      const response = await publicApi.get('/promotions/header-promos/active/', {
+        params: { _t: timestamp }
+      });
       console.log('Header promo API response:', response.data);
       return response.data;
     } catch (error) {
@@ -924,7 +927,10 @@ export const promotionsService = {
   // Get hero slides
   getHeroSlides: async () => {
     try {
-      const response = await publicApi.get('/promotions/hero-slides/');
+      const timestamp = new Date().getTime(); // Add timestamp for cache busting
+      const response = await publicApi.get('/promotions/hero-slides/', {
+        params: { _t: timestamp }
+      });
       console.log('Hero slides API response:', response.data);
       
       // Check if the response has a results property (pagination)
@@ -969,7 +975,10 @@ export const promotionsService = {
   // Get new arrivals banner
   getNewArrivalsBanner: async () => {
     try {
-      const response = await publicApi.get('/promotions/new-arrivals-banner/active/');
+      const timestamp = new Date().getTime(); // Add timestamp for cache busting
+      const response = await publicApi.get('/promotions/new-arrivals-banner/active/', {
+        params: { _t: timestamp }
+      });
       console.log('New arrivals banner API response:', response.data);
       return response.data;
     } catch (error) {
@@ -981,7 +990,10 @@ export const promotionsService = {
   // Get sale banner
   getSaleBanner: async () => {
     try {
-      const response = await publicApi.get('/promotions/sale-banner/active/');
+      const timestamp = new Date().getTime(); // Add timestamp for cache busting
+      const response = await publicApi.get('/promotions/sale-banner/active/', {
+        params: { _t: timestamp }
+      });
       console.log('Sale banner API response:', response.data);
       return response.data;
     } catch (error) {
@@ -993,7 +1005,10 @@ export const promotionsService = {
   // Get catalog top banner
   getCatalogTopBanner: async () => {
     try {
-      const response = await publicApi.get('/promotions/catalog-top-banner/active/');
+      const timestamp = new Date().getTime(); // Add timestamp for cache busting
+      const response = await publicApi.get('/promotions/catalog-top-banner/active/', {
+        params: { _t: timestamp }
+      });
       console.log('Catalog top banner API response:', response.data);
       return response.data;
     } catch (error) {
@@ -1005,7 +1020,10 @@ export const promotionsService = {
   // Get catalog bottom banner
   getCatalogBottomBanner: async () => {
     try {
-      const response = await publicApi.get('/promotions/catalog-bottom-banner/active/');
+      const timestamp = new Date().getTime(); // Add timestamp for cache busting
+      const response = await publicApi.get('/promotions/catalog-bottom-banner/active/', {
+        params: { _t: timestamp }
+      });
       console.log('Catalog bottom banner API response:', response.data);
       return response.data;
     } catch (error) {

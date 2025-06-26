@@ -57,7 +57,7 @@ class PromoCodeViewSet(viewsets.ModelViewSet):
         # Calculate discount
         discount = promo_code.calculate_discount(cart_total)
         
-        return Response({
+        response = Response({
             'valid': True,
             'code': promo_code.code,
             'discount_type': promo_code.discount_type,
@@ -66,6 +66,12 @@ class PromoCodeViewSet(viewsets.ModelViewSet):
             'min_purchase_amount': promo_code.min_purchase_amount,
             'max_discount_amount': promo_code.max_discount_amount
         })
+        
+        # Add cache control headers
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
     
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def apply(self, request):
@@ -116,13 +122,19 @@ class PromoCodeViewSet(viewsets.ModelViewSet):
             'discount_amount': float(discount)
         }
         
-        return Response({
+        response = Response({
             'success': True,
             'message': f'Promo code {promo_code.code} applied successfully',
             'discount_amount': discount,
             'cart_total_before_discount': cart_total,
             'cart_total_after_discount': cart_total - discount
         })
+        
+        # Add cache control headers
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
     
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def remove(self, request):
@@ -142,10 +154,16 @@ class PromoCodeViewSet(viewsets.ModelViewSet):
             del request.session['promo_code']
             request.session.modified = True
             
-        return Response({
+        response = Response({
             'success': True,
             'message': 'Promo code removed successfully'
         })
+        
+        # Add cache control headers
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
 
 
 class HeaderPromoBannerViewSet(viewsets.ReadOnlyModelViewSet):
@@ -154,14 +172,33 @@ class HeaderPromoBannerViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = HeaderPromoBannerSerializer
     permission_classes = [permissions.AllowAny]
     
+    def list(self, request, *args, **kwargs):
+        """Override list method to add cache control headers."""
+        response = super().list(request, *args, **kwargs)
+        # Add cache control headers
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
+    
     @action(detail=False, methods=['get'])
     def active(self, request):
         """Get the currently active header promo banner."""
         banner = HeaderPromoBanner.objects.filter(is_active=True).order_by('priority').first()
         if banner:
             serializer = self.get_serializer(banner)
-            return Response(serializer.data)
-        return Response({}, status=status.HTTP_404_NOT_FOUND)
+            response = Response(serializer.data)
+            # Add cache control headers
+            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response["Pragma"] = "no-cache"
+            response["Expires"] = "0"
+            return response
+        response = Response({}, status=status.HTTP_404_NOT_FOUND)
+        # Add cache control headers even for 404 responses
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
 
 
 class HeroSlideViewSet(viewsets.ReadOnlyModelViewSet):
@@ -169,6 +206,15 @@ class HeroSlideViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = HeroSlide.objects.filter(is_active=True).order_by('priority')
     serializer_class = HeroSlideSerializer
     permission_classes = [permissions.AllowAny]
+    
+    def list(self, request, *args, **kwargs):
+        """Override list method to add cache control headers."""
+        response = super().list(request, *args, **kwargs)
+        # Add cache control headers
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
 
 
 class NewArrivalsBannerViewSet(viewsets.ReadOnlyModelViewSet):
@@ -177,14 +223,33 @@ class NewArrivalsBannerViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = NewArrivalsBannerSerializer
     permission_classes = [permissions.AllowAny]
     
+    def list(self, request, *args, **kwargs):
+        """Override list method to add cache control headers."""
+        response = super().list(request, *args, **kwargs)
+        # Add cache control headers
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
+    
     @action(detail=False, methods=['get'])
     def active(self, request):
         """Get the currently active new arrivals banner."""
         banner = NewArrivalsBanner.objects.filter(is_active=True).first()
         if banner:
             serializer = self.get_serializer(banner)
-            return Response(serializer.data)
-        return Response({}, status=status.HTTP_404_NOT_FOUND)
+            response = Response(serializer.data)
+            # Add cache control headers
+            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response["Pragma"] = "no-cache"
+            response["Expires"] = "0"
+            return response
+        response = Response({}, status=status.HTTP_404_NOT_FOUND)
+        # Add cache control headers even for 404 responses
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
 
 
 class SaleBannerViewSet(viewsets.ReadOnlyModelViewSet):
@@ -193,14 +258,33 @@ class SaleBannerViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SaleBannerSerializer
     permission_classes = [permissions.AllowAny]
     
+    def list(self, request, *args, **kwargs):
+        """Override list method to add cache control headers."""
+        response = super().list(request, *args, **kwargs)
+        # Add cache control headers
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
+    
     @action(detail=False, methods=['get'])
     def active(self, request):
         """Get the currently active sale banner."""
         banner = SaleBanner.objects.filter(is_active=True).first()
         if banner:
             serializer = self.get_serializer(banner)
-            return Response(serializer.data)
-        return Response({}, status=status.HTTP_404_NOT_FOUND)
+            response = Response(serializer.data)
+            # Add cache control headers
+            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response["Pragma"] = "no-cache"
+            response["Expires"] = "0"
+            return response
+        response = Response({}, status=status.HTTP_404_NOT_FOUND)
+        # Add cache control headers even for 404 responses
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
 
 
 class CatalogTopBannerViewSet(viewsets.ReadOnlyModelViewSet):
@@ -209,14 +293,33 @@ class CatalogTopBannerViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CatalogTopBannerSerializer
     permission_classes = [permissions.AllowAny]
     
+    def list(self, request, *args, **kwargs):
+        """Override list method to add cache control headers."""
+        response = super().list(request, *args, **kwargs)
+        # Add cache control headers
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
+    
     @action(detail=False, methods=['get'])
     def active(self, request):
         """Get the currently active catalog top banner."""
         banner = CatalogTopBanner.objects.filter(is_active=True).order_by('priority').first()
         if banner:
             serializer = self.get_serializer(banner)
-            return Response(serializer.data)
-        return Response({}, status=status.HTTP_404_NOT_FOUND)
+            response = Response(serializer.data)
+            # Add cache control headers
+            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response["Pragma"] = "no-cache"
+            response["Expires"] = "0"
+            return response
+        response = Response({}, status=status.HTTP_404_NOT_FOUND)
+        # Add cache control headers even for 404 responses
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
 
 
 class CatalogBottomBannerViewSet(viewsets.ReadOnlyModelViewSet):
@@ -225,11 +328,30 @@ class CatalogBottomBannerViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CatalogBottomBannerSerializer
     permission_classes = [permissions.AllowAny]
     
+    def list(self, request, *args, **kwargs):
+        """Override list method to add cache control headers."""
+        response = super().list(request, *args, **kwargs)
+        # Add cache control headers
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
+    
     @action(detail=False, methods=['get'])
     def active(self, request):
         """Get the currently active catalog bottom banner."""
         banner = CatalogBottomBanner.objects.filter(is_active=True).order_by('priority').first()
         if banner:
             serializer = self.get_serializer(banner)
-            return Response(serializer.data)
-        return Response({}, status=status.HTTP_404_NOT_FOUND)
+            response = Response(serializer.data)
+            # Add cache control headers
+            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response["Pragma"] = "no-cache"
+            response["Expires"] = "0"
+            return response
+        response = Response({}, status=status.HTTP_404_NOT_FOUND)
+        # Add cache control headers even for 404 responses
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
