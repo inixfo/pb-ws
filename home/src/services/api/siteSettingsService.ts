@@ -34,6 +34,30 @@ export const DEFAULT_SETTINGS: SiteSettings = {
 
 class SiteSettingsService {
   /**
+   * Clean up a URL by fixing common issues
+   */
+  private cleanUrl(url: string | null): string | null {
+    if (!url) return null;
+    
+    console.log(`[SiteSettingsService] Cleaning URL: ${url}`);
+    
+    // Fix double slashes in the path (but preserve http:// or https://)
+    let cleaned = url.replace(/(https?:\/\/)|(\/)+/g, (match, protocol) => {
+      return protocol ? protocol : '/';
+    });
+    
+    // Fix duplicate media paths - handle multiple variations
+    cleaned = cleaned.replace(/\/media\/+media\//g, '/media/');
+    
+    // Handle case where URL might have incorrect double slashes
+    // This matches patterns like http://phonebay.xyz/media//website/logos/
+    cleaned = cleaned.replace(/(https?:\/\/[^\/]+)\/media\/+([^\/]+)/g, '$1/media/$2');
+    
+    console.log(`[SiteSettingsService] Cleaned URL: ${cleaned}`);
+    return cleaned;
+  }
+  
+  /**
    * Get site settings
    */
   async getSettings(): Promise<SiteSettings> {
@@ -78,24 +102,28 @@ class SiteSettingsService {
       const validateImageUrl = (url: string | null): string | null => {
         if (!url) return null;
         
+        // Clean the URL first
+        const cleanedUrl = this.cleanUrl(url);
+        if (!cleanedUrl) return null;
+        
         // Log the URL for debugging
-        console.log(`[SiteSettingsService] Validating image URL: ${url}`);
+        console.log(`[SiteSettingsService] Validating image URL: ${cleanedUrl}`);
         
         try {
           // Check if it's already a valid URL with hostname
-          new URL(url);
-          console.log(`[SiteSettingsService] URL is valid with hostname: ${url}`);
-          return url;
+          new URL(cleanedUrl);
+          console.log(`[SiteSettingsService] URL is valid with hostname: ${cleanedUrl}`);
+          return cleanedUrl;
         } catch (e) {
           // If not a valid URL, it might be a relative path
-          if (url.startsWith('/')) {
+          if (cleanedUrl.startsWith('/')) {
             // It's already a root-relative path, can use as is
-            console.log(`[SiteSettingsService] URL is relative path: ${url}`);
-            return url;
+            console.log(`[SiteSettingsService] URL is relative path: ${cleanedUrl}`);
+            return cleanedUrl;
           } else {
             // It's a relative path without leading slash, add it
-            console.log(`[SiteSettingsService] Adding leading slash to relative URL: ${url}`);
-            return `/${url}`;
+            console.log(`[SiteSettingsService] Adding leading slash to relative URL: ${cleanedUrl}`);
+            return `/${cleanedUrl}`;
           }
         }
       };
@@ -126,7 +154,7 @@ class SiteSettingsService {
         
         // If we have a favicon URL, set it as the page favicon
         if (settings.favicon) {
-        this.setPageFavicon(settings.favicon);
+          this.setPageFavicon(settings.favicon);
         }
       }
       
@@ -142,7 +170,11 @@ class SiteSettingsService {
    */
   private setPageFavicon(faviconUrl: string): void {
     try {
-      console.log('[SiteSettingsService] Setting favicon to:', faviconUrl);
+      // Clean the URL first
+      const cleanedUrl = this.cleanUrl(faviconUrl);
+      const finalUrl = cleanedUrl || faviconUrl;
+      
+      console.log('[SiteSettingsService] Setting favicon to:', finalUrl);
       
       // Find existing favicon link element or create a new one
       let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
@@ -153,7 +185,7 @@ class SiteSettingsService {
       }
       
       // Update the href attribute to point to the new favicon
-      link.href = faviconUrl;
+      link.href = finalUrl;
       
       console.log('[SiteSettingsService] Favicon updated successfully');
     } catch (err) {

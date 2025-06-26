@@ -527,21 +527,35 @@ class SiteSettingsView(APIView):
             scheme = request.scheme  # 'http' or 'https'
             host = request.get_host()  # This will be either 'phonebay.xyz' or 'www.phonebay.xyz'
             base_url = f"{scheme}://{host}"
-            media_url = f"{base_url}/media/"
             
             print(f"Constructing media URLs with base: {base_url}")
             
+            # Helper function to clean paths and prevent double media path issues
+            def clean_media_path(path):
+                if not path:
+                    return None
+                
+                # Strip any leading slashes
+                path = path.lstrip('/')
+                
+                # If path starts with media/, remove it to prevent duplication
+                if path.startswith('media/'):
+                    path = path[6:]  # Remove 'media/'
+                
+                # Return properly constructed URL
+                return f"{base_url}/media/{path}"
+            
             # Process image URLs to make them absolute
-            if data['header_logo'] and not data['header_logo'].startswith('http'):
-                data['header_logo'] = f"{media_url}{data['header_logo']}"
+            if data['header_logo']:
+                data['header_logo'] = clean_media_path(data['header_logo'])
                 print(f"Set header_logo URL to: {data['header_logo']}")
             
-            if data['footer_logo'] and not data['footer_logo'].startswith('http'):
-                data['footer_logo'] = f"{media_url}{data['footer_logo']}"
+            if data['footer_logo']:
+                data['footer_logo'] = clean_media_path(data['footer_logo'])
                 print(f"Set footer_logo URL to: {data['footer_logo']}")
                 
-            if data['favicon'] and not data['favicon'].startswith('http'):
-                data['favicon'] = f"{media_url}{data['favicon']}"
+            if data['favicon']:
+                data['favicon'] = clean_media_path(data['favicon'])
                 print(f"Set favicon URL to: {data['favicon']}")
             
             # Debug info

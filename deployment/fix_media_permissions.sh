@@ -1,31 +1,39 @@
 #!/bin/bash
 
-# Script to fix media directory permissions for Docker containers
+# Script to ensure proper media directories exist with correct permissions
+echo "Creating media directories if they don't exist..."
 
-echo "Fixing media directory permissions..."
-
-# Create required directories if they don't exist
-mkdir -p media/website/logos
-mkdir -p media/brand_logos
-mkdir -p media/category_images
-mkdir -p media/product_images
-mkdir -p media/promotions
-
-# Ensure permissions are correct (readable by nginx)
-chmod -R 755 media
-
-echo "Copying logo.png to website logos directory if it exists"
-if [ -f media/logo.png ]; then
-    cp media/logo.png media/website/logos/default_logo.png
-    echo "Copied media/logo.png to media/website/logos/default_logo.png"
+# Check if we're running in a Docker container
+if [ -d "/usr/share/nginx/html/media" ]; then
+  # Docker environment
+  echo "Docker environment detected"
+  MEDIA_PATH="/usr/share/nginx/html/media"
 else
-    echo "No logo.png found in media directory"
+  # Local environment
+  echo "Local environment detected"
+  MEDIA_PATH="./media"
+  # Create local media directory if it doesn't exist
+  mkdir -p $MEDIA_PATH
 fi
 
-echo "Media directories created and permissions set."
+# Create the website/logos directory for site logos
+mkdir -p $MEDIA_PATH/website/logos
 
-# Restart the containers to apply changes
-echo "Restarting containers..."
-docker-compose restart backend frontend
+# Set proper permissions
+echo "Setting permissions..."
+chmod -R 755 $MEDIA_PATH
 
-echo "Done!" 
+# Create a test file if needed
+echo "Creating a test file to verify permissions..."
+echo "test" > $MEDIA_PATH/website/logos/test.txt
+
+echo "Checking directory structure..."
+ls -la $MEDIA_PATH/website/logos
+
+echo "Done!"
+
+# Restart containers if in Docker environment
+if [ -f "docker-compose.yml" ]; then
+  echo "Restarting containers..."
+  docker-compose restart backend frontend
+fi 

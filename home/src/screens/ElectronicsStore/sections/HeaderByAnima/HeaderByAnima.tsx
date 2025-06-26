@@ -441,8 +441,22 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                     className="h-8 sm:h-10 w-auto"
                     onLoad={() => console.log('[Header] Successfully loaded logo:', settings.header_logo)}
                     onError={(e) => {
-                      console.log('[Header] Logo failed to load:', settings.header_logo);
+                      console.error('[Header] Logo failed to load:', settings.header_logo);
                       console.log('[Header] Current URL:', window.location.href);
+                      console.log('[Header] Host:', window.location.host);
+                      console.log('[Header] Protocol:', window.location.protocol);
+                      
+                      // Try to fetch the image directly to see the exact error
+                      if (settings.header_logo) {
+                        fetch(settings.header_logo)
+                          .then(resp => {
+                            console.log(`[Header] Fetch response for logo: ${resp.status} ${resp.statusText}`);
+                            return resp.blob();
+                          })
+                          .then(blob => console.log('[Header] Fetch successful, blob size:', blob.size))
+                          .catch(err => console.error('[Header] Fetch error:', err));
+                      }
+                          
                       e.currentTarget.style.display = 'none';
                       
                       // Find the fallback element
@@ -463,13 +477,14 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                       }
                     }}
                   />
+                  {/* Add fallback text element that's hidden by default but will be shown if image fails */}
                   <div className="text-white font-bold text-lg sm:text-xl logo-text-fallback hidden">
                     {settings.site_name || 'Phone Bay'}
                   </div>
                 </React.Fragment>
               ) : (
                 <div className="text-white font-bold text-lg sm:text-xl">
-                  {settings.site_name || 'Phone Bay'}
+                  {settings?.site_name || 'Phone Bay'}
                 </div>
               )}
             </Link>
