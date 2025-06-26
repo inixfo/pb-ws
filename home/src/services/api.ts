@@ -184,16 +184,36 @@ export const productService = {
     try {
       console.log(`Fetching special offers with limit: ${limit}`);
       const timestamp = new Date().getTime(); // Add timestamp for cache busting
-      const response = await publicApi.get('/products/products/special_offers/', { 
-        params: { 
-          limit,
-          ordering: '-id', // Try standard Django REST Framework ordering
-          order_by: '-id', // Alternative parameter name
-          sort: '-id',     // Another alternative parameter name
-          _t: timestamp    // Cache busting parameter
-        } 
-      });
-      console.log('Special offers response:', response.data);
+      
+      // Log the API request details
+      const url = '/products/products/special_offers/';
+      const params = { 
+        limit,
+        ordering: '-id', // Try standard Django REST Framework ordering
+        order_by: '-id', // Alternative parameter name
+        sort: '-id',     // Another alternative parameter name
+        _t: timestamp,   // Cache busting parameter
+        is_available: true,
+        is_approved: true
+      };
+      
+      console.log(`Making request to ${url} with params:`, params);
+      
+      const response = await publicApi.get(url, { params });
+      
+      console.log('Special offers API response status:', response.status);
+      console.log('Special offers response headers:', response.headers);
+      console.log('Special offers response data:', response.data);
+      
+      // Validate response data
+      if (Array.isArray(response.data)) {
+        console.log(`Got array of ${response.data.length} special offer products`);
+      } else if (response.data && response.data.results) {
+        console.log(`Got paginated response with ${response.data.results.length} products (total: ${response.data.count})`);
+      } else {
+        console.warn('Unexpected response format from special offers API:', response.data);
+      }
+      
       return response.data;
     } catch (error) {
       console.error('Error fetching special offers:', error);

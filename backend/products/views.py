@@ -238,7 +238,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         # Filter out unapproved products for non-admin users
         user = self.request.user
         if not user.is_authenticated or not user.is_staff:
-            queryset = queryset.filter(is_approved=True)
+            queryset = queryset.filter(is_approved=True, is_available=True)
         
         # If this is a vendor, only show their products
         if user.is_authenticated and hasattr(user, 'role') and user.role == 'vendor' and not user.is_staff:
@@ -524,7 +524,17 @@ class ProductViewSet(viewsets.ModelViewSet):
     def trending(self, request):
         """Get trending products."""
         try:
-            queryset = self.get_queryset().filter(is_trending=True)
+            # Get base queryset - pass it through get_queryset to apply default filters
+            base_queryset = self.get_queryset()
+            
+            # Ensure we only get trending products that are approved and available
+            queryset = base_queryset.filter(
+                is_trending=True,
+                is_approved=True,
+                is_available=True
+            )
+            
+            print(f"Found {queryset.count()} trending products.")
             
             # Apply pagination
             page = self.paginate_queryset(queryset)
@@ -555,7 +565,22 @@ class ProductViewSet(viewsets.ModelViewSet):
     def special_offers(self, request):
         """Get special offer products."""
         try:
-            queryset = self.get_queryset().filter(is_special_offer=True)
+            # Get base queryset - pass it through get_queryset to apply default filters
+            base_queryset = self.get_queryset()
+            
+            # Ensure we only get special offer products that are approved and available
+            queryset = base_queryset.filter(
+                is_special_offer=True,
+                is_approved=True,
+                is_available=True
+            )
+            
+            print(f"Found {queryset.count()} special offer products.")
+            
+            # Debug: print all special offer product IDs and names
+            for product in queryset:
+                print(f"Special offer product: ID={product.id}, Name={product.name}, "
+                      f"Approved={product.is_approved}, Available={product.is_available}")
             
             # Apply pagination
             page = self.paginate_queryset(queryset)
@@ -586,7 +611,17 @@ class ProductViewSet(viewsets.ModelViewSet):
     def best_sellers(self, request):
         """Get best seller products."""
         try:
-            queryset = self.get_queryset().filter(is_best_seller=True)
+            # Get base queryset - pass it through get_queryset to apply default filters
+            base_queryset = self.get_queryset()
+            
+            # Ensure we only get best seller products that are approved and available
+            queryset = base_queryset.filter(
+                is_best_seller=True,
+                is_approved=True,
+                is_available=True
+            )
+            
+            print(f"Found {queryset.count()} best seller products.")
             
             # Apply pagination
             page = self.paginate_queryset(queryset)
@@ -617,7 +652,17 @@ class ProductViewSet(viewsets.ModelViewSet):
     def todays_deal(self, request):
         """Get today's deal products."""
         try:
-            queryset = self.get_queryset().filter(is_todays_deal=True)
+            # Get base queryset - pass it through get_queryset to apply default filters
+            base_queryset = self.get_queryset()
+            
+            # Ensure we only get today's deal products that are approved and available
+            queryset = base_queryset.filter(
+                is_todays_deal=True,
+                is_approved=True,
+                is_available=True
+            )
+            
+            print(f"Found {queryset.count()} today's deal products.")
             
             # Apply pagination
             page = self.paginate_queryset(queryset)

@@ -97,10 +97,32 @@ export const SpecialOffers = (): JSX.Element => {
     const fetchSpecialOffers = async () => {
       try {
         setLoading(true);
+        console.log("Fetching special offers (SpecialOffers page)...");
         const data = await productService.getSpecialOffers();
-        const products = Array.isArray(data) ? data : data.results || [];
+        
+        // Debug log the full response
+        console.log('Raw special offers response:', data);
+        
+        // Check response structure - handle both array and paginated responses
+        let products: Product[];
+        
+        if (Array.isArray(data)) {
+          products = data;
+          console.log(`Received array with ${products.length} special offer products`);
+        } else if (data && data.results && Array.isArray(data.results)) {
+          products = data.results;
+          console.log(`Received paginated response with ${products.length} special offer products (total: ${data.count})`);
+        } else {
+          console.warn('Unexpected data structure from special offers API:', data);
+          products = [];
+        }
+        
         setProducts(products);
-        console.log('Fetched special offers:', products);
+        
+        // Debug log each product for investigation
+        products.forEach((product, index) => {
+          console.log(`Special offer #${index + 1}: ID=${product.id}, Name=${product.name}`);
+        });
         
         // Update filter data based on the products
         if (products.length > 0) {

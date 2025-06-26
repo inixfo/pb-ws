@@ -23,9 +23,32 @@ export const SpecialOffersByAnima = (): JSX.Element => {
     const fetchSpecialOffers = async () => {
       try {
         setLoading(true);
+        console.log("Fetching special offers (SpecialOffersByAnima)...");
         const data = await productService.getSpecialOffers(2);
-        const products = Array.isArray(data) ? data : data.results || [];
+        
+        // Debug log the full response
+        console.log('Raw special offers response:', data);
+        
+        // Check response structure - handle both array and paginated responses
+        let products: Product[];
+        
+        if (Array.isArray(data)) {
+          products = data;
+          console.log(`Received array with ${products.length} special offer products`);
+        } else if (data && data.results && Array.isArray(data.results)) {
+          products = data.results;
+          console.log(`Received paginated response with ${products.length} special offer products (total: ${data.count})`);
+        } else {
+          console.warn('Unexpected data structure from special offers API:', data);
+          products = [];
+        }
+        
         if (products.length > 0) {
+          // Log details of each product for debugging
+          products.forEach((product, index) => {
+            console.log(`Special offer #${index + 1}: ID=${product.id}, Name=${product.name}`);
+          });
+          
           // Sort products by ID in descending order (newest first)
           const sortedProducts = [...products].sort((a, b) => b.id - a.id);
           setProducts(sortedProducts);
