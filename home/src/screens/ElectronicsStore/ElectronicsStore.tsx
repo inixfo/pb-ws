@@ -27,6 +27,15 @@ export const ElectronicsStore = (): JSX.Element => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Clear cache for API requests
+  useEffect(() => {
+    // Clear any cached API data by setting a flag in sessionStorage
+    const timestamp = new Date().getTime();
+    sessionStorage.setItem('lastCacheCleared', timestamp.toString());
+    
+    console.log('Cleared API cache on home page load:', timestamp);
+  }, []);
+
   // Fetch brands on component mount
   useEffect(() => {
     const fetchBrands = async () => {

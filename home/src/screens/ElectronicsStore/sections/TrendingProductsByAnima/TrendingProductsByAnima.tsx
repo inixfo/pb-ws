@@ -23,7 +23,7 @@ export const TrendingProductsByAnima = (): JSX.Element => {
     const fetchTrendingProducts = async () => {
       try {
         setLoading(true);
-        const data = await productService.getTrending(8);
+        const data = await productService.getTrending(12);
         const products = Array.isArray(data) ? data : data.results || [];
         if (products.length > 0) {
           setProducts(products);
