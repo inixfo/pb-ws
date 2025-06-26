@@ -77,9 +77,10 @@ export const CtaFooterByAnima = (): JSX.Element => {
   const footerLinks = {
     company: [
       { name: "Home", path: "/" },
-      { name: "Catalog", path: "/catalog" },
+      { name: "About Us", path: "/about-us" },
+      { name: "Terms & Conditions", path: "/terms-and-conditions" },
+      { name: "Privacy Policy", path: "/privacy-policy" },
       { name: "Help Center", path: "/help-center" },
-
     ],
     account: [
       { name: "My Account", path: "/account" },

@@ -21,6 +21,9 @@ import { SpecialOffers } from "./screens/SpecialOffers/SpecialOffers";
 import { HelpCenter } from "./screens/HelpCenter/HelpCenter";
 import { OrderTrackingPage } from "./screens/OrderTracking/OrderTrackingPage";
 import { TrackOrderLookup } from "./screens/OrderTracking/TrackOrderLookup";
+import { AboutUs } from "./screens/AboutUs/AboutUs";
+import { TermsAndConditions } from "./screens/TermsAndConditions/TermsAndConditions";
+import { PrivacyPolicy } from "./screens/PrivacyPolicy/PrivacyPolicy";
 import { useSiteSettings } from "./contexts/SiteSettingsContext";
 
 // FaviconUpdater component to update the favicon from site settings
@@ -111,6 +114,11 @@ const App = () => {
         <Route path="/trending" element={<Trending />} />
         <Route path="/special-offers" element={<SpecialOffers />} />
         <Route path="/help-center" element={<HelpCenter />} />
+        
+        {/* New Pages */}
+        <Route path="/about-us" element={<AboutUs />} />
+        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         
         {/* Product routes - support multiple URL patterns */}
         <Route path="/product/:productId" element={<ElectronicsProduct />} />
