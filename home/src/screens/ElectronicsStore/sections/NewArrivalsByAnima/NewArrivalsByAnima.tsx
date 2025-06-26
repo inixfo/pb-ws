@@ -45,10 +45,12 @@ export const NewArrivalsByAnima = (): JSX.Element => {
         const data = await productService.getNewArrivals(10);
         const products = Array.isArray(data) ? data : data.results || [];
         if (products.length > 0) {
-          setProducts(products);
+          // Sort products by ID in descending order (newest first)
+          const sortedProducts = [...products].sort((a, b) => b.id - a.id);
+          setProducts(sortedProducts);
           
           // Find a featured product (MacBook)
-          const macBook = products.find(
+          const macBook = sortedProducts.find(
             (product: Product) => 
               product.name.toLowerCase().includes('macbook') && 
               getProductImageUrl(product)

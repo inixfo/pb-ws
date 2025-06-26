@@ -242,7 +242,12 @@ export const productService = {
     try {
       console.log(`Fetching new arrivals with limit: ${limit}`);
       const response = await publicApi.get('/products/products/new_arrivals/', { 
-        params: { limit } 
+        params: { 
+          limit,
+          ordering: '-id', // Try standard Django REST Framework ordering
+          order_by: '-id', // Alternative parameter name
+          sort: '-id'      // Another alternative parameter name
+        } 
       });
       console.log('New arrivals response:', response.data);
       return response.data;

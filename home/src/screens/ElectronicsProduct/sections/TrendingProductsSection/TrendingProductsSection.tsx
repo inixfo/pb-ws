@@ -89,7 +89,9 @@ export const TrendingProductsSection = (): JSX.Element => {
         setLoading(true);
         const data = await productService.getTrending(8);
         const products = Array.isArray(data) ? data : data.results || [];
-        setProducts(products);
+        // Sort products by ID in descending order (newest first)
+        const sortedProducts = [...products].sort((a, b) => b.id - a.id);
+        setProducts(sortedProducts);
         setError(null);
       } catch (err) {
         setError('Failed to load trending products');
