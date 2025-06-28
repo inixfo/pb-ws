@@ -960,11 +960,9 @@ export const ProductNavbarSection = (): JSX.Element => {
                                               <span className="font-medium">{(plan.down_payment_percentage ?? 0)}% (৳{
                                                 (() => {
                                                   const productPrice = Number(selectedVariation?.price || product.price || 0);
-                                                  const interestRate = Number(plan.interest_rate || 0);
                                                   const downPaymentPercentage = Number(plan.down_payment_percentage || 0);
-                                                  const interestAmount = productPrice * interestRate / 100;
-                                                  const priceWithInterest = productPrice + interestAmount;
-                                                  return Math.round(priceWithInterest * downPaymentPercentage / 100);
+                                                  // Calculate down payment directly on product price (not on price + interest)
+                                                  return Math.round(productPrice * downPaymentPercentage / 100);
                                                 })()
                                               })</span>
                                             </div>
