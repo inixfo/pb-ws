@@ -1073,7 +1073,7 @@ export const DeliveryInfoContent = (): JSX.Element => {
       const totalWithInterest = baseAmount + totalInterest;
       const downPayment = (downPaymentPercent > 0 ? totalWithInterest * (downPaymentPercent / 100) : 0) + currentShippingCost;
       const financedAmount = totalWithInterest - downPayment;
-      const monthlyInstallment = financedAmount / tenureMonths;
+      const monthlyInstallment = tenureMonths > 0 ? financedAmount / tenureMonths : financedAmount;
       const totalPayable = totalWithInterest + currentShippingCost;
       
       return {
