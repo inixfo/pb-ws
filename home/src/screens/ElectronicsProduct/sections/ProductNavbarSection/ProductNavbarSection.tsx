@@ -961,10 +961,41 @@ export const ProductNavbarSection = (): JSX.Element => {
                                                 (() => {
                                                   const productPrice = Number(selectedVariation?.price || product.price || 0);
                                                   const downPaymentPercentage = Number(plan.down_payment_percentage || 0);
-                                                  // Calculate down payment directly on product price (not on price + interest)
-                                                  return Math.round(productPrice * downPaymentPercentage / 100);
+                                                  const interestRate = Number(plan.interest_rate || 0) / 100;
+                                                  
+                                                  // For cardless EMI: calculate down payment on total (price + interest)
+                                                  if (plan.plan_type === 'cardless_emi') {
+                                                    const interest = productPrice * interestRate;
+                                                    const totalWithInterest = productPrice + interest;
+                                                    return Math.round(totalWithInterest * downPaymentPercentage / 100);
+                                                  } else {
+                                                    // For card EMI: calculate down payment directly on product price
+                                                    return Math.round(productPrice * downPaymentPercentage / 100);
+                                                  }
                                                 })()
                                               })</span>
+                                            </div>
+                                          )}
+                                          {plan.plan_type === 'cardless_emi' && (
+                                            <div className="flex justify-between">
+                                              <span>Monthly Installment:</span>
+                                              <span className="font-medium">৳{
+                                                (() => {
+                                                  const productPrice = Number(selectedVariation?.price || product.price || 0);
+                                                  const downPaymentPercentage = Number(plan.down_payment_percentage || 0) / 100;
+                                                  const interestRate = Number(plan.interest_rate || 0) / 100;
+                                                  const tenureMonths = Number(plan.duration_months || 12);
+                                                  
+                                                  // Calculate using correct cardless EMI formula
+                                                  const interest = productPrice * interestRate;
+                                                  const totalWithInterest = productPrice + interest;
+                                                  const downPayment = totalWithInterest * downPaymentPercentage;
+                                                  const financedAmount = totalWithInterest - downPayment;
+                                                  const monthlyInstallment = financedAmount / tenureMonths;
+                                                  
+                                                  return Math.round(monthlyInstallment);
+                                                })()
+                                              }</span>
                                             </div>
                                           )}
                                         </div>

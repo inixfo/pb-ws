@@ -61,36 +61,45 @@ class EMIService {
         status: "fallback"
       };
       
-      // If we have plan ID and bank code, try to make a reasonable estimate
-      if (planId && bankCode) {
-        // Typical EMI parameters - these are just estimates
-        let downPaymentPercent = 0;
-        let interestRate = 0;
-        let tenureMonths = 12;
+      // If we have plan ID, try to make a reasonable estimate
+      if (planId) {
+        // For cardless EMI, use the correct flat interest calculation
+        let downPaymentPercent = 40; // Default 40% down payment
+        let interestRate = 10.8; // Default 10.8% interest rate
+        let tenureMonths = 12; // Default 12 months
         
-        // Adjust based on plan ID (assuming plan ID might indicate tenure)
+        // Adjust based on plan ID (these are estimates)
         if (planId <= 3) {
           tenureMonths = planId * 3; // 3, 6, 9 months
-          interestRate = 2 + planId; // 3%, 4%, 5%
+          interestRate = 8 + planId; // 9%, 10%, 11%
         } else if (planId <= 6) {
           tenureMonths = (planId - 3) * 6; // 6, 12, 18 months
-          interestRate = 5 + (planId - 3); // 5%, 6%, 7%
+          interestRate = 10 + (planId - 3); // 10%, 11%, 12%
         } else {
           tenureMonths = 12;
-          interestRate = 8;
+          interestRate = 10.8;
         }
         
-        // Calculate EMI values
-        const downPayment = productPrice * (downPaymentPercent / 100);
-        const financedAmount = productPrice - downPayment;
-        const totalInterest = financedAmount * (interestRate / 100) * (tenureMonths / 12);
-        const totalPayable = financedAmount + totalInterest;
-        const monthlyInstallment = totalPayable / tenureMonths;
+        // Calculate EMI values using correct cardless EMI formula
+        // 1. Calculate interest on full product price
+        const totalInterest = productPrice * (interestRate / 100);
+        
+        // 2. Calculate total amount (price + interest)
+        const totalWithInterest = productPrice + totalInterest;
+        
+        // 3. Calculate down payment on total amount
+        const downPayment = totalWithInterest * (downPaymentPercent / 100);
+        
+        // 4. Calculate financed amount (total - down payment)
+        const financedAmount = totalWithInterest - downPayment;
+        
+        // 5. Calculate monthly installment
+        const monthlyInstallment = financedAmount / tenureMonths;
         
         fallbackData.down_payment = downPayment;
         fallbackData.financed_amount = financedAmount;
         fallbackData.total_interest = totalInterest;
-        fallbackData.total_payable = totalPayable;
+        fallbackData.total_payable = totalWithInterest;
         fallbackData.monthly_installment = monthlyInstallment;
         fallbackData.tenure_months = tenureMonths;
         fallbackData.interest_rate = interestRate;
