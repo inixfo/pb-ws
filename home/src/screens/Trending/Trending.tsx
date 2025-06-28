@@ -639,7 +639,7 @@ export const Trending = (): JSX.Element => {
                   <Card key={product.id} className="rounded-lg overflow-hidden h-full flex flex-col">
                     <div className="relative overflow-hidden">
                       <img
-                        className="w-full aspect-[4/3] object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+                        className="w-full aspect-square object-contain p-2 transition-transform duration-300 hover:scale-105 cursor-pointer sm:aspect-[4/3] sm:p-3 lg:aspect-square lg:p-4"
                         src={getProductImageUrl(product)}
                         alt={product.name}
                         onClick={() => handleProductClick(product.id, product.slug)}

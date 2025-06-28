@@ -500,12 +500,14 @@ export const ShoppingCartContent = (): JSX.Element => {
             {cart.items.map((item: any, index: number) => (
               <div key={`${item.id}-${index}`} className="flex flex-col md:flex-row w-full items-start gap-4">
                 <div className="flex items-center gap-3 w-full md:w-[306px]">
-                  <div 
-                    className="w-[70px] h-[70px] bg-gray-100 rounded-lg bg-center bg-cover"
-                    style={{ 
-                      backgroundImage: `url(${item.product ? getProductImageUrl(item.product) : '/placeholder-product.png'})` 
-                    }}
-                  />
+                  <div className="relative aspect-square w-[60px] sm:w-[70px] md:w-[80px] overflow-hidden rounded-lg bg-gray-100">
+                    <img
+                      src={item.product ? getProductImageUrl(item.product, 'small') : '/placeholder-product.png'}
+                      alt={item.product?.name || 'Product'}
+                      className="h-full w-full object-contain p-1 transition-transform duration-200 hover:scale-105"
+                      loading="lazy"
+                    />
+                  </div>
                   <div className="flex flex-col items-start">
                     <div className="font-body-small-medium text-gray-900">
                       {item.product.name}

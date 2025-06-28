@@ -4,36 +4,71 @@
 
 import { Product, ProductImage } from "../types/products";
 
-// Define the backend URL constant
-const BACKEND_URL = 'https://phonebay.xyz/';
-
 /**
- * Ensure a URL is absolute by adding the backend URL if needed
+ * Ensures URL is absolute by adding base URL if needed
  */
-const ensureAbsoluteUrl = (url: string | null | undefined): string => {
-  // Handle null or undefined URL
-  if (!url) {
-    console.warn('Received null or undefined URL in ensureAbsoluteUrl');
-    return '/placeholder-product.png';
-  }
-  
-  // If the URL is already absolute (starts with http:// or https://)
+export const ensureAbsoluteUrl = (url: string): string => {
+  if (!url) return '/placeholder-product.png';
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  
-  // If the URL is a relative path starting with /media/
-  if (url.startsWith('/media/')) {
-    return `${BACKEND_URL}${url}`;
+  if (url.startsWith('/')) {
+    return url;
   }
+  // If it's a relative URL, prepend with base URL
+  const baseUrl = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000';
+  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
+/**
+ * Responsive image container classes for different sizes and layouts
+ */
+export const getResponsiveImageClasses = (size: 'small' | 'medium' | 'large' | 'card' | 'thumbnail' = 'medium') => {
+  const baseClasses = "relative overflow-hidden";
   
-  // If the URL is a relative path not starting with /
-  if (!url.startsWith('/')) {
-    return `${BACKEND_URL}/media/${url}`;
+  switch (size) {
+    case 'thumbnail':
+      return {
+        container: `${baseClasses} aspect-square w-[50px] sm:w-[60px] md:w-[75px] lg:w-[80px] rounded-lg border-2 transition-all duration-200`,
+        image: "h-full w-full object-contain p-1 transition-transform duration-200 hover:scale-105",
+        background: "bg-gray-50"
+      };
+    
+    case 'small':
+      return {
+        container: `${baseClasses} aspect-square w-[60px] sm:w-[70px] md:w-[80px] rounded-lg`,
+        image: "h-full w-full object-contain p-1 transition-transform duration-200 hover:scale-105",
+        background: "bg-gray-50"
+      };
+    
+    case 'card':
+      return {
+        container: `${baseClasses} aspect-square w-full bg-gray-50 sm:aspect-[4/3] lg:aspect-square rounded-t-lg`,
+        image: "h-full w-full object-contain p-2 transition-all duration-300 group-hover:scale-105 sm:p-3 lg:p-4",
+        background: "bg-gray-50"
+      };
+    
+    case 'medium':
+      return {
+        container: `${baseClasses} aspect-square w-full max-w-[160px] sm:max-w-[200px] md:max-w-[240px]`,
+        image: "h-full w-full object-contain p-2 transition-transform duration-300 hover:scale-105 sm:p-3",
+        background: "bg-gray-50"
+      };
+    
+    case 'large':
+      return {
+        container: `${baseClasses} aspect-square w-full lg:h-[500px] xl:h-[600px] rounded-lg`,
+        image: "w-full h-full object-contain",
+        background: "bg-gray-50"
+      };
+    
+    default:
+      return {
+        container: `${baseClasses} aspect-square w-full`,
+        image: "h-full w-full object-contain p-2 sm:p-3 lg:p-4",
+        background: "bg-gray-50"
+      };
   }
-  
-  // Otherwise, just add the backend URL
-  return `${BACKEND_URL}${url}`;
 };
 
 /**
@@ -211,4 +246,28 @@ export const getProductImageUrls = (product: Product, size: 'small' | 'medium' |
   
   // Return images or fallback
   return images.length > 0 ? images : ['/placeholder-product.png'];
+};
+
+/**
+ * Create a responsive image component props
+ */
+export const createResponsiveImageProps = (
+  product: Product, 
+  size: 'small' | 'medium' | 'large' | 'card' | 'thumbnail' = 'medium',
+  alt?: string
+) => {
+  const classes = getResponsiveImageClasses(size);
+  const imageUrl = getProductImageUrl(product, size === 'large' ? 'full' : size === 'thumbnail' || size === 'small' ? 'small' : 'medium');
+  
+  return {
+    containerProps: {
+      className: `${classes.container} ${classes.background}`
+    },
+    imageProps: {
+      src: imageUrl,
+      alt: alt || product.name || 'Product image',
+      className: classes.image,
+      loading: 'lazy' as const
+    }
+  };
 }; 

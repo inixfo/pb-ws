@@ -208,13 +208,15 @@ export const SpecialOffersByAnima = (): JSX.Element => {
             onClick={() => handleProductClick(product.id, product.slug)}
           >
             <div className="flex flex-col md:flex-row w-full h-full">
-              <div className="md:w-1/2 bg-white-100 flex items-center justify-center py-6 px-8">
-                <img
-                  src={getProductImageUrl(product, 'medium')}
-                  alt={product.name}
-                  className="w-full max-w-[200px] md:max-w-[240px] h-auto object-contain transition-transform hover:scale-105"
-                  loading="lazy"
-                />
+              <div className="md:w-1/2 bg-white-100 flex items-center justify-center py-4 px-4 sm:py-6 sm:px-8">
+                <div className="relative aspect-square w-full max-w-[160px] sm:max-w-[200px] md:max-w-[240px] overflow-hidden">
+                  <img
+                    src={getProductImageUrl(product, 'medium')}
+                    alt={product.name}
+                    className="h-full w-full object-contain p-2 transition-transform duration-300 hover:scale-105 sm:p-3"
+                    loading="lazy"
+                  />
+                </div>
               </div>
               <div className="md:w-1/2 p-4 md:p-6 flex flex-col justify-between bg-white-100">
                 <div className="flex flex-col gap-2 md:gap-3">

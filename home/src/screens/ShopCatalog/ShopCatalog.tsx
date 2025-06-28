@@ -1337,13 +1337,14 @@ export const ShopCatalog = (): JSX.Element => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => (
                   <Card key={product.id} className="overflow-hidden border-none rounded-xl">
-                    <div className="relative">
+                    <div className="relative aspect-square w-full overflow-hidden bg-gray-50 sm:aspect-[4/3] lg:aspect-square">
                       <img
                         src={product.primary_image || product.image || (product.images && product.images.length > 0 ? 
                           (typeof product.images[0] === 'string' ? product.images[0] : (product.images[0] as any).image_url) 
                           : "/placeholder-product.png")}
                         alt={product.name}
-                        className="w-full h-[200px] object-cover"
+                        className="h-full w-full object-contain p-2 transition-transform duration-300 hover:scale-105 sm:p-3 lg:p-4"
+                        loading="lazy"
                       />
                       {product.sale_price && (
                         <Badge className="absolute top-4 left-4 bg-primarymain text-white-100 py-1 px-2 text-xs">

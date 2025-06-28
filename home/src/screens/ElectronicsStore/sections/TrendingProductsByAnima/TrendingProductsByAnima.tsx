@@ -181,17 +181,17 @@ export const TrendingProductsByAnima = (): JSX.Element => {
             className="rounded-lg overflow-hidden cursor-pointer"
             onClick={() => handleProductClick(product.id, product.slug)}
           >
-            <div className="relative flex items-center justify-center p-3 sm:p-6 bg-white-100">
+            <div className="relative aspect-square w-full overflow-hidden bg-white-100 p-2 sm:p-3 lg:p-4">
               {product.is_new && (
                 <Badge
-                  className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-infomain text-white-100 text-xs sm:text-sm"
+                  className="absolute top-2 left-2 z-10 bg-infomain text-white-100 text-xs sm:text-sm"
                 >
                   New
                 </Badge>
               )}
               {product.sale_price && product.sale_price < product.price && (
                 <Badge
-                  className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-dangermain text-white-100 text-xs sm:text-sm"
+                  className="absolute top-2 left-2 z-10 bg-dangermain text-white-100 text-xs sm:text-sm"
                 >
                   -{calculateDiscountPercentage(product.price, product.sale_price)}%
                 </Badge>
@@ -199,7 +199,7 @@ export const TrendingProductsByAnima = (): JSX.Element => {
               <img
                 src={getProductImageUrl(product, 'medium')}
                 alt={product.name}
-                className="w-full h-auto max-h-[150px] sm:max-h-[240px] object-contain transition-transform hover:scale-105"
+                className="h-full w-full object-contain transition-transform duration-300 hover:scale-105"
                 loading="lazy"
               />
             </div>

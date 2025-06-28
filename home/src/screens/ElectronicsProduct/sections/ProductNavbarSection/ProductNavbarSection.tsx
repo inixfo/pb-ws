@@ -668,16 +668,24 @@ export const ProductNavbarSection = (): JSX.Element => {
                   )}
 
                   {/* Thumbnail Images */}
-                  <div className="flex items-start gap-2 mt-2 flex-wrap justify-center sm:justify-start">
+                  <div className="flex items-start gap-2 mt-2 overflow-x-auto pb-2 justify-center sm:justify-start">
                     {productImages.map((image, index) => (
                       <div
                         key={index}
-                        className={`w-[60px] h-[60px] sm:w-[75px] sm:h-[75px] rounded-lg border ${index === currentImageIndex ? "border-[#181d25]" : "border-[#e0e5eb]"} bg-cover bg-center relative cursor-pointer`}
-                        style={{ backgroundImage: `url(${image.src})` }}
+                        className={`relative flex-shrink-0 aspect-square w-[50px] sm:w-[60px] md:w-[75px] lg:w-[80px] rounded-lg border-2 overflow-hidden cursor-pointer transition-all duration-200 ${
+                          index === currentImageIndex 
+                            ? "border-[#181d25] shadow-md scale-105" 
+                            : "border-[#e0e5eb] hover:border-gray-400"
+                        }`}
                         onClick={() => handleThumbnailClick(index)}
                         aria-label={`Show image ${index + 1}`}
                       >
-                        {/* Optionally, show badge for more images, etc. */}
+                        <img
+                          src={image.src}
+                          alt={image.alt || `Product thumbnail ${index + 1}`}
+                          className="h-full w-full object-contain p-1 transition-transform duration-200 hover:scale-105"
+                          loading="lazy"
+                        />
                       </div>
                     ))}
                   </div>

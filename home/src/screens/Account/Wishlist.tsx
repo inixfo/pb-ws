@@ -29,7 +29,7 @@ import { LogoutButton } from "../../components/auth/LogoutButton";
 import { wishlistService, WishlistItem } from "../../services/wishlist";
 import { useAuth } from "../../contexts/AuthContext";
 import { Product } from '../../types/product';
-import './Wishlist.css';
+
 
 interface MenuItem {
   icon: React.ReactElement;
@@ -368,11 +368,12 @@ export const Wishlist = (): JSX.Element => {
                 key={item.id}
                 className="flex flex-col bg-white rounded-lg border border-gray-200 overflow-hidden"
               >
-                <div className="relative">
+                <div className="relative aspect-square w-full overflow-hidden bg-gray-50 sm:aspect-[4/3] lg:aspect-square">
                   <img
                     src={item.product.image}
                     alt={item.product.name}
-                    className="w-full h-48 object-cover"
+                    className="h-full w-full object-contain p-2 transition-transform duration-300 hover:scale-105 sm:p-3 lg:p-4"
+                    loading="lazy"
                   />
                   <Button
                     variant="ghost"
@@ -401,7 +402,7 @@ export const Wishlist = (): JSX.Element => {
                           key={i}
                           size={16}
                           className={`${
-                            i < Math.floor(item.product.rating)
+                            i < Math.floor(item.product.rating || 0)
                               ? "text-yellow-400"
                               : "text-gray-300"
                           }`}
@@ -409,7 +410,7 @@ export const Wishlist = (): JSX.Element => {
                       ))}
                     </div>
                     <span className="text-sm text-gray-600">
-                      ({item.product.rating_count})
+                      ({(item.product as any).reviews_count || (item.product as any).total_reviews || 0})
                     </span>
                   </div>
                   <div className="mt-auto">

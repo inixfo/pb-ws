@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Product } from '../../types/product';
+import { Product } from '../../types/products';
 import { wishlistService } from '../../services/wishlist';
 import { getProductImageUrl } from '../../utils/imageUtils';
 import { formatPrice } from '../../utils/formatters';
-import './ProductCard.css';
 
 interface ProductCardProps {
   product: Product;
@@ -58,27 +57,35 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onWishlistUpdate, cl
     <div className={`group relative rounded-lg border border-gray-200 bg-white shadow-sm transition-all hover:shadow-md ${className}`}>
       {/* Discount badge */}
       {discountPercentage > 0 && (
-        <div className="absolute left-2 top-2 rounded-full bg-red-500 px-2 py-1 text-xs font-medium text-white">
+        <div className="absolute left-2 top-2 z-10 rounded-full bg-red-500 px-2 py-1 text-xs font-medium text-white">
           {discountPercentage}% OFF
         </div>
       )}
       
       {/* Product link */}
       <Link to={`/product/${product.slug}`}>
-        {/* Image container with fixed height */}
-        <div className="relative h-48 overflow-hidden rounded-t-lg">
+        {/* Responsive image container with aspect ratio */}
+        <div className="relative aspect-square w-full overflow-hidden rounded-t-lg bg-gray-50 sm:aspect-[4/3] lg:aspect-square">
           <img
             src={getProductImageUrl(product, 'medium')}
             alt={product.name}
-            className="h-full w-full object-contain p-4 transition-transform hover:scale-105"
+            className={`h-full w-full object-contain p-2 transition-all duration-300 group-hover:scale-105 sm:p-3 lg:p-4 ${
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
             loading="lazy"
             onLoad={handleImageLoad}
           />
+          {/* Loading placeholder */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
+            </div>
+          )}
         </div>
         
         {/* Product info */}
-        <div className="p-4">
-          <h3 className="mb-1 line-clamp-2 min-h-[2.5rem] text-sm font-medium text-gray-900">
+        <div className="p-3 sm:p-4">
+          <h3 className="mb-2 line-clamp-2 min-h-[2.5rem] text-sm font-medium text-gray-900 sm:text-base">
             {product.name}
           </h3>
           
@@ -87,15 +94,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onWishlistUpdate, cl
               {/* Price display */}
               {product.sale_price ? (
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-red-600">
+                  <span className="text-sm font-medium text-red-600 sm:text-base">
                     ৳{formatPrice(product.sale_price)}
                   </span>
-                  <span className="text-xs text-gray-500 line-through">
+                  <span className="text-xs text-gray-500 line-through sm:text-sm">
                     ৳{formatPrice(product.price)}
                   </span>
                 </div>
               ) : (
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-gray-900 sm:text-base">
                   ৳{formatPrice(product.price)}
                 </span>
               )}
@@ -103,11 +110,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onWishlistUpdate, cl
             
             {/* Rating stars */}
             <div className="flex items-center">
-              <span className="mr-1 text-xs font-medium text-gray-700">
+              <span className="mr-1 text-xs font-medium text-gray-700 sm:text-sm">
                 {product.average_rating || product.rating || 0}
               </span>
               <svg
-                className="h-4 w-4 text-yellow-400"
+                className="h-3 w-3 text-yellow-400 sm:h-4 sm:w-4"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
