@@ -393,7 +393,7 @@ export const CtaFooterByAnima = (): JSX.Element => {
               
             </div>
             <p className="text-sm text-gray-400 text-center sm:text-right">
-              © 2025 All Rights Reserved. Made with ❤️ by <a href="https://bangladeshdigitalagency.com" target="_blank" rel="noopener noreferrer" className="underline">BDA</a>
+              © 2025 All Rights Reserved. <a href="https://bangladeshdigitalagency.com" target="_blank" rel="noopener noreferrer" className="underline"></a>
             </p>
           </div>
         </div>

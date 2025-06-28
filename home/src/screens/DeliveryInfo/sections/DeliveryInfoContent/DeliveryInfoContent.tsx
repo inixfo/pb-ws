@@ -11,7 +11,7 @@ import { CountryOption, CityOption } from "../../../../types/order";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { ProductEMIPlan } from "../../../../types/products";
-import { emiService } from "../../../../services/api/emiService";
+import { emiService } from "../../../../services/api";
 // Add import for the imageUtils
 import { getProductImageUrl } from '../../../../utils/imageUtils';
 
@@ -162,6 +162,7 @@ export const DeliveryInfoContent = (): JSX.Element => {
   const [activeCardlessEMIMonthly, setActiveCardlessEMIMonthly] = useState<number | null>(null);
   const [activeCardlessEMIBasePrice, setActiveCardlessEMIBasePrice] = useState<number | null>(null);
   const [activeCardlessEMIFinancedAmount, setActiveCardlessEMIFinancedAmount] = useState<number | null>(null);
+  const [cardlessEMIAPIDetails, setCardlessEMIAPIDetails] = useState<any>(null);
 
   // New state for active Card EMI plan details from cart
   const [activeCardEMIPlanDetails, setActiveCardEMIPlanDetails] = useState<ProductEMIPlan | null>(null);
@@ -940,7 +941,18 @@ export const DeliveryInfoContent = (): JSX.Element => {
   };
 
   // EMI Calculation Helper
-  const calculateEmiDetails = () => {
+  const calculateEmiDetails = (): {
+    downPayment: number;
+    financedAmount: number;
+    totalInterest: number;
+    totalPayable: number;
+    monthlyInstallment: number;
+    tenureMonths: number;
+    interestPercent: number;
+    downPaymentPercent: number;
+    baseAmount: number;
+    planName: string;
+  } | null => {
     if (!cart || !cart.items || cart.items.length === 0) return null;
     
     // Determine if we are looking for Card EMI or Cardless EMI details based on current selection
@@ -1014,26 +1026,38 @@ export const DeliveryInfoContent = (): JSX.Element => {
         planName: planParams.plan_name || planParams.name || `${tenureMonths}-month EMI`
       };
     } else {
-      // For Cardless EMI - We calculate our own interest
-      const interestPercent = planParams.interest_rate || 0;
-      const downPayment = baseAmount * (downPaymentPercent / 100);
-      // Add shipping cost to downpayment
-      const totalDownPayment = downPayment + currentShippingCost;
-      const financedAmount = baseAmount - downPayment;
-      
-      // Use flat interest rate for entire period (not annual)
-      const totalInterest = financedAmount * (interestPercent / 100);
-      const totalPayable = financedAmount + totalInterest;
-      const monthlyInstallment = tenureMonths > 0 ? totalPayable / tenureMonths : totalPayable;
+      // For Cardless EMI - Use the API calculation if available
+      if (cardlessEMIAPIDetails) {
+        // Use the API data but add shipping to the downpayment and total
+        const downPayment = cardlessEMIAPIDetails.down_payment + currentShippingCost;
+        const financedAmount = cardlessEMIAPIDetails.financed_amount || cardlessEMIAPIDetails.principal;
+        const totalInterest = cardlessEMIAPIDetails.total_interest;
+        const totalPayable = cardlessEMIAPIDetails.total_payable + currentShippingCost;
+        const monthlyInstallment = cardlessEMIAPIDetails.monthly_installment;
 
+        return {
+          downPayment,
+          financedAmount,
+          totalInterest,
+          totalPayable,
+          monthlyInstallment,
+          tenureMonths,
+          interestPercent: planParams.interest_rate || 0,
+          downPaymentPercent,
+          baseAmount,
+          planName: planParams.plan_name || planParams.name || `${tenureMonths}-month EMI`
+        };
+      }
+      
+      // Fallback to base values if API data not yet available
       return {
-        downPayment: totalDownPayment, // Include shipping in downpayment
-        financedAmount,
-        totalInterest,
-        totalPayable: totalDownPayment + totalPayable - downPayment, // Total with shipping included in downpayment
-        monthlyInstallment,
+        downPayment: (downPaymentPercent > 0 ? baseAmount * (downPaymentPercent / 100) : 0) + currentShippingCost,
+        financedAmount: baseAmount - (downPaymentPercent > 0 ? baseAmount * (downPaymentPercent / 100) : 0),
+        totalInterest: 0, // This will be filled by the API call
+        totalPayable: baseAmount + currentShippingCost, // Temp value
+        monthlyInstallment: 0, // This will be filled by the API call
         tenureMonths,
-        interestPercent,
+        interestPercent: planParams.interest_rate || 0,
         downPaymentPercent,
         baseAmount,
         planName: planParams.plan_name || planParams.name || `${tenureMonths}-month EMI`
@@ -1201,6 +1225,41 @@ export const DeliveryInfoContent = (): JSX.Element => {
 
     fetchAvailableBanks();
   }, []);
+
+  // Add this effect to calculate cardless EMI using the API
+  useEffect(() => {
+    const fetchCardlessEMIDetails = async () => {
+      // Only proceed if we have a cardless EMI plan selected, price available, and cardless EMI is the payment method
+      if (!selectedCardlessEMIPlanDetails || 
+          activeCardlessEMIBasePrice === null || 
+          paymentDetails.payment_method !== "SSLCOMMERZ_CARDLESS_EMI") {
+        return;
+      }
+      
+      try {
+        // Call the same API endpoint that product page uses
+        const details = await emiService.calculateEMI(
+          selectedCardlessEMIPlanDetails.id, 
+          activeCardlessEMIBasePrice, 
+          '' // No bank code needed for cardless EMI
+        );
+        
+        if (details) {
+          console.log('Cardless EMI API details:', details);
+          setCardlessEMIAPIDetails(details);
+          
+          // Update the state variables used in the UI
+          setActiveCardlessEMIDownpayment(details.down_payment);
+          setActiveCardlessEMIMonthly(details.monthly_installment);
+          setActiveCardlessEMIFinancedAmount(details.financed_amount);
+        }
+      } catch (error) {
+        console.error('Error calculating cardless EMI details:', error);
+      }
+    };
+    
+    fetchCardlessEMIDetails();
+  }, [selectedCardlessEMIPlanDetails, activeCardlessEMIBasePrice, paymentDetails.payment_method]);
 
   return (
     <div className="w-full">
@@ -1960,6 +2019,13 @@ export const DeliveryInfoContent = (): JSX.Element => {
                                   <span className="text-gray-600">Interest Rate:</span>
                                   <span className="font-medium">{selectedCardlessEMIPlanDetails.interest_rate}%</span>
                                 </div>
+                                
+                                {cardlessEMIAPIDetails && (
+                                  <div className="flex justify-between font-medium border-t pt-1 mt-1">
+                                    <span>Total Payable:</span>
+                                    <span>{formatCurrency(cardlessEMIAPIDetails.total_payable)}</span>
+                                  </div>
+                                )}
                               </div>
                               <p className="text-xs mt-3 flex items-center gap-1 text-blue-700">
                                 <InfoIcon className="h-4 w-4 flex-shrink-0 text-blue-500" />
