@@ -325,16 +325,21 @@ export const DeliveryInfoContent = (): JSX.Element => {
 
       // Calculate and set Cardless EMI payment details
       if (cardlessPlan && cardlessItemPrice > 0 && cardlessPlan.down_payment_percentage !== undefined && cardlessPlan.duration_months) {
-        const downpayment = cardlessItemPrice * (cardlessPlan.down_payment_percentage / 100);
-        const financedAmount = cardlessItemPrice - downpayment;
-        
-        // Calculate interest - treat interest_rate as flat rate for the entire period, not annual
+        // First calculate interest on the full price
         const interestRate = (cardlessPlan.interest_rate || 0) / 100;
-        const totalInterest = financedAmount * interestRate;
-        const totalPayable = financedAmount + totalInterest;
+        const totalInterest = cardlessItemPrice * interestRate;
         
-        // Monthly installment includes interest
-        const monthly = totalPayable / cardlessPlan.duration_months;
+        // Total price including interest
+        const totalWithInterest = cardlessItemPrice + totalInterest;
+        
+        // Calculate down payment on the total (price + interest)
+        const downpayment = totalWithInterest * (cardlessPlan.down_payment_percentage / 100);
+        
+        // Calculate financed amount after down payment
+        const financedAmount = totalWithInterest - downpayment;
+        
+        // Monthly installment is simply financed amount / tenure
+        const monthly = financedAmount / cardlessPlan.duration_months;
         
         // Note: We're storing the base downpayment without shipping here
         // The shipping cost will be added to the downpayment in the UI display
@@ -1245,13 +1250,36 @@ export const DeliveryInfoContent = (): JSX.Element => {
         );
         
         if (details) {
-          console.log('Cardless EMI API details:', details);
-          setCardlessEMIAPIDetails(details);
+          console.log('Cardless EMI API details from backend:', details);
+          
+          // Override with our calculation that matches expected behavior
+          const productPrice = activeCardlessEMIBasePrice;
+          const cardlessInterestRate = (selectedCardlessEMIPlanDetails?.interest_rate || 0) / 100;
+          const cardlessTotalInterest = productPrice * cardlessInterestRate;
+          const cardlessTotalWithInterest = productPrice + cardlessTotalInterest;
+          const cardlessDownPaymentPercent = (selectedCardlessEMIPlanDetails?.down_payment_percentage || 0) / 100;
+          const cardlessDownPayment = cardlessTotalWithInterest * cardlessDownPaymentPercent;
+          const cardlessFinancedAmount = cardlessTotalWithInterest - cardlessDownPayment;
+          const cardlessMonthlyInstallment = cardlessFinancedAmount / (selectedCardlessEMIPlanDetails?.duration_months || 12);
+          
+          // Create our custom details object
+          const customDetails = {
+            ...details,
+            down_payment: cardlessDownPayment,
+            monthly_installment: cardlessMonthlyInstallment,
+            financed_amount: cardlessFinancedAmount,
+            total_interest: cardlessTotalInterest,
+            total_payable: cardlessTotalWithInterest
+          };
+          
+          console.log('Updated EMI details with custom calculation:', customDetails);
+          
+          setCardlessEMIAPIDetails(customDetails);
           
           // Update the state variables used in the UI
-          setActiveCardlessEMIDownpayment(details.down_payment);
-          setActiveCardlessEMIMonthly(details.monthly_installment);
-          setActiveCardlessEMIFinancedAmount(details.financed_amount);
+          setActiveCardlessEMIDownpayment(cardlessDownPayment);
+          setActiveCardlessEMIMonthly(cardlessMonthlyInstallment);
+          setActiveCardlessEMIFinancedAmount(cardlessFinancedAmount);
         }
       } catch (error) {
         console.error('Error calculating cardless EMI details:', error);
