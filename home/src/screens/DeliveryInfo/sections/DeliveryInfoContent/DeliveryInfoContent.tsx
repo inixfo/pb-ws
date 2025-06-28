@@ -466,9 +466,9 @@ export const DeliveryInfoContent = (): JSX.Element => {
           const productPrice = parseFloat(String(cart.total_price || '0'));
           const interestRate = (selectedCardlessEMIPlanDetails.interest_rate || 0) / 100;
           
-          // Use the same flat interest calculation as other parts of the component
+          // Interest is calculated on the product price
           emiInterest = productPrice * interestRate;
-          emiInterestDisplay = `EMI Interest (${selectedCardlessEMIPlanDetails.interest_rate}% flat rate): ${formatCurrency(emiInterest)}`;
+          emiInterestDisplay = `EMI Interest (${selectedCardlessEMIPlanDetails.interest_rate}%):`;
           
           // For Cardless EMI, add the interest to the total
           totalWithInterest += emiInterest;
@@ -832,34 +832,24 @@ export const DeliveryInfoContent = (): JSX.Element => {
       // For cardless EMI, prepare the EMI application data
       let emiApplicationData = null;
       if (chosenPaymentMethodKey === "SSLCOMMERZ_CARDLESS_EMI" && selectedCardlessEMIPlanDetails && activeCardlessEMIBasePrice !== null) {
-        // Override with our calculation that matches expected behavior
+        // Use the same calculation logic as the UI display
         const productPrice = activeCardlessEMIBasePrice || 0;
-
-        // 1. Calculate interest on the full price
         const interestRate = (selectedCardlessEMIPlanDetails?.interest_rate || 0) / 100;
         const flatInterest = productPrice * interestRate;
-
-        // 2. Add interest to get total
         const totalWithInterest = productPrice + flatInterest;
-
-        // 3. Calculate down payment on total price including interest
         const downPaymentPercent = (selectedCardlessEMIPlanDetails?.down_payment_percentage || 0) / 100;
         const downPayment = totalWithInterest * downPaymentPercent;
-
-        // 4. Calculate the financed amount (total - down payment)
         const financedAmount = totalWithInterest - downPayment;
-
-        // 5. Calculate monthly installment
         const durationMonths = selectedCardlessEMIPlanDetails?.duration_months || 12;
         const monthlyInstallment = financedAmount / durationMonths;
 
         emiApplicationData = {
           emi_plan_id: selectedCardlessEMIPlanDetails.id,
-          product_price: activeCardlessEMIBasePrice,
+          product_price: productPrice,
           down_payment_amount: downPayment,
           principal_amount: financedAmount,
           monthly_installment: monthlyInstallment,
-          tenure_months: selectedCardlessEMIPlanDetails.duration_months,
+          tenure_months: durationMonths,
           interest_rate: selectedCardlessEMIPlanDetails.interest_rate,
           total_interest: flatInterest,
           total_payable: totalWithInterest
@@ -1183,9 +1173,9 @@ export const DeliveryInfoContent = (): JSX.Element => {
         const productPrice = parseFloat(String(cart.total_price || '0'));
         const interestRate = (selectedCardlessEMIPlanDetails.interest_rate || 0) / 100;
         
-        // Use the same flat interest calculation as other parts of the component
+        // Interest is calculated on the product price
         emiInterest = productPrice * interestRate;
-        emiInterestDisplay = `EMI Interest (${selectedCardlessEMIPlanDetails.interest_rate}% flat rate): ${formatCurrency(emiInterest)}`;
+        emiInterestDisplay = `EMI Interest (${selectedCardlessEMIPlanDetails.interest_rate}%):`;
         
         // For Cardless EMI, add the interest to the total
         totalWithInterest += emiInterest;
@@ -1308,22 +1298,24 @@ export const DeliveryInfoContent = (): JSX.Element => {
           const durationMonths = selectedCardlessEMIPlanDetails?.duration_months || 12;
           const monthlyInstallment = financedAmount / durationMonths;
           
-          // Create our custom details object that matches the screenshot calculation pattern
+          // Create our custom details object to update the UI
           const customDetails = {
             ...details,
             down_payment: downPayment,
             principal: financedAmount, 
             total_interest: flatInterest,
             monthly_installment: monthlyInstallment,
-            total_payment: financedAmount,
-            total_payable: totalWithInterest,
+            total_payment: financedAmount, // This is the amount paid in installments
+            total_payable: totalWithInterest, // This is the full amount including interest
+            duration_months: durationMonths,
+            interest_rate: selectedCardlessEMIPlanDetails.interest_rate
           };
           
           // Log and set the custom calculation results
-          console.log('Cardless EMI custom calculation:', customDetails);
+          console.log('Cardless EMI custom calculation for UI:', customDetails);
           setCardlessEMIAPIDetails(customDetails);
           
-          // Update the state variables used in the UI
+          // Update the state variables used elsewhere in the component
           setActiveCardlessEMIDownpayment(downPayment);
           setActiveCardlessEMIMonthly(monthlyInstallment);
           setActiveCardlessEMIFinancedAmount(financedAmount);
