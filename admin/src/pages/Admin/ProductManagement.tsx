@@ -993,7 +993,7 @@ const ProductManagement: React.FC = () => {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Price ($)
+                              Price (৳)
                             </label>
                             <input
                               type="number"

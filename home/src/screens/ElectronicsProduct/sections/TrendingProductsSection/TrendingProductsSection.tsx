@@ -240,11 +240,11 @@ export const TrendingProductsSection = (): JSX.Element => {
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-gray-900 text-base sm:text-lg">
-                        ${product.sale_price || product.price}
+                        ৳{product.sale_price || product.price}
                       </span>
                       {product.sale_price && product.sale_price < product.price && (
                         <span className="text-gray-400 text-xs sm:text-sm line-through">
-                          ${product.price}
+                          ৳{product.price}
                         </span>
                       )}
                     </div>

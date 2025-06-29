@@ -40,6 +40,14 @@ CSRF_TRUSTED_ORIGINS = [
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_HTTPONLY = False  # Set to False to allow JavaScript to access the CSRF token
+# Set cookie domain to work for both www and non-www
+CSRF_COOKIE_DOMAIN = '.phonebay.xyz'  # Leading dot makes it work for all subdomains
+
+# Session settings - ensure cookies work across both domains
+SESSION_COOKIE_DOMAIN = '.phonebay.xyz'  # Leading dot makes it work for all subdomains
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = not DEBUG  # Use secure cookies in production
 
 # Application definition
 

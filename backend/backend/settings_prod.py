@@ -11,6 +11,14 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['phonebay.xyz', 'www.phonebay.xyz', '52.62.201.84', 'localhost', '127.0.0.1']
 
+# Cookie domain settings - ensure cookies work across both www and non-www
+CSRF_COOKIE_DOMAIN = '.phonebay.xyz'  # Leading dot makes it work for all subdomains
+SESSION_COOKIE_DOMAIN = '.phonebay.xyz'  # Leading dot makes it work for all subdomains
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True  # Use secure cookies in production
+CSRF_COOKIE_SECURE = True  # Use secure CSRF cookies in production
+
 # Google OAuth Settings
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get('GOOGLE_CLIENT_ID', '')
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')

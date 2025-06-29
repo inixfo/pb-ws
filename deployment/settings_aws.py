@@ -269,6 +269,12 @@ SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
+# Cookie domain settings - ensure cookies work across both www and non-www
+CSRF_COOKIE_DOMAIN = '.phonebay.xyz'  # Leading dot makes it work for all subdomains
+SESSION_COOKIE_DOMAIN = '.phonebay.xyz'  # Leading dot makes it work for all subdomains
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_HTTPONLY = True
+
 # SMS Settings
 SMS_API_URL = os.environ.get('SMS_API_URL', 'https://smsplus.sslwireless.com')
 SMS_API_SID = os.environ.get('SMS_API_SID', 'PHONEBAYBRAND')

@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios, { AxiosRequestConfig } from 'axios';
+import config from '../config';
 
-const API_URL = 'https://phonebay.xyz/api';
+const API_URL = config.API_URL;
 
 // Create axios instance with default config
 const api = axios.create({
