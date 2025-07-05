@@ -56,7 +56,6 @@ services:
     volumes:
       - ./media:/app/media
     depends_on:
-      - db
       - redis
       - backend
     networks:
@@ -73,7 +72,6 @@ services:
     volumes:
       - ./media:/app/media
     depends_on:
-      - db
       - redis
       - backend
     networks:
