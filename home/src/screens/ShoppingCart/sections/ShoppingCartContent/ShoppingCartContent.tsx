@@ -29,6 +29,7 @@ import CartManager from "../../../../services/CartManager";
 import { toast } from "react-hot-toast";
 import promoCodeService from "../../../../services/api/promoCodeService";
 import { getProductImageUrl } from '../../../../utils/imageUtils';
+import { useAuth } from '../../../../contexts/AuthContext';
 
 // Define order summary data structure
 interface OrderSummary {
@@ -45,8 +46,9 @@ export const ShoppingCartContent = (): JSX.Element => {
   console.log('ShoppingCartContent rendering');
   console.log('localStorage cart:', localStorage.getItem('cart'));
   
-  // Check authentication status
-  const isAuthenticated = authService.isAuthenticated();
+  // Check authentication status using reactive state
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
   
   // Cart state
   const [cart, setCart] = useState<any>(null);
@@ -177,10 +179,10 @@ export const ShoppingCartContent = (): JSX.Element => {
     }
   };
 
-  // Load cart on component mount
+  // Load cart on component mount and when authentication changes
   useEffect(() => {
     fetchCart();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   // Handle quantity changes
   const handleQuantityChange = async (itemId: number, newQuantity: number) => {
