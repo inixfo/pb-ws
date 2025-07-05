@@ -38,16 +38,6 @@ services:
     networks:
       - phonebay_network
 
-  db:
-    image: postgres:14-alpine
-    restart: always
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    env_file:
-      - db.env
-    networks:
-      - phonebay_network
-
   redis:
     image: redis:7-alpine
     restart: always
