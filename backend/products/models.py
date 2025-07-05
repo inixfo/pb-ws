@@ -54,6 +54,7 @@ class Brand(models.Model):
     slug = models.SlugField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     logo = models.ImageField(upload_to='brand_logos/', blank=True, null=True)
+    categories = models.ManyToManyField(Category, related_name='brands', blank=True, help_text="Categories this brand belongs to")
     is_active = models.BooleanField(default=True)
     
     class Meta:

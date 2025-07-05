@@ -312,6 +312,27 @@ class ProductService {
       };
     }
   }
+
+  async getBrandsByCategory(categorySlug: string) {
+    console.log(`[productService.getBrandsByCategory] Called with category slug: ${categorySlug}`);
+    try {
+      // First try to get brands from filter options, which will include counts
+      const filterOptions = await this.getFilterOptions(undefined, categorySlug);
+      
+      if (filterOptions && Array.isArray(filterOptions.brands)) {
+        // Only include brands with products in this category
+        const brandsWithCounts = filterOptions.brands.filter((brand: { count?: number }) => brand.count && brand.count > 0);
+        console.log('[productService.getBrandsByCategory] Success:', brandsWithCounts.length, 'brands found');
+        return brandsWithCounts;
+      }
+      
+      console.log('[productService.getBrandsByCategory] No brands found in filter options');
+      return [];
+    } catch (error) {
+      console.error('[productService.getBrandsByCategory] Error:', error);
+      return [];
+    }
+  }
 }
 
 export const productService = new ProductService(); 

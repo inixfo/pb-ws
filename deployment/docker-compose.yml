@@ -13,7 +13,6 @@ services:
       - ./media:/app/media
       - ./static:/app/staticfiles
     depends_on:
-      - db
       - redis
     networks:
       - phonebay_network

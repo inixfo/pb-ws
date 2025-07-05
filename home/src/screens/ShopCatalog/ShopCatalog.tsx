@@ -869,61 +869,54 @@ export const ShopCatalog = (): JSX.Element => {
 
   // Fetch brands
   const fetchBrands = async () => {
+    console.log('[ShopCatalog fetchBrands] Called');
+    setLoading(true);
+    
     try {
-      // First try to get brands from filter options, which will include counts
-      let brandsWithCounts: Brand[] = [];
+      // Different approach based on whether we're on a category page or main catalog
+      let brandsData;
       
-      // If we have a category slug, try to get category-specific brands
       if (slug) {
-        try {
-          const filterOptions = await productService.getFilterOptions(undefined, slug);
-          if (filterOptions && Array.isArray(filterOptions.brands)) {
-            // Only include brands with products
-            brandsWithCounts = (filterOptions.brands as Brand[]).filter(brand => brand.count && brand.count > 0);
-            console.log('Got category-specific brands with counts:', brandsWithCounts);
-          }
-        } catch (err) {
-          console.error('Failed to get category-specific brands:', err);
-        }
+        // For category pages, fetch brands specific to this category
+        console.log(`[ShopCatalog fetchBrands] Fetching brands for category: ${slug}`);
+        const response = await productService.getBrandsByCategory(slug);
+        brandsData = response;
+      } else {
+        // For main catalog page, fetch all brands
+        console.log('[ShopCatalog fetchBrands] Fetching all brands');
+        const response = await brandService.getAll();
+        brandsData = response.results || [];
       }
       
-      // If we couldn't get brands with counts from filter options, fall back to regular brand list
-      if (brandsWithCounts.length === 0) {
-        try {
-          // Get filter options to get brands with product counts
-          const filterOptions = await productService.getFilterOptions();
-          if (filterOptions && Array.isArray(filterOptions.brands)) {
-            // Only include brands with products
-            brandsWithCounts = (filterOptions.brands as Brand[]).filter(brand => brand.count && brand.count > 0);
-            console.log('Got brands with counts from filter options:', brandsWithCounts);
-          }
-        } catch (err) {
-          console.error('Failed to get brands with counts from filter options:', err);
-          
-          // Last resort: get all brands and assume they all have products
-          try {
-            const data = await brandService.getAll();
-            if (data && data.results) {
-              brandsWithCounts = data.results.map((brand: Brand) => ({
-                ...brand,
-                count: 1 // Assume at least one product
-              }));
+      console.log('[ShopCatalog fetchBrands] Brands data:', brandsData);
+      
+      // Process brands data
+      if (Array.isArray(brandsData)) {
+        // Sort brands by name
+        const sortedBrands = brandsData.sort((a, b) => a.name.localeCompare(b.name));
+        setBrands(sortedBrands);
+        
+        // Update selected brands state if needed
+        if (selectedBrands.length > 0) {
+          // Make sure the brand IDs match the brand names
+          const updatedBrandIds = [];
+          for (const brandName of selectedBrands) {
+            const brand = sortedBrands.find(b => b.name === brandName);
+            if (brand) {
+              updatedBrandIds.push(brand.id);
             }
-          } catch (brandErr) {
-            console.error('Failed to load brands:', brandErr);
           }
+          setSelectedBrandIds(updatedBrandIds);
         }
+      } else {
+        console.error('[ShopCatalog fetchBrands] Unexpected brands data format:', brandsData);
+        setBrands([]);
       }
-      
-      // Sort brands by count (descending)
-      brandsWithCounts.sort((a: Brand, b: Brand) => (b.count || 0) - (a.count || 0));
-      
-      // Only set brands if we have some
-      if (brandsWithCounts.length > 0) {
-        setBrands(brandsWithCounts);
-      }
-    } catch (err) {
-      console.error('Failed to load brands:', err);
+    } catch (error) {
+      console.error('[ShopCatalog fetchBrands] Error fetching brands:', error);
+      setBrands([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1064,25 +1057,65 @@ export const ShopCatalog = (): JSX.Element => {
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-9">{pageTitle}</h1>
         </div>
-        {/* Banners */}
-        <div className="flex flex-col md:flex-row gap-4 md:gap-6 mb-6 md:mb-8">
-          <div className="relative flex-1 min-w-0 h-48 sm:h-56 rounded-2xl overflow-hidden bg-gradient-to-r from-[#ACCBEE] to-[#E7F0FD] flex items-center">
-            <img src="/image.png" alt="iPhone" className="absolute left-0 top-0 h-full w-[55%] object-cover" />
-            <div className="absolute left-[56%] top-1/2 -translate-y-1/2 flex flex-col gap-2">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">iPhone 14</h2>
-              <p className="text-xs sm:text-sm text-gray-700">Apple iPhone 14 128GB Blue</p>
-              <Button className="mt-2 bg-primarymain text-white-100 w-fit px-4 sm:px-6 py-2 rounded-lg flex items-center gap-1 text-sm">
-                From ৳899 <ChevronRightIcon className="w-3 h-3 sm:w-4 sm:h-4" />
-              </Button>
-            </div>
-          </div>
-          <div className="relative flex-1 min-w-0 h-48 sm:h-56 rounded-2xl overflow-hidden bg-gradient-to-r from-[#FDCBF1] to-[#FFECFA] flex items-center">
-            <img src="/image-1.png" alt="iPad" className="absolute left-0 bottom-0 w-full h-[60%] object-contain" />
-            <div className="absolute left-1/2 top-8 -translate-x-1/2 flex flex-col items-center w-[70%]">
-              <img src="/apple.svg" alt="Apple" className="w-6 h-6 sm:w-8 sm:h-8 mb-1" />
-              <p className="text-xs sm:text-sm text-gray-700 mb-1">Deal of the week</p>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">iPad Pro M1</h2>
-            </div>
+        {/* Brand Showcase - Replacing the Banners */}
+        <div className="mb-8">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">
+            {slug ? `${pageTitle} Brands` : 'Popular Brands'}
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {brands
+              .filter(brand => {
+                // On category pages, show only brands that have products in that category
+                // This is determined by the brand.count property which comes from the API
+                if (slug) {
+                  return brand.count && brand.count > 0;
+                }
+                // On the main catalog page, show all brands
+                return true;
+              })
+              .map((brand) => (
+                <div
+                  key={brand.id}
+                  onClick={() => {
+                    // If brand is already selected, remove it (toggle functionality)
+                    if (selectedBrands.includes(brand.name)) {
+                      setSelectedBrands([]);
+                      setSelectedBrandIds([]);
+                    } else {
+                      // Otherwise, select only this brand
+                      setSelectedBrands([brand.name]);
+                      setSelectedBrandIds([brand.id]);
+                    }
+                    // Reset to first page when changing brand filter
+                    setCurrentPage(1);
+                  }}
+                  className={`cursor-pointer flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${
+                    selectedBrands.includes(brand.name)
+                      ? "border-primary bg-primary/5"
+                      : "border-gray-200 hover:border-primary/30 hover:bg-gray-50"
+                  }`}
+                >
+                  {brand.logo ? (
+                    <img
+                      src={brand.logo}
+                      alt={brand.name}
+                      className="h-16 w-auto object-contain mb-2"
+                      onError={(e) => {
+                        // Fallback for broken images
+                        e.currentTarget.src = "/placeholder-brand.png";
+                      }}
+                    />
+                  ) : (
+                    <div className="h-16 w-full flex items-center justify-center bg-gray-100 rounded-lg mb-2">
+                      <span className="text-gray-500 font-medium">{brand.name}</span>
+                    </div>
+                  )}
+                  <span className="text-xs font-medium text-center text-gray-700">{brand.name}</span>
+                  {brand.count !== undefined && (
+                    <span className="text-xs text-gray-400 mt-1">{brand.count} items</span>
+                  )}
+                </div>
+              ))}
           </div>
         </div>
         {/* Filter bar */}
