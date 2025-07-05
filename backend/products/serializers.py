@@ -31,9 +31,19 @@ class CategorySerializer(serializers.ModelSerializer):
 class BrandSerializer(serializers.ModelSerializer):
     """Serializer for Brand model."""
     
+    categories = serializers.SerializerMethodField()
+    
     class Meta:
         model = Brand
-        fields = ['id', 'name', 'slug', 'description', 'logo']
+        fields = ['id', 'name', 'slug', 'description', 'logo', 'categories']
+    
+    def get_categories(self, obj):
+        """Get the categories associated with this brand."""
+        # Check if we should include categories based on query params
+        request = self.context.get('request')
+        if request and request.query_params.get('with_categories') == 'true':
+            return CategorySerializer(obj.categories.all(), many=True, context=self.context).data
+        return None
 
 
 class ProductFieldSerializer(serializers.ModelSerializer):

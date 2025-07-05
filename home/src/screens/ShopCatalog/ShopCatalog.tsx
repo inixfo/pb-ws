@@ -882,10 +882,10 @@ export const ShopCatalog = (): JSX.Element => {
         const response = await productService.getBrandsByCategory(slug);
         brandsData = response;
       } else {
-        // For main catalog page, fetch all brands
-        console.log('[ShopCatalog fetchBrands] Fetching all brands');
-        const response = await brandService.getAll();
-        brandsData = response.results || [];
+        // For main catalog page, fetch all brands with their category associations
+        console.log('[ShopCatalog fetchBrands] Fetching all brands with categories');
+        const response = await brandService.getAllWithCategories();
+        brandsData = response;
       }
       
       console.log('[ShopCatalog fetchBrands] Brands data:', brandsData);
@@ -1058,17 +1058,26 @@ export const ShopCatalog = (): JSX.Element => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-9">{pageTitle}</h1>
         </div>
         {/* Brand Showcase - Replacing the Banners */}
-        <div className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">
+        <div className="mb-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-3">
             {slug ? `${pageTitle} Brands` : 'Popular Brands'}
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
             {brands
               .filter(brand => {
                 // On category pages, show only brands that have products in that category
-                // This is determined by the brand.count property which comes from the API
+                // This is determined by the brand's categories array which comes from the API
                 if (slug) {
-                  return brand.count && brand.count > 0;
+                  // If brand has categories property and it contains the current category
+                  return (
+                    brand.count > 0 || // Check count from API
+                    (brand.categories && // Or check categories array if available
+                      Array.isArray(brand.categories) &&
+                      brand.categories.some(cat => 
+                        typeof cat === 'object' && cat.slug === slug ||
+                        typeof cat === 'string' && cat === slug
+                      ))
+                  );
                 }
                 // On the main catalog page, show all brands
                 return true;
@@ -1089,31 +1098,28 @@ export const ShopCatalog = (): JSX.Element => {
                     // Reset to first page when changing brand filter
                     setCurrentPage(1);
                   }}
-                  className={`cursor-pointer flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${
+                  className={`cursor-pointer flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
                     selectedBrands.includes(brand.name)
                       ? "border-primary bg-primary/5"
                       : "border-gray-200 hover:border-primary/30 hover:bg-gray-50"
                   }`}
                 >
-                  {brand.logo ? (
-                    <img
-                      src={brand.logo}
-                      alt={brand.name}
-                      className="h-16 w-auto object-contain mb-2"
-                      onError={(e) => {
-                        // Fallback for broken images
-                        e.currentTarget.src = "/placeholder-brand.png";
-                      }}
-                    />
-                  ) : (
-                    <div className="h-16 w-full flex items-center justify-center bg-gray-100 rounded-lg mb-2">
-                      <span className="text-gray-500 font-medium">{brand.name}</span>
-                    </div>
-                  )}
-                  <span className="text-xs font-medium text-center text-gray-700">{brand.name}</span>
-                  {brand.count !== undefined && (
-                    <span className="text-xs text-gray-400 mt-1">{brand.count} items</span>
-                  )}
+                  <div className="h-10 w-full flex items-center justify-center mb-1">
+                    {brand.logo ? (
+                      <img
+                        src={brand.logo}
+                        alt={brand.name}
+                        className="h-8 w-auto object-contain"
+                        onError={(e) => {
+                          // Fallback for broken images
+                          e.currentTarget.src = "/placeholder-brand.png";
+                        }}
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-700 font-medium text-center">{brand.name}</span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-700 font-medium text-center truncate w-full px-1">{brand.name}</span>
                 </div>
               ))}
           </div>

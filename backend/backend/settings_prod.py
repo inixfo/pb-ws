@@ -27,7 +27,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'pbws',
         'USER': 'pbws',
-        'PASSWORD': 'PhoneBay@2025',
+        'PASSWORD': 'eORC,2OL621',
         'HOST': '172.232.107.167',
         'PORT': '5432',
     }

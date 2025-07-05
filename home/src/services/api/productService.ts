@@ -319,14 +319,36 @@ class ProductService {
       // First try to get brands from filter options, which will include counts
       const filterOptions = await this.getFilterOptions(undefined, categorySlug);
       
+      // If we have brands with counts from filter options
       if (filterOptions && Array.isArray(filterOptions.brands)) {
-        // Only include brands with products in this category
-        const brandsWithCounts = filterOptions.brands.filter((brand: { count?: number }) => brand.count && brand.count > 0);
-        console.log('[productService.getBrandsByCategory] Success:', brandsWithCounts.length, 'brands found');
-        return brandsWithCounts;
+        console.log('[productService.getBrandsByCategory] Success from filter options:', filterOptions.brands.length, 'brands found');
+        return filterOptions.brands;
       }
       
-      console.log('[productService.getBrandsByCategory] No brands found in filter options');
+      // If that fails, try to get all brands and filter them by category
+      try {
+        // Attempt to get brands with their category associations
+        const response = await publicApi.get(`${API_URL}/brands/?with_categories=true`);
+        
+        if (response.data && Array.isArray(response.data.results)) {
+          // Filter brands that belong to this category
+          const brandsInCategory = response.data.results.filter((brand: any) => {
+            // Check if brand has categories and if any match the slug
+            return brand.categories && Array.isArray(brand.categories) && 
+              brand.categories.some((cat: any) => 
+                (typeof cat === 'object' && cat.slug === categorySlug) || 
+                (typeof cat === 'string' && cat === categorySlug)
+              );
+          });
+          
+          console.log('[productService.getBrandsByCategory] Success from brands API:', brandsInCategory.length, 'brands found');
+          return brandsInCategory;
+        }
+      } catch (brandErr) {
+        console.error('[productService.getBrandsByCategory] Error fetching brands with categories:', brandErr);
+      }
+      
+      console.log('[productService.getBrandsByCategory] No brands found');
       return [];
     } catch (error) {
       console.error('[productService.getBrandsByCategory] Error:', error);

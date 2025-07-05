@@ -127,6 +127,39 @@ class BrandViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return [permissions.AllowAny()]
         return super().get_permissions()
+    
+    def get_queryset(self):
+        """Filter brands and prefetch related objects as needed."""
+        queryset = super().get_queryset()
+        
+        # Check if we should include categories
+        if self.request.query_params.get('with_categories') == 'true':
+            queryset = queryset.prefetch_related('categories')
+            
+        # Filter by category if specified
+        category_slug = self.request.query_params.get('category')
+        if category_slug:
+            queryset = queryset.filter(categories__slug=category_slug)
+            
+        return queryset
+        
+    def list(self, request, *args, **kwargs):
+        """Override list to include counts of products per brand."""
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        # Calculate product counts for each brand if requested
+        include_counts = request.query_params.get('with_counts', 'false').lower() == 'true'
+        if include_counts:
+            from django.db.models import Count
+            queryset = queryset.annotate(count=Count('products'))
+            
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+            
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class ProductFieldViewSet(viewsets.ModelViewSet):
