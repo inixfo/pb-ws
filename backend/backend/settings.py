@@ -22,16 +22,11 @@ SECRET_KEY = 'django-insecure-oqib9m00m3$=h@-3k@ap7#9me%hz3xixo39n-e=xik&^i)=^f(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['52.62.201.84', 'localhost', '127.0.0.1', 'phonebay.xyz', 'www.phonebay.xyz']
+ALLOWED_HOSTS = ['172.232.107.167', 'localhost', '127.0.0.1', 'phonebay.xyz', 'www.phonebay.xyz']
 
 # CSRF settings
 CSRF_TRUSTED_ORIGINS = [
-    'http://52.62.201.84',
-    'https://52.62.201.84',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:5174',
-    'http://localhost:5173',
+    'http://172.232.107.167',
     'http://phonebay.xyz',
     'https://phonebay.xyz',
     'http://www.phonebay.xyz',
@@ -105,12 +100,7 @@ SOCIAL_AUTH_PIPELINE = (
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
-    'http://52.62.201.84',
-    'https://52.62.201.84',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:5174',
-    'http://localhost:5173',
+    'http://172.232.107.167',
     'http://phonebay.xyz',
     'https://phonebay.xyz',
     'http://www.phonebay.xyz',
@@ -179,7 +169,7 @@ DATABASES = {
         'NAME': os.getenv('DB_NAME', 'pbws'),
         'USER': os.getenv('DB_USER', 'pbws'),
         'PASSWORD': os.getenv('DB_PASSWORD', 'PbWs2025'),
-        'HOST': os.getenv('DB_HOST', '52.62.201.84'),
+        'HOST': os.getenv('DB_HOST', '172.232.107.167'),
         'PORT': os.getenv('DB_PORT', '5432'),
     }
 }

@@ -9,7 +9,7 @@ from .settings import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['phonebay.xyz', 'www.phonebay.xyz', '52.62.201.84', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['phonebay.xyz', 'www.phonebay.xyz', '172.232.107.167']
 
 # Google OAuth Settings
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get('GOOGLE_CLIENT_ID', '')
@@ -27,8 +27,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'pbws',
         'USER': 'pbws',
-        'PASSWORD': 'PbWs2025',
-        'HOST': '52.62.201.84',
+        'PASSWORD': 'PhoneBay@2025',
+        'HOST': '172.232.107.167',
         'PORT': '5432',
     }
 }
@@ -45,8 +45,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 CORS_ALLOWED_ORIGINS = [
     'https://phonebay.xyz',
     'https://www.phonebay.xyz',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
 ]
 
 # SSLCOMMERZ Payment Gateway Settings
