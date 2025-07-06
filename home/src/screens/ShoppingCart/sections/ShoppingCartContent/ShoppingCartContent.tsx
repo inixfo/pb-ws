@@ -222,7 +222,7 @@ export const ShoppingCartContent = (): JSX.Element => {
   };
 
   // Handle checkout
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     console.log('Checkout button clicked, auth loading:', authLoading, 'user:', !!user, 'isAuthenticated:', isAuthenticated);
     
     if (authLoading) {
@@ -239,9 +239,21 @@ export const ShoppingCartContent = (): JSX.Element => {
       return;
     }
     
-    console.log('User authenticated, proceeding to checkout');
-    // Proceed to checkout
-    navigate('/checkout');
+    console.log('User authenticated, proceeding to checkout with page refresh');
+    
+    try {
+      // Ensure cart data is properly synced to localStorage before refresh
+      await CartManager.getCart();
+      console.log('Cart data synced, refreshing page and redirecting to checkout');
+      
+      // Force a full page refresh and redirect to checkout
+      // This bypasses React Router state issues and ensures fresh authentication state
+      window.location.href = '/checkout';
+    } catch (error) {
+      console.error('Error syncing cart before checkout:', error);
+      // Fallback to regular navigation if sync fails
+      navigate('/checkout');
+    }
   };
   
   // Handle promo code application
