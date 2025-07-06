@@ -47,8 +47,8 @@ export const ShoppingCartContent = (): JSX.Element => {
   console.log('localStorage cart:', localStorage.getItem('cart'));
   
   // Check authentication status using reactive state
-  const { user } = useAuth();
-  const isAuthenticated = !!user;
+  const { user, loading: authLoading } = useAuth();
+  const isAuthenticated = !authLoading && !!user;
   
   // Cart state
   const [cart, setCart] = useState<any>(null);
@@ -182,7 +182,7 @@ export const ShoppingCartContent = (): JSX.Element => {
   // Load cart on component mount and when authentication changes
   useEffect(() => {
     fetchCart();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, authLoading]);
 
   // Handle quantity changes
   const handleQuantityChange = async (itemId: number, newQuantity: number) => {
@@ -223,9 +223,15 @@ export const ShoppingCartContent = (): JSX.Element => {
 
   // Handle checkout
   const handleCheckout = () => {
-    console.log('Checkout button clicked, auth status:', isAuthenticated);
+    console.log('Checkout button clicked, auth loading:', authLoading, 'user:', !!user, 'isAuthenticated:', isAuthenticated);
+    
+    if (authLoading) {
+      console.log('Authentication still loading, waiting...');
+      return;
+    }
     
     if (!isAuthenticated) {
+      console.log('User not authenticated, redirecting to login');
       // Store the current URL to return after login
       const currentPath = '/checkout';
       // Redirect to login with return path
@@ -233,6 +239,7 @@ export const ShoppingCartContent = (): JSX.Element => {
       return;
     }
     
+    console.log('User authenticated, proceeding to checkout');
     // Proceed to checkout
     navigate('/checkout');
   };
