@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { access, user } = response.data;
       localStorage.setItem('auth_token', access);
       setUser(user);
-      navigate('/account');
+      // Let calling component handle navigation (e.g., SignIn with redirect support)
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed');
       throw err;
