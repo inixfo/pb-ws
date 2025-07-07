@@ -5,6 +5,7 @@ import numpy as np
 import openpyxl
 import requests
 import os
+import time
 from urllib.parse import urlparse
 from django.core.files import File
 from django.core.files.temp import NamedTemporaryFile
@@ -62,25 +63,57 @@ def is_url(path):
 def save_image_from_path(product, image_path, is_primary=False, display_order=0):
     """Save an image from a path or URL to a ProductImage instance."""
     if not image_path:
+        print("No image path provided")
         return None
         
     try:
         if is_url(image_path):
             # Handle URL
-            img_temp = NamedTemporaryFile(delete=True)
-            response = requests.get(image_path, stream=True)
+            print(f"Attempting to save image from URL: {image_path}")
             
-            if not response.ok:
-                print(f"Failed to download image from URL: {image_path}")
-                return None
-                
+            # Create a temporary file
+            img_temp = NamedTemporaryFile(delete=True)
+            
+            # Add retry logic for better reliability
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    # Increased timeout for slow servers
+                    response = requests.get(image_path, stream=True, timeout=30)
+                    
+                    if response.ok:
+                        break
+                    else:
+                        print(f"Attempt {attempt+1}/{max_retries}: Failed to download, status: {response.status_code}")
+                        if attempt == max_retries - 1:
+                            print(f"Failed to download image from URL after {max_retries} attempts: {image_path}")
+                            return None
+                        time.sleep(1)  # Wait before retrying
+                except Exception as e:
+                    print(f"Attempt {attempt+1}/{max_retries}: Download error: {str(e)}")
+                    if attempt == max_retries - 1:
+                        print(f"Failed to download image from URL after {max_retries} attempts: {str(e)}")
+                        return None
+                    time.sleep(1)  # Wait before retrying
+            
             # Write the image to a temporary file
-            for block in response.iter_content(1024 * 8):
-                if not block:
-                    break
-                img_temp.write(block)
+            total_size = 0
+            try:
+                for block in response.iter_content(1024 * 8):
+                    if not block:
+                        break
+                    img_temp.write(block)
+                    total_size += len(block)
                 
-            img_temp.flush()
+                img_temp.flush()
+                print(f"Downloaded image data: {total_size} bytes")
+                
+                if total_size == 0:
+                    print(f"Error: Downloaded image has zero bytes")
+                    return None
+            except Exception as e:
+                print(f"Error writing image data to temp file: {str(e)}")
+                return None
             
             # Create the product image
             image = ProductImage.objects.create(
@@ -89,15 +122,31 @@ def save_image_from_path(product, image_path, is_primary=False, display_order=0)
                 display_order=display_order
             )
             
-            # Get the filename from the URL
+            # Get the filename from the URL or generate one
             filename = os.path.basename(urlparse(image_path).path)
-            if not filename:
-                filename = f"image_{display_order}.jpg"
-                
+            if not filename or len(filename) < 4:
+                # Get extension from content-type
+                content_type = response.headers.get('content-type', '')
+                ext = 'jpg'  # Default extension
+                if 'png' in content_type:
+                    ext = 'png'
+                elif 'gif' in content_type:
+                    ext = 'gif'
+                elif 'webp' in content_type:
+                    ext = 'webp'
+                    
+                filename = f"image_{product.id}_{display_order}.{ext}"
+            
             # Save the image file
-            image.image.save(filename, File(img_temp))
-            print(f"Successfully saved image from URL: {image_path}")
-            return image
+            try:
+                image.image.save(filename, File(img_temp))
+                print(f"Successfully saved image from URL: {image_path}")
+                return image
+            except Exception as e:
+                print(f"Error saving image file: {str(e)}")
+                return None
+            finally:
+                img_temp.close()
             
         else:
             # For local file paths, try to handle both Windows and Unix paths
@@ -148,14 +197,18 @@ def save_image_from_path(product, image_path, is_primary=False, display_order=0)
             filename = os.path.basename(file_path)
             
             # Open and save the file
-            with open(file_path, 'rb') as f:
-                image.image.save(filename, File(f))
-                
-            print(f"Successfully saved image from file: {file_path}")
-            return image
+            try:
+                with open(file_path, 'rb') as f:
+                    image.image.save(filename, File(f))
+                    
+                print(f"Successfully saved image from file: {file_path}")
+                return image
+            except Exception as e:
+                print(f"Error saving image from file: {str(e)}")
+                return None
             
     except Exception as e:
-        print(f"Error saving image: {str(e)}")
+        print(f"Error in save_image_from_path: {str(e)}")
         return None
 
 
