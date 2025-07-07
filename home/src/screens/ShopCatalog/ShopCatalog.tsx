@@ -882,18 +882,44 @@ export const ShopCatalog = (): JSX.Element => {
         const response = await productService.getBrandsByCategory(slug);
         brandsData = response;
       } else {
-        // For main catalog page, fetch all brands with their category associations
-        console.log('[ShopCatalog fetchBrands] Fetching all brands with categories');
-        const response = await brandService.getAllWithCategories();
-        brandsData = response;
+        // For main catalog page, fetch all brands with their counts
+        console.log('[ShopCatalog fetchBrands] Fetching all brands with counts');
+        // First try to get from filter options which includes counts
+        try {
+          const filterOptions = await productService.getFilterOptions();
+          if (filterOptions && Array.isArray(filterOptions.brands) && filterOptions.brands.length > 0) {
+            brandsData = filterOptions.brands;
+          } else {
+            const response = await brandService.getAllWithCategories();
+            brandsData = response;
+          }
+        } catch (err) {
+          console.error('[ShopCatalog fetchBrands] Error getting brands from filter options:', err);
+          const response = await brandService.getAllWithCategories();
+          brandsData = response;
+        }
       }
       
       console.log('[ShopCatalog fetchBrands] Brands data:', brandsData);
       
       // Process brands data
       if (Array.isArray(brandsData)) {
-        // Sort brands by name
-        const sortedBrands = brandsData.sort((a, b) => a.name.localeCompare(b.name));
+        // Make sure each brand has a count property
+        const processedBrands = brandsData.map(brand => ({
+          ...brand,
+          count: brand.count || brand.product_count || 0
+        }));
+        
+        // Sort brands by count (descending) and then by name
+        const sortedBrands = processedBrands.sort((a, b) => {
+          // First sort by count (brands with products first)
+          if ((b.count || 0) - (a.count || 0) !== 0) {
+            return (b.count || 0) - (a.count || 0);
+          }
+          // Then alphabetically
+          return a.name.localeCompare(b.name);
+        });
+        
         setBrands(sortedBrands);
         
         // Update selected brands state if needed
@@ -1199,6 +1225,189 @@ export const ShopCatalog = (): JSX.Element => {
           )}
         </div>
         
+        {/* Mobile Filters Drawer */}
+        {mobileFiltersVisible && (
+          <div
+            ref={filtersRef}
+            className="fixed inset-0 z-50 bg-white overflow-auto lg:hidden p-4"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Filters</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleMobileFilters}
+              >
+                <XIcon className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            {/* Mobile Filter Content */}
+            <div className="space-y-6">
+              {/* Categories */}
+              <div>
+                <h3 className="text-base font-medium mb-3">Categories</h3>
+                <div className="space-y-3">
+                  {categories.map((category) => (
+                    <div
+                      key={category.id}
+                      className="flex items-center justify-between cursor-pointer group"
+                      onClick={() => handleCategoryClick(category.name)}
+                    >
+                      <div className="flex items-center">
+                        <Checkbox
+                          checked={selectedCategories.includes(category.name)}
+                          onChange={() => {}}
+                          className="mr-2"
+                        />
+                        <span className="text-gray-700 group-hover:text-gray-900">
+                          {category.name}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {category.count || 0}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <Separator />
+              
+              {/* Brands */}
+              <div>
+                <h3 className="text-base font-medium mb-3">Brands</h3>
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {brands.map((brand) => (
+                    <div
+                      key={brand.id}
+                      className="flex items-center justify-between cursor-pointer group"
+                      onClick={() => handleBrandToggle(brand.name, brand.id)}
+                    >
+                      <div className="flex items-center">
+                        <Checkbox
+                          checked={selectedBrands.includes(brand.name)}
+                          onChange={() => {}}
+                          className="mr-2"
+                        />
+                        <span className="text-gray-700 group-hover:text-gray-900">
+                          {brand.name}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500">{brand.count || 0}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <Separator />
+              
+              {/* Price Range */}
+              <div>
+                <h3 className="text-base font-medium mb-3">Price Range</h3>
+                <div className="flex gap-2 mb-2">
+                  <div className="w-1/2 relative">
+                    <DollarSignIcon className="w-4 h-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-500" />
+                    <Input
+                      type="number"
+                      placeholder={priceRange.min.toString()}
+                      className="pl-8 py-3"
+                      value={minPrice}
+                      onChange={(e) => handlePriceChange("min", e.target.value)}
+                      min={priceRange.min}
+                      max={priceRange.max}
+                    />
+                  </div>
+                  <div className="w-1/2 relative">
+                    <DollarSignIcon className="w-4 h-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-500" />
+                    <Input
+                      type="number"
+                      placeholder={priceRange.max.toString()}
+                      className="pl-8 py-3"
+                      value={maxPrice}
+                      onChange={(e) => handlePriceChange("max", e.target.value)}
+                      min={priceRange.min}
+                      max={priceRange.max}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Custom Filters */}
+              {customFields.map((field, index) => (
+                <div key={index}>
+                  <Separator />
+                  <h3 className="text-base font-medium my-3">{field.name}</h3>
+                  <div className="space-y-2">
+                    {field.options.map((option: string, optIndex: number) => (
+                      <div
+                        key={optIndex}
+                        className="flex items-center justify-between cursor-pointer group"
+                        onClick={() => handleCustomFilterChange(field.name, option)}
+                      >
+                        <div className="flex items-center">
+                          <Checkbox
+                            checked={(customFilterValues[field.name] || []).includes(option)}
+                            onChange={() => {}}
+                            className="mr-2"
+                          />
+                          <span className="text-gray-700 group-hover:text-gray-900">
+                            {option}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              
+              {/* Colors */}
+              {availableColors.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="text-base font-medium mb-3">Colors</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {availableColors.map((color, index) => (
+                        <div
+                          key={index}
+                          className={`w-8 h-8 rounded-full cursor-pointer ${
+                            selectedColors.includes(color.name)
+                              ? "ring-2 ring-offset-2 ring-black"
+                              : ""
+                          }`}
+                          style={{
+                            background: color.color,
+                            border: color.name.toLowerCase() === "white" ? "1px solid #d1d5db" : "none",
+                          }}
+                          onClick={() => handleColorClick(color.name)}
+                          title={color.name}
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              <div className="flex justify-between mt-6">
+                <Button
+                  variant="outline"
+                  className="w-[48%]"
+                  onClick={handleClearAll}
+                >
+                  Clear all
+                </Button>
+                <Button
+                  className="w-[48%] bg-primarymain text-white"
+                  onClick={toggleMobileFilters}
+                >
+                  Apply filters
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Add "Did you mean" section */}
         {didYouMean && (
           <div className="mt-4 p-4 bg-blue-50 rounded-lg text-center">
@@ -1262,15 +1471,30 @@ export const ShopCatalog = (): JSX.Element => {
             {brands.length > 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <h3 className="text-base font-semibold text-gray-900 mb-2">Brand</h3>
-                <div className="flex flex-col gap-2">
-                  {brands.map((brand) => (
-                    <label key={brand.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                      <Checkbox checked={selectedBrands.includes(brand.name)} onChange={() => handleBrandToggle(brand.name, brand.id)} />
-                      <span>{brand.name}</span>
-                      <span className="ml-auto text-xs text-gray-400">{brand.count || 0}</span>
-                    </label>
-                  ))}
+                <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
+                  {brands
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((brand) => (
+                      <label key={brand.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                        <Checkbox checked={selectedBrands.includes(brand.name)} onChange={() => handleBrandToggle(brand.name, brand.id)} />
+                        <span>{brand.name}</span>
+                        <span className="ml-auto text-xs text-gray-400">{brand.count || 0}</span>
+                      </label>
+                    ))
+                  }
                 </div>
+                {brands.length > 5 && (
+                  <button 
+                    className="text-sm text-primarymain mt-2 flex items-center justify-center w-full"
+                    onClick={() => setShowAllBrands(!showAllBrands)}
+                  >
+                    {showAllBrands ? (
+                      <>Show Less <ChevronUpIcon className="w-4 h-4 ml-1" /></>
+                    ) : (
+                      <>Show All <ChevronDownIcon className="w-4 h-4 ml-1" /></>
+                    )}
+                  </button>
+                )}
               </div>
             )}
             

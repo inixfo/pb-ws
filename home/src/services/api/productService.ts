@@ -322,13 +322,28 @@ class ProductService {
       // If we have brands with counts from filter options
       if (filterOptions && Array.isArray(filterOptions.brands)) {
         console.log('[productService.getBrandsByCategory] Success from filter options:', filterOptions.brands.length, 'brands found');
-        return filterOptions.brands;
+        // Make sure each brand has a count property
+        return filterOptions.brands.map((brand: any) => ({
+          ...brand,
+          count: brand.count || brand.product_count || 0
+        }));
       }
       
       // If that fails, try to get all brands and filter them by category
       try {
+        // Try the dedicated endpoint for brands by category if it exists
+        try {
+          const brandsByCategoryResponse = await publicApi.get(`${API_URL}/brands/by-category/${categorySlug}/`);
+          if (brandsByCategoryResponse.data && Array.isArray(brandsByCategoryResponse.data)) {
+            console.log('[productService.getBrandsByCategory] Success from brands by category endpoint:', brandsByCategoryResponse.data.length, 'brands found');
+            return brandsByCategoryResponse.data;
+          }
+        } catch (endpointErr) {
+          console.log('[productService.getBrandsByCategory] Dedicated endpoint not available, trying alternative method');
+        }
+        
         // Attempt to get brands with their category associations
-        const response = await publicApi.get(`${API_URL}/brands/?with_categories=true`);
+        const response = await publicApi.get(`${API_URL}/brands/?with_categories=true&category_slug=${categorySlug}`);
         
         if (response.data && Array.isArray(response.data.results)) {
           // Filter brands that belong to this category
