@@ -24,6 +24,7 @@ import { TrackOrderLookup } from "./screens/OrderTracking/TrackOrderLookup";
 import { AboutUs } from "./screens/AboutUs/AboutUs";
 import { TermsAndConditions } from "./screens/TermsAndConditions/TermsAndConditions";
 import { PrivacyPolicy } from "./screens/PrivacyPolicy/PrivacyPolicy";
+import { SearchResults } from "./screens/SearchResults/SearchResults";
 import { useSiteSettings } from "./contexts/SiteSettingsContext";
 
 // ScrollToTop component to reset scroll position when navigating
@@ -132,6 +133,7 @@ const App = () => {
         <Route path="/category/:slug" element={<ShopCatalog />} />
         <Route path="/catalog" element={<ShopCatalog />} />
         <Route path="/catalog/:slug" element={<ShopCatalog />} />
+        <Route path="/search" element={<SearchResults />} />
         
         {/* Promotional Category Pages */}
         <Route path="/best-sellers" element={<BestSellers />} />

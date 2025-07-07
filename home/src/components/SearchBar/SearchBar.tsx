@@ -75,7 +75,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       if (onSearch) {
         onSearch(searchQuery.trim());
       } else {
-        navigate(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
+        // Navigate to the search results page
+        navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       }
     }
   };

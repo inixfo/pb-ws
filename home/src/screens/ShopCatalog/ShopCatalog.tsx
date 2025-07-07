@@ -169,7 +169,7 @@ export const ShopCatalog = (): JSX.Element => {
     // Reset pagination when slug changes
     setCurrentPage(1);
     
-    // Set page title based on slug
+    // Set page title based on slug or search query
     if (slug) {
       // Convert slug to title case
       const title = slug
@@ -177,14 +177,21 @@ export const ShopCatalog = (): JSX.Element => {
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
       setPageTitle(title);
+    } else if (searchQuery) {
+      setPageTitle(`Search results for "${searchQuery}"`);
     } else {
       setPageTitle('All Products');
     }
-  }, [slug]);
+  }, [slug, searchQuery]);
   
   // Effect to update filter tags when filters change
   useEffect(() => {
     const tags: string[] = [];
+    
+    // Add search tag if there's a search query
+    if (searchQuery) {
+      tags.push(`Search: ${searchQuery}`);
+    }
     
     // Add brand tags
     selectedBrands.forEach(brand => {
@@ -214,7 +221,7 @@ export const ShopCatalog = (): JSX.Element => {
     });
     
     setFilterTags(tags);
-  }, [selectedBrands, selectedColors, minPrice, maxPrice, customFilterValues, priceRange]);
+  }, [selectedBrands, selectedColors, minPrice, maxPrice, customFilterValues, priceRange, searchQuery]);
 
   // Handlers
   const handleBrandToggle = (brand: string, brandId: number) => {
@@ -574,9 +581,35 @@ export const ShopCatalog = (): JSX.Element => {
           apiParams.ordering = params.ordering;
         }
         
+        // If we have a search query, use the search service
         if (searchQuery) {
           console.log('[ShopCatalog fetchProducts] Performing search with query:', searchQuery, 'and params:', apiParams);
-          return await searchService.search(searchQuery, apiParams);
+          try {
+            // Use the search service from our imports
+            const searchResponse = await searchService.search(searchQuery, apiParams);
+            
+            // Check if we got search results with a search_id for analytics
+            if (searchResponse.search_id) {
+              setSearchId(searchResponse.search_id);
+              console.log('[ShopCatalog fetchProducts] Setting search ID for analytics:', searchResponse.search_id);
+            }
+            
+            // Check if we got "did you mean" suggestions
+            if (searchResponse.did_you_mean && !searchResponse.results?.length) {
+              setDidYouMean(searchResponse.did_you_mean);
+              console.log('[ShopCatalog fetchProducts] Setting "did you mean" suggestion:', searchResponse.did_you_mean);
+            }
+            
+            return searchResponse;
+          } catch (searchError) {
+            console.error('[ShopCatalog fetchProducts] Error in search service:', searchError);
+            // Fall back to regular product service
+            console.log('[ShopCatalog fetchProducts] Falling back to regular product API with search param');
+            return await productService.getAll({
+              ...apiParams,
+              search: searchQuery
+            });
+          }
         } else if (slug) {
           const categoryParams = { ...apiParams, category_slug: slug };
           console.log('[ShopCatalog fetchProducts] Fetching by category slug:', slug, 'and params:', categoryParams);

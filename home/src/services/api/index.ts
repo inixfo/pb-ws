@@ -11,6 +11,7 @@ import categoryService from './categoryService';
 import brandService from './brandService';
 import smsService from './smsService';
 import siteSettingsService from './siteSettingsService';
+import searchService from './searchService';
 
 export {
   productService,
@@ -25,5 +26,6 @@ export {
   categoryService,
   brandService,
   smsService,
-  siteSettingsService
+  siteSettingsService,
+  searchService
 }; 
