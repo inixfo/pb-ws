@@ -103,55 +103,56 @@ export const ShopCatalog = (): JSX.Element => {
   const [didYouMean, setDidYouMean] = useState<string | null>(null);
   const [searchId, setSearchId] = useState<number | null>(null);
 
-  // Initial data fetching
+  // Add a state to track if initial filter sync from URL is done
+  const [initialFilterSyncDone, setInitialFilterSyncDone] = useState(false);
+
+  // Initial data fetching: fetch categories and brands only
   useEffect(() => {
-    console.log('[ShopCatalog] Initial mount effect running. Verifying parameters:');
-    console.log('- URL slug parameter:', slug);
-    console.log('- Location pathname:', location.pathname);
-    console.log('- Search query:', searchQuery);
-    
-    // Check if we're using the correct route pattern
-    if (location.pathname.startsWith('/catalog/') && slug) {
-      console.log('[ShopCatalog] Detected correct /catalog/:slug route pattern');
-    } else if (location.pathname.startsWith('/category/') && slug) {
-      console.log('[ShopCatalog] Detected /category/:slug route pattern');
-    } else if (location.pathname === '/catalog' && !slug) {
-      console.log('[ShopCatalog] Detected base /catalog route (no slug)');
-    } else {
-      console.warn('[ShopCatalog] Unknown route pattern:', location.pathname);
-    }
-    
-    // Always fetch categories and brands first
     fetchCategoriesWithCount();
     fetchBrands();
-    
-    // Fetch products immediately without waiting for filters
-    fetchProducts();
+    // Do NOT fetch products here
   }, []);
 
-  // --- Add: Sync category/brand query params to filter state ---
+  // Sync category/brand query params to filter state, then mark sync as done
   useEffect(() => {
     // Only run if category or brand param is present
-    if (!categoryParam && !brandParam) return;
+    if (!categoryParam && !brandParam) {
+      setInitialFilterSyncDone(true); // No sync needed
+      return;
+    }
+    let didSet = false;
     // Set category filter if category param is present
     if (categoryParam && categories.length > 0) {
-      const catObj = categories.find(c => c.slug === categoryParam);
+      const catObj = categories.find((c: any) => c.slug === categoryParam);
       if (catObj) {
         setSelectedCategories([catObj.name]);
+        didSet = true;
       }
     }
     // Set brand filter if brand param is present
     if (brandParam && brands.length > 0) {
-      const brandObj = brands.find(b => b.slug === brandParam);
+      const brandObj = brands.find((b: any) => b.slug === brandParam);
       if (brandObj) {
         setSelectedBrands([brandObj.name]);
         setSelectedBrandIds([brandObj.id]);
+        didSet = true;
       }
     }
-    // If only brand param is present, but not in brands list yet, wait for brands to load
-    // If only category param is present, but not in categories list yet, wait for categories to load
-    // Product fetching is triggered by state change
+    // If we set filters, wait for them to propagate before marking sync done
+    if (didSet) {
+      // Wait for next tick to ensure state is set
+      setTimeout(() => setInitialFilterSyncDone(true), 0);
+    } else if (categories.length > 0 && brands.length > 0) {
+      // If nothing to sync, mark as done
+      setInitialFilterSyncDone(true);
+    }
   }, [categoryParam, brandParam, categories, brands]);
+
+  // Fetch products after initial filter sync is done (URL-driven or not)
+  useEffect(() => {
+    if (!initialFilterSyncDone) return;
+    fetchProducts();
+  }, [initialFilterSyncDone, slug, currentPage, sort, selectedBrands, selectedColors, minPrice, maxPrice, searchQuery, JSON.stringify(customFilterValues)]);
 
   useEffect(() => {
     console.log('[ShopCatalog useEffect fetchFilterOptions trigger] Slug:', slug, 'Categories count:', categories.length);
@@ -171,21 +172,13 @@ export const ShopCatalog = (): JSX.Element => {
     }
   }, [priceRange, filterTags]);
 
-  // Effect to fetch products when filters change
+  // Effect to fetch products when filters change (for normal filter UI interaction)
   useEffect(() => {
-    console.log('Filter/sort dependency changed, fetching products. Sort:', sort);
-    fetchProducts();
-  }, [
-    slug, 
-    currentPage, 
-    sort, 
-    selectedBrands, 
-    selectedColors, 
-    minPrice, 
-    maxPrice, 
-    searchQuery, 
-    JSON.stringify(customFilterValues)
-  ]);
+    // Only run if not using query params (to avoid double fetch)
+    if (!categoryParam && !brandParam) {
+      fetchProducts();
+    }
+  }, [slug, currentPage, sort, selectedBrands, selectedColors, minPrice, maxPrice, searchQuery, JSON.stringify(customFilterValues)]);
   
   // Effect to fetch categories and filter options when slug changes
   useEffect(() => {
@@ -1721,4 +1714,5 @@ export const ShopCatalog = (): JSX.Element => {
       <CtaFooterByAnima />
     </div>
   );
+};
 };
