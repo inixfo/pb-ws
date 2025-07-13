@@ -1715,4 +1715,3 @@ export const ShopCatalog = (): JSX.Element => {
     </div>
   );
 };
-};
