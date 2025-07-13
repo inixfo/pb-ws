@@ -430,6 +430,9 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
     fetchBrandsForCategories();
   }, [categories]);
 
+  // --- Add state for mobile accordion ---
+  const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
+
   return (
     <header className="flex flex-col items-center w-full">
       {/* Top navigation bar */}
@@ -655,24 +658,18 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                   <>
                     {categories.map((category) => (
                       <div key={category.id} className="relative group">
-                        <a
-                          href={`/catalog/${category.slug}`}
-                          className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2 cursor-pointer"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setMobileMenuOpen(false);
-                            navigate(`/catalog/${category.slug}`);
-                          }}
+                        <button
+                          className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2 w-full justify-between"
+                          onClick={() => setExpandedMobileCategory(expandedMobileCategory === category.slug ? null : category.slug)}
                         >
-                          <img 
-                            className="w-4 h-4" 
-                            alt={category.name} 
-                            src={category.image || category.icon || `/computer.svg`} 
-                          />
-                          {category.name}
-                        </a>
-                        {/* Brands dropdown (mobile) */}
-                        {brandsByCategory[category.slug] && brandsByCategory[category.slug].length > 0 && (
+                          <span className="flex items-center gap-2">
+                            <img className="w-4 h-4" alt={category.name} src={category.image || category.icon || `/computer.svg`} />
+                            {category.name}
+                          </span>
+                          <ChevronDownIcon className={`w-4 h-4 transition-transform ${expandedMobileCategory === category.slug ? 'rotate-180' : ''}`} />
+                        </button>
+                        {/* Brands accordion (mobile) */}
+                        {expandedMobileCategory === category.slug && brandsByCategory[category.slug] && brandsByCategory[category.slug].length > 0 && (
                           <div className="ml-4 flex flex-col gap-1 mt-1">
                             {brandsByCategory[category.slug].map((brand) => (
                               <a
@@ -692,6 +689,20 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
                               </a>
                             ))}
                           </div>
+                        )}
+                        {/* If no brands, clicking category navigates directly */}
+                        {expandedMobileCategory === category.slug && (!brandsByCategory[category.slug] || brandsByCategory[category.slug].length === 0) && (
+                          <a
+                            href={`/catalog/${category.slug}`}
+                            className="px-3 py-2 text-white-80 hover:bg-gray-600 rounded-lg flex items-center gap-2 cursor-pointer ml-4"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setMobileMenuOpen(false);
+                              navigate(`/catalog/${category.slug}`);
+                            }}
+                          >
+                            See all {category.name}
+                          </a>
                         )}
                       </div>
                     ))}
@@ -895,36 +906,55 @@ export const HeaderByAnima = ({ showHeroSection = true }: { showHeroSection?: bo
           <div className="hidden md:inline-flex items-start p-3 bg-white-100 rounded-[0px_0px_16px_16px] border border-solid border-[#eef1f6] shadow-shadow-light-mode-medium z-10 relative">
             <div className="flex flex-col items-start gap-1.5">
               {categories.map((item, index) => (
-                <a
-                  key={index}
-                  href={`/catalog/${item.slug}`}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg w-full cursor-pointer hover:bg-gray-100"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    console.log(`[DEBUG] Sidebar category clicked: ${item.name}, navigating to: /catalog/${item.slug}`);
-                    // Close the categories dropdown
-                    setShowCategories(false);
-                    // Use React Router navigation
-                    navigate(`/catalog/${item.slug}`);
-                  }}
-                  onMouseEnter={() => setHoveredCategory(item.name)}
-                >
-                  <img className="w-5 h-5" alt={item.name} src={item.image || item.icon || '/default-category.svg'} />
-                  <span className="font-medium text-gray-700 text-sm w-[198px]">
-                    {item.name}
-                  </span>
-                  <ChevronRightIcon className="w-4 h-4 text-gray-500" />
-                </a>
+                <div key={index} className="relative group w-full">
+                  <a
+                    href={`/catalog/${item.slug}`}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg w-full cursor-pointer hover:bg-gray-100"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowCategories(false);
+                      navigate(`/catalog/${item.slug}`);
+                    }}
+                    onMouseEnter={() => setHoveredCategory(item.name)}
+                  >
+                    <img className="w-5 h-5" alt={item.name} src={item.image || item.icon || '/default-category.svg'} />
+                    <span className="font-medium text-gray-700 text-sm w-[198px]">
+                      {item.name}
+                    </span>
+                    <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+                  </a>
+                  {/* Brands dropdown (desktop sidebar) */}
+                  {brandsByCategory[item.slug] && brandsByCategory[item.slug].length > 0 && (
+                    <div className="absolute left-full top-0 mt-0 bg-white-100 rounded-xl shadow-lg border border-gray-100 z-30 min-w-[200px] hidden group-hover:block">
+                      <div className="flex flex-col p-2">
+                        {brandsByCategory[item.slug].map((brand) => (
+                          <a
+                            key={brand.id}
+                            href={`/catalog?category=${item.slug}&brand=${brand.slug}`}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg w-full cursor-pointer hover:bg-gray-50 text-gray-700"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setShowCategories(false);
+                              navigate(`/catalog?category=${item.slug}&brand=${brand.slug}`);
+                            }}
+                          >
+                            {brand.logo && (
+                              <img src={brand.logo} alt={brand.name} className="w-5 h-5 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                            )}
+                            <span className="text-sm">{brand.name}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
-              
-              {/* See All Categories link in hero section */}
               <a
                 href="/catalog"
                 className="flex items-center gap-3 px-3 py-2 rounded-lg w-full cursor-pointer hover:bg-gray-100 mt-1 border-t border-gray-100 pt-3"
                 onClick={(e) => {
                   e.preventDefault();
-                  console.log(`[DEBUG] Sidebar See All Products clicked, navigating to: /catalog`);
-                  // Use React Router navigation
+                  setShowCategories(false);
                   navigate('/catalog');
                 }}
               >
