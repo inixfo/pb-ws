@@ -952,62 +952,67 @@ export const ProductNavbarSection = (): JSX.Element => {
                                     // Show calculated EMI details from the plan if API data not available
                                     product.emi_plans
                                       .filter(plan => plan.id === selectedEmiPlan)
-                                      .map(plan => (
-                                        <div key={plan.id} className="text-sm space-y-1">
-                                          <div className="flex justify-between">
-                                            <span>Duration:</span>
-                                            <span className="font-medium">{plan.duration_months} months</span>
-                                          </div>
-                                          <div className="flex justify-between">
-                                            <span>Interest Rate:</span>
-                                            <span className="font-medium">{plan.interest_rate}%</span>
-                                          </div>
-                                          {(plan.down_payment_percentage ?? 0) > 0 && (
+                                      .map(plan => {
+                                        const productPrice = Number(selectedVariation?.price || product.price || 0);
+                                        const downPaymentPercentage = Number(plan.down_payment_percentage || 0);
+                                        const interestRate = Number(plan.interest_rate || 0) / 100;
+                                        const tenureMonths = Number(plan.duration_months || 12);
+                                        let totalPayable = 0;
+                                        if (plan.plan_type === 'cardless_emi') {
+                                          const interest = productPrice * interestRate;
+                                          const totalWithInterest = productPrice + interest;
+                                          totalPayable = totalWithInterest;
+                                        } else {
+                                          totalPayable = productPrice;
+                                        }
+                                        return (
+                                          <div key={plan.id} className="text-sm space-y-1">
                                             <div className="flex justify-between">
-                                              <span>Down Payment:</span>
-                                              <span className="font-medium">{(plan.down_payment_percentage ?? 0)}% (৳{
-                                                (() => {
-                                                  const productPrice = Number(selectedVariation?.price || product.price || 0);
-                                                  const downPaymentPercentage = Number(plan.down_payment_percentage || 0);
-                                                  const interestRate = Number(plan.interest_rate || 0) / 100;
-                                                  
-                                                  // For cardless EMI: calculate down payment on total (price + interest)
-                                                  if (plan.plan_type === 'cardless_emi') {
+                                              <span>Duration:</span>
+                                              <span className="font-medium">{plan.duration_months} months</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                              <span>Interest Rate:</span>
+                                              <span className="font-medium">{plan.interest_rate}%</span>
+                                            </div>
+                                            {(plan.down_payment_percentage ?? 0) > 0 && (
+                                              <div className="flex justify-between">
+                                                <span>Down Payment:</span>
+                                                <span className="font-medium">{(plan.down_payment_percentage ?? 0)}% (৳{
+                                                  (() => {
+                                                    if (plan.plan_type === 'cardless_emi') {
+                                                      const interest = productPrice * interestRate;
+                                                      const totalWithInterest = productPrice + interest;
+                                                      return Math.round(totalWithInterest * downPaymentPercentage / 100);
+                                                    } else {
+                                                      return Math.round(productPrice * downPaymentPercentage / 100);
+                                                    }
+                                                  })()
+                                                })</span>
+                                              </div>
+                                            )}
+                                            {plan.plan_type === 'cardless_emi' && (
+                                              <div className="flex justify-between">
+                                                <span>Monthly Installment:</span>
+                                                <span className="font-medium">৳{
+                                                  (() => {
                                                     const interest = productPrice * interestRate;
                                                     const totalWithInterest = productPrice + interest;
-                                                    return Math.round(totalWithInterest * downPaymentPercentage / 100);
-                                                  } else {
-                                                    // For card EMI: calculate down payment directly on product price
-                                                    return Math.round(productPrice * downPaymentPercentage / 100);
-                                                  }
-                                                })()
-                                              })</span>
+                                                    const downPayment = totalWithInterest * (downPaymentPercentage / 100);
+                                                    const financedAmount = totalWithInterest - downPayment;
+                                                    const monthlyInstallment = financedAmount / tenureMonths;
+                                                    return Math.round(monthlyInstallment);
+                                                  })()
+                                                }</span>
+                                              </div>
+                                            )}
+                                            <div className="flex justify-between font-medium border-t pt-1 mt-1">
+                                              <span>Total Payable:</span>
+                                              <span>৳{Math.round(totalPayable)}</span>
                                             </div>
-                                          )}
-                                          {plan.plan_type === 'cardless_emi' && (
-                                            <div className="flex justify-between">
-                                              <span>Monthly Installment:</span>
-                                              <span className="font-medium">৳{
-                                                (() => {
-                                                  const productPrice = Number(selectedVariation?.price || product.price || 0);
-                                                  const downPaymentPercentage = Number(plan.down_payment_percentage || 0) / 100;
-                                                  const interestRate = Number(plan.interest_rate || 0) / 100;
-                                                  const tenureMonths = Number(plan.duration_months || 12);
-                                                  
-                                                  // Calculate using correct cardless EMI formula
-                                                  const interest = productPrice * interestRate;
-                                                  const totalWithInterest = productPrice + interest;
-                                                  const downPayment = totalWithInterest * downPaymentPercentage;
-                                                  const financedAmount = totalWithInterest - downPayment;
-                                                  const monthlyInstallment = financedAmount / tenureMonths;
-                                                  
-                                                  return Math.round(monthlyInstallment);
-                                                })()
-                                              }</span>
-                                            </div>
-                                          )}
-                                        </div>
-                                      ))
+                                          </div>
+                                        );
+                                      })
                                   )}
                                 </div>
                               )}
