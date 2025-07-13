@@ -28,6 +28,9 @@ export const ShopCatalog = (): JSX.Element => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const searchQuery = queryParams.get('search');
+  // --- Add: Read category and brand from query params ---
+  const categoryParam = queryParams.get('category');
+  const brandParam = queryParams.get('brand');
   
   console.log('[ShopCatalog] COMPONENT MOUNTED. Slug from useParams:', slug, 'Search query:', searchQuery, 'Full pathname:', location.pathname);
 
@@ -125,6 +128,30 @@ export const ShopCatalog = (): JSX.Element => {
     // Fetch products immediately without waiting for filters
     fetchProducts();
   }, []);
+
+  // --- Add: Sync category/brand query params to filter state ---
+  useEffect(() => {
+    // Only run if category or brand param is present
+    if (!categoryParam && !brandParam) return;
+    // Set category filter if category param is present
+    if (categoryParam && categories.length > 0) {
+      const catObj = categories.find(c => c.slug === categoryParam);
+      if (catObj) {
+        setSelectedCategories([catObj.name]);
+      }
+    }
+    // Set brand filter if brand param is present
+    if (brandParam && brands.length > 0) {
+      const brandObj = brands.find(b => b.slug === brandParam);
+      if (brandObj) {
+        setSelectedBrands([brandObj.name]);
+        setSelectedBrandIds([brandObj.id]);
+      }
+    }
+    // If only brand param is present, but not in brands list yet, wait for brands to load
+    // If only category param is present, but not in categories list yet, wait for categories to load
+    // Product fetching is triggered by state change
+  }, [categoryParam, brandParam, categories, brands]);
 
   useEffect(() => {
     console.log('[ShopCatalog useEffect fetchFilterOptions trigger] Slug:', slug, 'Categories count:', categories.length);
