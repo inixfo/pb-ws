@@ -1068,7 +1068,7 @@ def advanced_search(request):
     # Split search term into keywords for more comprehensive search
     keywords = search_term.lower().split()
     
-    # Build a comprehensive search query
+    # Build a comprehensive search query using OR logic
     search_query = Q()
     
     for keyword in keywords:
@@ -1081,7 +1081,7 @@ def advanced_search(request):
             Q(sku__icontains=keyword) |
             Q(model_number__icontains=keyword)
         )
-        search_query &= keyword_query
+        search_query |= keyword_query  # Use OR instead of AND
     
     # Also search for the complete search term
     complete_term_query = (
@@ -1178,7 +1178,7 @@ def autocomplete(request):
     # Get products matching the query prefix or containing keywords
     keywords = query.lower().split()
     
-    # Build search query for products
+    # Build search query for products using OR logic
     product_query = Q()
     for keyword in keywords:
         product_query |= (

@@ -115,10 +115,10 @@ export const TrendingProductsSection = (): JSX.Element => {
     
     if (currentPath === targetPath) {
       // If we're already on the same product page, force a refresh
-      fetchProduct(targetId);
+      window.location.reload();
     } else {
-      // Navigate to the new product page
-      navigate(targetPath);
+      // Navigate to the new product page with full page reload to ensure fresh data
+      window.location.href = targetPath;
     }
   };
 
@@ -132,10 +132,10 @@ export const TrendingProductsSection = (): JSX.Element => {
     
     if (currentPath === targetPath) {
       // If we're already on the same product page, force a refresh
-      fetchProduct(targetId);
+      window.location.reload();
     } else {
-      // Navigate to the new product page
-      navigate(targetPath);
+      // Navigate to the new product page with full page reload to ensure fresh data
+      window.location.href = targetPath;
     }
   };
 

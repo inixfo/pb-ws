@@ -678,22 +678,26 @@ export const ShopCatalog = (): JSX.Element => {
           console.warn('[ShopCatalog fetchProducts] No ordering parameter found in baseParams');
         }
         
-        // Add other filter parameters
-        Object.entries(baseParams).forEach(([key, value]) => {
-          if (key !== 'page' && key !== 'ordering' && key !== 'brandIds' && key !== 'brandSlugs') {
-            // For all parameters, just use the key-value pair directly
-            endpoint += `&${key}=${encodeURIComponent(String(value))}`;
-          }
-        });
-        
-        // Special handling for multiple brand selection
-        if (baseParams.brandSlugs && Array.isArray(baseParams.brandSlugs) && baseParams.brandSlugs.length > 0) {
+        // Add brand filtering - prioritize URL parameter over selected brands
+        if (brandParam) {
+          // Use the brand from URL parameter
+          endpoint += `&brand__slug=${encodeURIComponent(brandParam)}`;
+          console.log('[ShopCatalog fetchProducts] Adding brand from URL param to direct API call:', brandParam);
+        } else if (baseParams.brandSlugs && Array.isArray(baseParams.brandSlugs) && baseParams.brandSlugs.length > 0) {
           // Use the brand__slug__in filter for multiple brands
           endpoint += `&brand__slug__in=${encodeURIComponent(baseParams.brandSlugs.join(','))}`;
         } else if (baseParams.brandIds && Array.isArray(baseParams.brandIds) && baseParams.brandIds.length === 1) {
           // Use the brand filter for single brand
           endpoint += `&brand=${encodeURIComponent(String(baseParams.brandIds[0]))}`;
         }
+        
+        // Add other filter parameters
+        Object.entries(baseParams).forEach(([key, value]) => {
+          if (key !== 'page' && key !== 'ordering' && key !== 'brandIds' && key !== 'brandSlugs' && key !== 'brand__slug') {
+            // For all parameters, just use the key-value pair directly
+            endpoint += `&${key}=${encodeURIComponent(String(value))}`;
+          }
+        });
         
         console.log(`[ShopCatalog fetchProducts] Direct API call to ${endpoint}`);
         const directResponse = await axios.get(endpoint, { 

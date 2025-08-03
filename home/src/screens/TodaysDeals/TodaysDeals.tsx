@@ -86,6 +86,17 @@ export const TodaysDeals = (): JSX.Element => {
         console.log('Filter data loaded:', { categories: categories.length, brands: brands.length });
         setAllCategories(categories);
         setAllBrands(brands);
+        
+        // Populate the filter data for the sidebar
+        if (categories.length > 0) {
+          setCategories(categories);
+        }
+        if (brands.length > 0) {
+          setBrands(brands);
+        }
+        
+        // Set default price range
+        setPriceRange({ min: 0, max: 5000 });
       } catch (err) {
         console.error('Error loading filter data:', err);
       }
@@ -102,62 +113,19 @@ export const TodaysDeals = (): JSX.Element => {
         const data = await productService.getTodaysDeals();
         const products = Array.isArray(data) ? data : data.results || [];
         setProducts(products);
-        console.log('Fetched today\'s deals:', products.length);
-        
-        // Update filter data based on the products
-        if (products.length > 0) {
-          // Set total pages based on product count (assuming 9 per page)
-          setTotalPages(Math.ceil(products.length / 9));
-          
-          // Extract and count categories - use allCategories if available, otherwise fetch
-          let categoriesToUse = allCategories;
-          if (categoriesToUse.length === 0) {
-            try {
-              const { categories } = await fetchFilterData();
-              categoriesToUse = categories;
-              setAllCategories(categories);
-            } catch (err) {
-              console.error('Error fetching categories for filtering:', err);
-            }
-          }
-          
-          if (categoriesToUse.length > 0) {
-            const categoriesWithCounts = countProductsByCategory(products, categoriesToUse);
-            setCategories(categoriesWithCounts);
-            console.log('Categories with counts:', categoriesWithCounts.length);
-          }
-          
-          // Extract and count brands - use allBrands if available, otherwise fetch
-          let brandsToUse = allBrands;
-          if (brandsToUse.length === 0) {
-            try {
-              const { brands } = await fetchFilterData();
-              brandsToUse = brands;
-              setAllBrands(brands);
-            } catch (err) {
-              console.error('Error fetching brands for filtering:', err);
-            }
-          }
-          
-          if (brandsToUse.length > 0) {
-            const brandsWithCounts = countProductsByBrand(products, brandsToUse);
-            setBrands(brandsWithCounts);
-            console.log('Brands with counts:', brandsWithCounts.length);
-          }
-          
-          // Extract colors
-          const colorOptions = extractColorsFromProducts(products);
-          setColors(colorOptions);
-          console.log('Color options:', colorOptions.length);
-          
-          // Find price range
-          const { min, max } = findPriceRange(products);
-          setPriceRange({ min, max });
-          setMinPrice(min.toString());
-          setMaxPrice(max.toString());
-        }
-        
         setError(null);
+        
+        // Extract colors from products for filter
+        const productColors = extractColorsFromProducts(products);
+        setColors(productColors);
+        
+        // Find price range from products
+        const range = findPriceRange(products);
+        setPriceRange(range);
+        
+        // Set default price inputs
+        setMinPrice(range.min.toString());
+        setMaxPrice(range.max.toString());
       } catch (err) {
         console.error('Error fetching today\'s deals:', err);
         setError('Failed to load today\'s deals');
@@ -167,17 +135,8 @@ export const TodaysDeals = (): JSX.Element => {
       }
     };
     
-    // Only fetch products if we have filter data or if filter data loading failed
-    if (allCategories.length > 0 || allBrands.length > 0) {
-      fetchTodaysDeals();
-    } else {
-      // If filter data is still loading, wait a bit and try again
-      const timer = setTimeout(() => {
-        fetchTodaysDeals();
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [allCategories, allBrands]);
+    fetchTodaysDeals();
+  }, []);
 
   // Filter products based on selected filters
   const filteredProducts = React.useMemo(() => {
