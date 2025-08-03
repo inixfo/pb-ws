@@ -11,8 +11,9 @@ import { Separator } from "../../../../components/ui/separator";
 import { StarRating } from "../../../../components/ui/StarRating";
 import { productService } from '../../../../services/api';
 import { Product, ProductImage } from '../../../../types/products';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from "../../../../context/CartContext";
+import { useProduct } from "../../../../contexts/ProductContext";
 import "./TrendingProductsSection.css";
 
 // Helper function to get image URL from product
@@ -31,7 +32,8 @@ export const TrendingProductsSection = (): JSX.Element => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const location = useLocation();
+  const { addToCart, fetchProduct } = useProduct();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visibleProducts, setVisibleProducts] = useState(4);
@@ -104,19 +106,36 @@ export const TrendingProductsSection = (): JSX.Element => {
   }, []);
 
   const handleProductClick = (productId: number, slug: string) => {
-    if (slug && slug.trim() !== '') {
-      navigate(`/products/${slug}`);
+    // Force refresh the product data when navigating to a new product
+    const targetId = slug && slug.trim() !== '' ? slug : productId.toString();
+    
+    // Check if we're already on the same product page
+    const currentPath = location.pathname;
+    const targetPath = `/products/${targetId}`;
+    
+    if (currentPath === targetPath) {
+      // If we're already on the same product page, force a refresh
+      fetchProduct(targetId);
     } else {
-      navigate(`/products/${productId}`);
+      // Navigate to the new product page
+      navigate(targetPath);
     }
   };
 
   const handleAddToCart = (e: React.MouseEvent, productId: number, slug: string) => {
     e.stopPropagation();
-    if (slug && slug.trim() !== '') {
-      navigate(`/products/${slug}`);
+    const targetId = slug && slug.trim() !== '' ? slug : productId.toString();
+    
+    // Check if we're already on the same product page
+    const currentPath = location.pathname;
+    const targetPath = `/products/${targetId}`;
+    
+    if (currentPath === targetPath) {
+      // If we're already on the same product page, force a refresh
+      fetchProduct(targetId);
     } else {
-      navigate(`/products/${productId}`);
+      // Navigate to the new product page
+      navigate(targetPath);
     }
   };
 

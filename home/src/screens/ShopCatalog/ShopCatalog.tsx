@@ -505,38 +505,47 @@ export const ShopCatalog = (): JSX.Element => {
     setSearchId(null);
 
     try {
-      // Only include filters that are actually selected
+      setLoading(true);
+      setError(null);
+      
+      // Build base parameters
       const baseParams: Record<string, any> = {
         page: currentPage,
+        page_size: 9,
       };
       
-      // Add sorting parameter based on selected sort option
-      console.log('[ShopCatalog fetchProducts] Setting sort ordering for:', sort);
-      switch (sort) {
-        case 'popular':
-          baseParams.ordering = '-popularity_score';
-          console.log('[ShopCatalog fetchProducts] Using popularity sort: -popularity_score');
-          break;
-        case 'new':
-          baseParams.ordering = '-created_at';
-          console.log('[ShopCatalog fetchProducts] Using newest sort: -created_at');
-          break;
-        case 'price_low':
-          baseParams.ordering = 'base_price';
-          console.log('[ShopCatalog fetchProducts] Using price ascending sort: base_price');
-          break;
-        case 'price_high':
-          baseParams.ordering = '-base_price';
-          console.log('[ShopCatalog fetchProducts] Using price descending sort: -base_price');
-          break;
-        default:
-          // Default sorting
-          baseParams.ordering = '-popularity_score';
-          console.log('[ShopCatalog fetchProducts] Using default sort: -popularity_score');
+      // Add sorting parameter
+      if (sort === 'popular') {
+        baseParams.ordering = '-average_rating';
+      } else if (sort === 'new') {
+        baseParams.ordering = '-created_at';
+      } else if (sort === 'price_low') {
+        baseParams.ordering = 'base_price';
+      } else if (sort === 'price_high') {
+        baseParams.ordering = '-base_price';
       }
       
-      // Add brand filter if brands are selected
-      if (selectedBrandIds.length > 0) {
+      // Handle category filtering - prioritize URL parameter over selected categories
+      if (categoryParam) {
+        // Use the category from URL parameter
+        baseParams.category_slug = categoryParam;
+        console.log('[ShopCatalog fetchProducts] Using category from URL param:', categoryParam);
+      } else if (slug) {
+        // Use the slug as category filter
+        baseParams.category_slug = slug;
+        console.log('[ShopCatalog fetchProducts] Using category from slug:', slug);
+      } else if (selectedCategories.length > 0) {
+        // Use selected categories from filter UI
+        baseParams.category__name__in = selectedCategories.join(',');
+        console.log('[ShopCatalog fetchProducts] Using selected categories:', selectedCategories);
+      }
+      
+      // Handle brand filtering - prioritize URL parameter over selected brands
+      if (brandParam) {
+        // Use the brand from URL parameter
+        baseParams.brand__slug = brandParam;
+        console.log('[ShopCatalog fetchProducts] Using brand from URL param:', brandParam);
+      } else if (selectedBrandIds.length > 0) {
         // Store brand IDs and slugs for filtering
         baseParams.brandIds = selectedBrandIds;
         baseParams.brandSlugs = selectedBrands.map(brandName => {
@@ -630,9 +639,15 @@ export const ShopCatalog = (): JSX.Element => {
               search: searchQuery
             });
           }
-        } else if (slug) {
-          const categoryParams = { ...apiParams, category_slug: slug };
-          console.log('[ShopCatalog fetchProducts] Fetching by category slug:', slug, 'and params:', categoryParams);
+        } else if (slug || categoryParam) {
+          // If we have a category slug or parameter, use category filtering
+          const categoryParams = { ...apiParams };
+          if (categoryParam) {
+            categoryParams.category_slug = categoryParam;
+          } else if (slug) {
+            categoryParams.category_slug = slug;
+          }
+          console.log('[ShopCatalog fetchProducts] Fetching by category with params:', categoryParams);
           return await productService.getAll(categoryParams);
         } else {
           console.log('[ShopCatalog fetchProducts] Fetching all products with params:', apiParams);
@@ -649,7 +664,9 @@ export const ShopCatalog = (): JSX.Element => {
         let endpoint = `https://phonebay.xyz/api/products/products/?page=${currentPage}`;
         
         // Add category slug if available
-        if (slug) {
+        if (categoryParam) {
+          endpoint += `&category_slug=${encodeURIComponent(categoryParam)}`;
+        } else if (slug) {
           endpoint += `&category_slug=${encodeURIComponent(slug)}`;
         }
         

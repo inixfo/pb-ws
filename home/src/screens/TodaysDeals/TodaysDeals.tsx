@@ -81,7 +81,9 @@ export const TodaysDeals = (): JSX.Element => {
   React.useEffect(() => {
     const loadFilterData = async () => {
       try {
+        console.log('Loading filter data for TodaysDeals...');
         const { categories, brands } = await fetchFilterData();
+        console.log('Filter data loaded:', { categories: categories.length, brands: brands.length });
         setAllCategories(categories);
         setAllBrands(brands);
       } catch (err) {
@@ -100,28 +102,53 @@ export const TodaysDeals = (): JSX.Element => {
         const data = await productService.getTodaysDeals();
         const products = Array.isArray(data) ? data : data.results || [];
         setProducts(products);
-        console.log("Fetched today's deals:", products);
+        console.log('Fetched today\'s deals:', products.length);
         
         // Update filter data based on the products
         if (products.length > 0) {
           // Set total pages based on product count (assuming 9 per page)
           setTotalPages(Math.ceil(products.length / 9));
           
-          // Extract and count categories
-          if (allCategories.length > 0) {
-            const categoriesWithCounts = countProductsByCategory(products, allCategories);
-            setCategories(categoriesWithCounts);
+          // Extract and count categories - use allCategories if available, otherwise fetch
+          let categoriesToUse = allCategories;
+          if (categoriesToUse.length === 0) {
+            try {
+              const { categories } = await fetchFilterData();
+              categoriesToUse = categories;
+              setAllCategories(categories);
+            } catch (err) {
+              console.error('Error fetching categories for filtering:', err);
+            }
           }
           
-          // Extract and count brands
-          if (allBrands.length > 0) {
-            const brandsWithCounts = countProductsByBrand(products, allBrands);
+          if (categoriesToUse.length > 0) {
+            const categoriesWithCounts = countProductsByCategory(products, categoriesToUse);
+            setCategories(categoriesWithCounts);
+            console.log('Categories with counts:', categoriesWithCounts.length);
+          }
+          
+          // Extract and count brands - use allBrands if available, otherwise fetch
+          let brandsToUse = allBrands;
+          if (brandsToUse.length === 0) {
+            try {
+              const { brands } = await fetchFilterData();
+              brandsToUse = brands;
+              setAllBrands(brands);
+            } catch (err) {
+              console.error('Error fetching brands for filtering:', err);
+            }
+          }
+          
+          if (brandsToUse.length > 0) {
+            const brandsWithCounts = countProductsByBrand(products, brandsToUse);
             setBrands(brandsWithCounts);
+            console.log('Brands with counts:', brandsWithCounts.length);
           }
           
           // Extract colors
           const colorOptions = extractColorsFromProducts(products);
           setColors(colorOptions);
+          console.log('Color options:', colorOptions.length);
           
           // Find price range
           const { min, max } = findPriceRange(products);
@@ -132,14 +159,24 @@ export const TodaysDeals = (): JSX.Element => {
         
         setError(null);
       } catch (err) {
-        console.error("Error fetching today's deals:", err);
-        setError("Failed to load today's deals products");
+        console.error('Error fetching today\'s deals:', err);
+        setError('Failed to load today\'s deals');
         setProducts([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchTodaysDeals();
+    
+    // Only fetch products if we have filter data or if filter data loading failed
+    if (allCategories.length > 0 || allBrands.length > 0) {
+      fetchTodaysDeals();
+    } else {
+      // If filter data is still loading, wait a bit and try again
+      const timer = setTimeout(() => {
+        fetchTodaysDeals();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
   }, [allCategories, allBrands]);
 
   // Filter products based on selected filters

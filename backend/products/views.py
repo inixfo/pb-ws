@@ -1037,6 +1037,7 @@ def advanced_search(request):
     - Fuzzy matching for typo correction
     - Did you mean suggestions
     - Search analytics tracking
+    - Keyword-based search across all fields
     """
     search_term = request.query_params.get('q', '')
     category = request.query_params.get('category', None)
@@ -1063,19 +1064,52 @@ def advanced_search(request):
             # Try to match by name if slug doesn't work
             queryset = queryset.filter(category__name__icontains=category)
     
-    # Prioritize exact matches over partial matches
-    exact_matches = queryset.filter(
-        Q(name__iexact=search_term) | 
-        Q(name__istartswith=search_term)
-    )
+    # Enhanced keyword-based search
+    # Split search term into keywords for more comprehensive search
+    keywords = search_term.lower().split()
     
-    partial_matches = queryset.filter(
+    # Build a comprehensive search query
+    search_query = Q()
+    
+    for keyword in keywords:
+        keyword_query = (
+            Q(name__icontains=keyword) |
+            Q(description__icontains=keyword) |
+            Q(specifications__icontains=keyword) |
+            Q(category__name__icontains=keyword) |
+            Q(brand__name__icontains=keyword) |
+            Q(sku__icontains=keyword) |
+            Q(model_number__icontains=keyword)
+        )
+        search_query &= keyword_query
+    
+    # Also search for the complete search term
+    complete_term_query = (
         Q(name__icontains=search_term) | 
         Q(description__icontains=search_term) |
         Q(specifications__icontains=search_term) |
         Q(category__name__icontains=search_term) |
-        Q(brand__name__icontains=search_term)
-    ).exclude(id__in=exact_matches.values_list('id', flat=True))
+        Q(brand__name__icontains=search_term) |
+        Q(sku__icontains=search_term) |
+        Q(model_number__icontains=search_term)
+    )
+    
+    # Combine keyword search with complete term search
+    final_search_query = search_query | complete_term_query
+    
+    # Apply the search filter
+    queryset = queryset.filter(final_search_query)
+    
+    # Prioritize exact matches over partial matches
+    exact_matches = queryset.filter(
+        Q(name__iexact=search_term) | 
+        Q(name__istartswith=search_term) |
+        Q(sku__iexact=search_term) |
+        Q(model_number__iexact=search_term)
+    )
+    
+    # Get partial matches (excluding exact matches)
+    partial_matches = queryset.exclude(id__in=exact_matches.values_list('id', flat=True))
     
     # Combine results, preserving the priority order
     results = list(exact_matches) + list(partial_matches)
@@ -1131,7 +1165,7 @@ def advanced_search(request):
 @permission_classes([permissions.AllowAny])
 def autocomplete(request):
     """
-    Endpoint for search autocomplete suggestions
+    Endpoint for search autocomplete suggestions with enhanced keyword support
     """
     query = request.query_params.get('q', '')
     limit = int(request.query_params.get('limit', 5))
@@ -1139,26 +1173,105 @@ def autocomplete(request):
     if not query or len(query) < 2:
         return Response({'suggestions': []})
     
-    # Get products matching the query prefix
-    products = Product.objects.filter(
+    suggestions = []
+    
+    # Get products matching the query prefix or containing keywords
+    keywords = query.lower().split()
+    
+    # Build search query for products
+    product_query = Q()
+    for keyword in keywords:
+        product_query |= (
+            Q(name__istartswith=keyword) | 
+            Q(name__icontains=f" {keyword}") |
+            Q(sku__istartswith=keyword) |
+            Q(model_number__istartswith=keyword)
+        )
+    
+    # Also search for complete query
+    product_query |= (
         Q(name__istartswith=query) | 
-        Q(name__icontains=f" {query}")
-    ).filter(is_approved=True).distinct()[:limit]
+        Q(name__icontains=f" {query}") |
+        Q(sku__istartswith=query) |
+        Q(model_number__istartswith=query)
+    )
     
-    # Get categories matching the query prefix
-    categories = Category.objects.filter(name__icontains=query)[:3]
+    products = Product.objects.filter(product_query).filter(is_approved=True).distinct()[:limit]
     
-    # Get brands matching the query prefix
-    brands = Brand.objects.filter(name__icontains=query)[:3]
+    # Add product suggestions
+    for product in products:
+        suggestions.append({
+            'type': 'product',
+            'id': product.id,
+            'name': product.name,
+            'category': product.category.name if product.category else '',
+            'brand': product.brand.name if product.brand else '',
+            'url': f'/products/{product.slug}' if product.slug else f'/products/{product.id}'
+        })
     
-    # Format suggestions
-    product_suggestions = [{'type': 'product', 'name': p.name, 'slug': p.slug} for p in products]
-    category_suggestions = [{'type': 'category', 'name': c.name, 'slug': c.slug} for c in categories]
-    brand_suggestions = [{'type': 'brand', 'name': b.name, 'slug': b.slug} for b in brands]
+    # Get categories matching the query
+    category_query = Q()
+    for keyword in keywords:
+        category_query |= Q(name__icontains=keyword)
+    category_query |= Q(name__istartswith=query)
     
-    # Combine suggestions with priority to products
-    all_suggestions = product_suggestions + category_suggestions + brand_suggestions
+    categories = Category.objects.filter(category_query)[:3]
     
-    return Response({
-        'suggestions': all_suggestions[:limit]
-    })
+    # Add category suggestions
+    for category in categories:
+        suggestions.append({
+            'type': 'category',
+            'id': category.id,
+            'name': category.name,
+            'url': f'/catalog/{category.slug}' if category.slug else f'/catalog/{category.id}'
+        })
+    
+    # Get brands matching the query
+    brand_query = Q()
+    for keyword in keywords:
+        brand_query |= Q(name__icontains=keyword)
+    brand_query |= Q(name__istartswith=query)
+    
+    brands = Brand.objects.filter(brand_query)[:3]
+    
+    # Add brand suggestions
+    for brand in brands:
+        suggestions.append({
+            'type': 'brand',
+            'id': brand.id,
+            'name': brand.name,
+            'url': f'/catalog?brand={brand.slug}' if brand.slug else f'/catalog?brand={brand.id}'
+        })
+    
+    # Add common search terms based on keywords
+    common_terms = []
+    for keyword in keywords:
+        if len(keyword) >= 3:
+            # Find products that contain this keyword in specifications
+            spec_products = Product.objects.filter(
+                specifications__icontains=keyword
+            ).filter(is_approved=True).distinct()[:2]
+            
+            for product in spec_products:
+                # Extract relevant specification values
+                if product.specifications:
+                    for key, value in product.specifications.items():
+                        if isinstance(value, str) and keyword.lower() in value.lower():
+                            common_terms.append({
+                                'type': 'keyword',
+                                'name': f"{key}: {value}",
+                                'url': f'/catalog?search={quote(keyword)}'
+                            })
+                            break
+    
+    # Add unique common terms
+    unique_terms = []
+    seen_terms = set()
+    for term in common_terms:
+        if term['name'] not in seen_terms:
+            unique_terms.append(term)
+            seen_terms.add(term['name'])
+    
+    suggestions.extend(unique_terms[:2])
+    
+    return Response({'suggestions': suggestions[:limit]})
