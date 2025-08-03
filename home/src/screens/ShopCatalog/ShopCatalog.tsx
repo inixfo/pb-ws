@@ -148,10 +148,12 @@ export const ShopCatalog = (): JSX.Element => {
     }
   }, [categoryParam, brandParam, categories, brands]);
 
-  // Fetch products after initial filter sync is done (URL-driven or not)
+  // Effect to fetch products when filters change (for normal filter UI interaction)
   useEffect(() => {
-    if (!initialFilterSyncDone) return;
-    fetchProducts();
+    // Only run if initial filter sync is done and we're not in the middle of URL parameter processing
+    if (initialFilterSyncDone) {
+      fetchProducts();
+    }
   }, [initialFilterSyncDone, slug, currentPage, sort, selectedBrands, selectedColors, minPrice, maxPrice, searchQuery, JSON.stringify(customFilterValues)]);
 
   useEffect(() => {
@@ -172,14 +174,6 @@ export const ShopCatalog = (): JSX.Element => {
     }
   }, [priceRange, filterTags]);
 
-  // Effect to fetch products when filters change (for normal filter UI interaction)
-  useEffect(() => {
-    // Only run if not using query params (to avoid double fetch)
-    if (!categoryParam && !brandParam) {
-      fetchProducts();
-    }
-  }, [slug, currentPage, sort, selectedBrands, selectedColors, minPrice, maxPrice, searchQuery, JSON.stringify(customFilterValues)]);
-  
   // Effect to fetch categories and filter options when slug changes
   useEffect(() => {
     fetchCategoriesWithCount();
@@ -663,11 +657,13 @@ export const ShopCatalog = (): JSX.Element => {
         // Build the endpoint URL with proper parameters
         let endpoint = `https://phonebay.xyz/api/products/products/?page=${currentPage}`;
         
-        // Add category slug if available
+        // Add category slug if available - prioritize URL parameter
         if (categoryParam) {
           endpoint += `&category_slug=${encodeURIComponent(categoryParam)}`;
+          console.log('[ShopCatalog fetchProducts] Adding category from URL param to direct API call:', categoryParam);
         } else if (slug) {
           endpoint += `&category_slug=${encodeURIComponent(slug)}`;
+          console.log('[ShopCatalog fetchProducts] Adding category from slug to direct API call:', slug);
         }
         
         // Add sorting parameter
@@ -686,14 +682,16 @@ export const ShopCatalog = (): JSX.Element => {
         } else if (baseParams.brandSlugs && Array.isArray(baseParams.brandSlugs) && baseParams.brandSlugs.length > 0) {
           // Use the brand__slug__in filter for multiple brands
           endpoint += `&brand__slug__in=${encodeURIComponent(baseParams.brandSlugs.join(','))}`;
+          console.log('[ShopCatalog fetchProducts] Adding multiple brands to direct API call:', baseParams.brandSlugs);
         } else if (baseParams.brandIds && Array.isArray(baseParams.brandIds) && baseParams.brandIds.length === 1) {
           // Use the brand filter for single brand
           endpoint += `&brand=${encodeURIComponent(String(baseParams.brandIds[0]))}`;
+          console.log('[ShopCatalog fetchProducts] Adding single brand ID to direct API call:', baseParams.brandIds[0]);
         }
         
-        // Add other filter parameters
+        // Add other filter parameters (but exclude the ones we already handled)
         Object.entries(baseParams).forEach(([key, value]) => {
-          if (key !== 'page' && key !== 'ordering' && key !== 'brandIds' && key !== 'brandSlugs' && key !== 'brand__slug') {
+          if (key !== 'page' && key !== 'ordering' && key !== 'brandIds' && key !== 'brandSlugs' && key !== 'brand__slug' && key !== 'category_slug') {
             // For all parameters, just use the key-value pair directly
             endpoint += `&${key}=${encodeURIComponent(String(value))}`;
           }

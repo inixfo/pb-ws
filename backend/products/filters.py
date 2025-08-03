@@ -21,6 +21,7 @@ class ProductFilter(django_filters.FilterSet):
     
     # Brand filters  
     brand = django_filters.ModelChoiceFilter(queryset=Brand.objects.all())
+    brand__slug = django_filters.CharFilter(method='filter_by_brand_slug')
     brand__slug__in = django_filters.CharFilter(method='filter_by_brand_slugs')
     
     # Product flags
@@ -98,12 +99,20 @@ class ProductFilter(django_filters.FilterSet):
             traceback.print_exc()
             return queryset  # Return original queryset instead of none to prevent blank pages
     
+    def filter_by_brand_slug(self, queryset, name, value):
+        """Filter products by a single brand slug."""
+        if not value:
+            return queryset
+        print(f"Filtering by brand_slug: {value}")
+        return queryset.filter(brand__slug=value)
+    
     def filter_by_brand_slugs(self, queryset, name, value):
         """Filter products by brand slugs (comma-separated)."""
         if not value:
             return queryset
             
         brand_slugs = [slug.strip() for slug in value.split(',')]
+        print(f"Filtering by brand_slugs: {brand_slugs}")
         return queryset.filter(brand__slug__in=brand_slugs)
     
     def filter_queryset(self, queryset):
