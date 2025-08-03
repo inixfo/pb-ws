@@ -14,6 +14,7 @@ from django.db import models
 from django.http import HttpResponse
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from fuzzywuzzy import process
+from urllib.parse import quote
 
 from .models import Category, Brand, ProductField, Product, ProductImage, SKU, ProductVariation
 from .serializers import (

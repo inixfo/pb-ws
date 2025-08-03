@@ -214,17 +214,27 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
   // Fetch product on initial load and whenever the productId/slug changes
   useEffect(() => {
     const id = getProductIdFromUrl();
+    const forceRefresh = location.state?.forceRefresh;
+    const timestamp = location.state?.timestamp;
+    
     console.log('[ProductContext] URL changed, extracted product ID/slug:', id, 'Current:', currentProductId);
+    console.log('[ProductContext] Force refresh:', forceRefresh, 'Timestamp:', timestamp);
+    
     if (id) {
-      // Always fetch when the ID/slug changes
-      if (id !== currentProductId || usedFallback) {
+      // Always fetch when the ID/slug changes OR when forceRefresh is true
+      if (id !== currentProductId || usedFallback || forceRefresh) {
+        console.log('[ProductContext] Fetching product due to:', {
+          idChanged: id !== currentProductId,
+          usedFallback,
+          forceRefresh
+        });
         fetchProduct(id);
       }
     } else {
       setLoading(false);
       setError('No product ID found in URL');
     }
-  }, [location.pathname, productId]);
+  }, [location.pathname, productId, location.state]);
 
   const value = {
     product,

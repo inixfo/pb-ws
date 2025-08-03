@@ -106,36 +106,58 @@ export const TrendingProductsSection = (): JSX.Element => {
   }, []);
 
   const handleProductClick = (productId: number, slug: string) => {
-    // Force refresh the product data when navigating to a new product
     const targetId = slug && slug.trim() !== '' ? slug : productId.toString();
+    const targetPath = `/products/${targetId}`;
     
     // Check if we're already on the same product page
     const currentPath = location.pathname;
-    const targetPath = `/products/${targetId}`;
     
     if (currentPath === targetPath) {
-      // If we're already on the same product page, force a refresh
+      // If we're already on the same product page, force a complete refresh
+      // This ensures the ProductContext re-fetches the data
       window.location.reload();
     } else {
-      // Navigate to the new product page with full page reload to ensure fresh data
-      window.location.href = targetPath;
+      // Navigate to the new product page with a state parameter to force re-fetch
+      navigate(targetPath, { 
+        state: { 
+          forceRefresh: true,
+          timestamp: Date.now() 
+        },
+        replace: true 
+      });
+      
+      // Force a small delay then reload to ensure fresh data
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     }
   };
 
   const handleAddToCart = (e: React.MouseEvent, productId: number, slug: string) => {
     e.stopPropagation();
     const targetId = slug && slug.trim() !== '' ? slug : productId.toString();
+    const targetPath = `/products/${targetId}`;
     
     // Check if we're already on the same product page
     const currentPath = location.pathname;
-    const targetPath = `/products/${targetId}`;
     
     if (currentPath === targetPath) {
-      // If we're already on the same product page, force a refresh
+      // If we're already on the same product page, force a complete refresh
       window.location.reload();
     } else {
-      // Navigate to the new product page with full page reload to ensure fresh data
-      window.location.href = targetPath;
+      // Navigate to the new product page with a state parameter to force re-fetch
+      navigate(targetPath, { 
+        state: { 
+          forceRefresh: true,
+          timestamp: Date.now() 
+        },
+        replace: true 
+      });
+      
+      // Force a small delay then reload to ensure fresh data
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     }
   };
 
