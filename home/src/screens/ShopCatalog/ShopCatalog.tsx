@@ -654,7 +654,31 @@ export const ShopCatalog = (): JSX.Element => {
         console.log('[ShopCatalog fetchProducts] Making direct API call first');
         const axios = (await import('axios')).default;
         
-        // Build the endpoint URL with proper parameters
+        // If we have a search query, use the search service instead of direct API call
+        if (searchQuery) {
+          console.log('[ShopCatalog fetchProducts] Using search service for query:', searchQuery);
+          const searchResponse = await searchService.search(searchQuery, {
+            page: currentPage,
+            page_size: 12,
+            ordering: baseParams.ordering
+          });
+          
+          // Check if we got search results with a search_id for analytics
+          if (searchResponse.search_id) {
+            setSearchId(searchResponse.search_id);
+            console.log('[ShopCatalog fetchProducts] Setting search ID for analytics:', searchResponse.search_id);
+          }
+          
+          // Check if we got "did you mean" suggestions
+          if (searchResponse.did_you_mean && !searchResponse.results?.length) {
+            setDidYouMean(searchResponse.did_you_mean);
+            console.log('[ShopCatalog fetchProducts] Setting "did you mean" suggestion:', searchResponse.did_you_mean);
+          }
+          
+          return searchResponse;
+        }
+        
+        // Build the endpoint URL with proper parameters for non-search queries
         let endpoint = `https://phonebay.xyz/api/products/products/?page=${currentPage}`;
         
         // Add category slug if available - prioritize URL parameter
