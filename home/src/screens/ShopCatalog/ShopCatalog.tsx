@@ -657,25 +657,41 @@ export const ShopCatalog = (): JSX.Element => {
         // If we have a search query, use the search service instead of direct API call
         if (searchQuery) {
           console.log('[ShopCatalog fetchProducts] Using search service for query:', searchQuery);
-          const searchResponse = await searchService.search(searchQuery, {
-            page: currentPage,
-            page_size: 12,
-            ordering: baseParams.ordering
-          });
-          
-          // Check if we got search results with a search_id for analytics
-          if (searchResponse.search_id) {
-            setSearchId(searchResponse.search_id);
-            console.log('[ShopCatalog fetchProducts] Setting search ID for analytics:', searchResponse.search_id);
+          try {
+            const searchResponse = await searchService.search(searchQuery, {
+              page: currentPage,
+              page_size: 12,
+              ordering: baseParams.ordering
+            });
+            
+            // Check if we got search results with a search_id for analytics
+            if (searchResponse.search_id) {
+              setSearchId(searchResponse.search_id);
+              console.log('[ShopCatalog fetchProducts] Setting search ID for analytics:', searchResponse.search_id);
+            }
+            
+            // Check if we got "did you mean" suggestions
+            if (searchResponse.did_you_mean && !searchResponse.results?.length) {
+              setDidYouMean(searchResponse.did_you_mean);
+              console.log('[ShopCatalog fetchProducts] Setting "did you mean" suggestion:', searchResponse.did_you_mean);
+            }
+            
+            return searchResponse;
+          } catch (searchError) {
+            console.error('[ShopCatalog fetchProducts] Search service failed:', searchError);
+            console.log('[ShopCatalog fetchProducts] Falling back to regular product API with search param');
+            
+            // Fall back to regular product service with search parameter
+            try {
+              return await productService.getAll({
+                ...baseParams,
+                search: searchQuery
+              });
+            } catch (fallbackError) {
+              console.error('[ShopCatalog fetchProducts] Fallback search also failed:', fallbackError);
+              throw fallbackError; // Re-throw to be caught by outer error handler
+            }
           }
-          
-          // Check if we got "did you mean" suggestions
-          if (searchResponse.did_you_mean && !searchResponse.results?.length) {
-            setDidYouMean(searchResponse.did_you_mean);
-            console.log('[ShopCatalog fetchProducts] Setting "did you mean" suggestion:', searchResponse.did_you_mean);
-          }
-          
-          return searchResponse;
         }
         
         // Build the endpoint URL with proper parameters for non-search queries
