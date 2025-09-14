@@ -26,8 +26,9 @@ interface SearchData {
   count: number;
   did_you_mean?: string;
   suggestions?: string[];
-  search_id?: number;
+  search_id?: number | null;
   fallback_used?: boolean;
+  error?: string;
 }
 
 const CURRENCY_SYMBOL = '৳';
@@ -71,7 +72,7 @@ export const SearchResults = (): JSX.Element => {
       let usedFallback = false;
       
       try {
-        console.log('[SearchResults] Attempting advanced search...');
+        console.log('[SearchResults] 🔄 Attempting advanced search...');
         data = await searchService.search(query, {
           page,
           page_size: pageSize,
@@ -81,12 +82,19 @@ export const SearchResults = (): JSX.Element => {
                    'relevance'
         });
         console.log('[SearchResults] ✅ Advanced search successful:', data);
-      } catch (searchError) {
-        console.warn('[SearchResults] ⚠️ Advanced search failed, using fallback:', searchError);
+      } catch (searchError: any) {
+        console.error('[SearchResults] ⚠️ Advanced search failed - activating fallback system');
+        console.error('[SearchResults] 📋 Search error details:', {
+          message: searchError?.message,
+          status: searchError?.status || 'unknown',
+          name: searchError?.name || 'Unknown Error'
+        });
+        
         usedFallback = true;
         
         try {
-          // Fallback to regular product API with search parameter
+          console.log('[SearchResults] 🔄 Calling fallback products API...');
+          
           const fallbackData = await productService.getAll({
             search: query,
             page,
@@ -97,27 +105,45 @@ export const SearchResults = (): JSX.Element => {
                      undefined
           });
           
-          console.log('[SearchResults] 📦 Raw fallback response:', fallbackData);
-          console.log('[SearchResults] 📊 Fallback response type:', typeof fallbackData);
-          console.log('[SearchResults] 📊 Fallback results array:', fallbackData.results);
-          console.log('[SearchResults] 📊 Fallback results length:', fallbackData.results?.length);
-          console.log('[SearchResults] 📊 Fallback count:', fallbackData.count);
+          console.log('[SearchResults] 📦 Fallback API response received:');
+          console.log('[SearchResults] 📊 Type:', typeof fallbackData);
+          console.log('[SearchResults] 📊 Count:', fallbackData?.count);
+          console.log('[SearchResults] 📊 Results length:', fallbackData?.results?.length);
+          console.log('[SearchResults] 📊 First result:', fallbackData?.results?.[0]?.name);
           
           // Transform the response to match search API format
           data = {
-            results: fallbackData.results || [],
-            count: fallbackData.count || 0,
+            results: fallbackData?.results || [],
+            count: fallbackData?.count || 0,
             did_you_mean: null,
             suggestions: [],
+            search_id: null,
             fallback_used: true
           };
-          console.log('[SearchResults] ✅ Fallback search successful:', data);
-          console.log('[SearchResults] 🔍 Final data results:', data.results);
-          console.log('[SearchResults] 🔍 Final data count:', data.count);
           
-        } catch (fallbackError) {
-          console.error('[SearchResults] ❌ Fallback search also failed:', fallbackError);
-          throw fallbackError; // Re-throw to be caught by outer catch
+          console.log('[SearchResults] ✅ Fallback transformation complete:');
+          console.log('[SearchResults] 🎯 Final results count:', data.count);
+          console.log('[SearchResults] 🎯 Final results length:', data.results.length);
+          console.log('[SearchResults] 🎯 Sample result:', data.results[0]?.name);
+          
+        } catch (fallbackError: any) {
+          console.error('[SearchResults] ❌ Fallback API also failed:');
+          console.error('[SearchResults] 📋 Fallback error details:', {
+            message: fallbackError?.message,
+            status: fallbackError?.status || 'unknown'
+          });
+          
+          // Don't throw error - provide empty results instead
+          console.log('[SearchResults] 🔧 Setting empty results due to API failures');
+          data = {
+            results: [],
+            count: 0,
+            did_you_mean: null,
+            suggestions: [],
+            search_id: null,
+            fallback_used: true,
+            error: 'Search services temporarily unavailable'
+          };
         }
       }
       
@@ -319,10 +345,19 @@ export const SearchResults = (): JSX.Element => {
         )}
 
         {/* Fallback Notice */}
-        {searchResults?.fallback_used && (
+        {searchResults?.fallback_used && !searchResults?.error && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
             <p className="text-yellow-800 text-sm">
               <span className="font-semibold">Note:</span> Using basic search (advanced search temporarily unavailable)
+            </p>
+          </div>
+        )}
+
+        {/* Error Notice */}
+        {searchResults?.error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-800 text-sm">
+              <span className="font-semibold">Error:</span> {searchResults.error}. Please try again later.
             </p>
           </div>
         )}
@@ -359,9 +394,6 @@ export const SearchResults = (): JSX.Element => {
           </div>
         )}
 
-        {/* Debug logging */}
-        {console.log('[SearchResults] 🖥️ RENDER - searchResults:', searchResults)}
-        {console.log('[SearchResults] 🖥️ RENDER - has results?', searchResults && searchResults.results && searchResults.results.length > 0)}
 
         {/* Results Grid/List */}
         {searchResults && searchResults.results.length > 0 && (
