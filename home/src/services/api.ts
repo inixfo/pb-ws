@@ -62,8 +62,22 @@ api.interceptors.response.use(
 
 // Error handler
 const handleError = (error: any) => {
-  console.error('API Error:', error);
-  return Promise.reject(error);
+  console.error('[API] Error details:', {
+    message: error.message,
+    status: error.response?.status,
+    statusText: error.response?.statusText,
+    url: error.config?.url,
+    method: error.config?.method,
+    data: error.response?.data
+  });
+  
+  // Preserve error details for fallback handling
+  const enhancedError = new Error(error.message || 'API request failed');
+  (enhancedError as any).status = error.response?.status;
+  (enhancedError as any).response = error.response;
+  (enhancedError as any).originalError = error;
+  
+  return Promise.reject(enhancedError);
 };
 
 // Check if user is authenticated before making API calls
@@ -74,9 +88,17 @@ export const productService = {
   // Get all products
   getAll: async (params?: any) => {
     try {
-      const response = await publicApi.get('/products/', { params });
+      console.log('[ProductService] Getting products with params:', params);
+      const response = await publicApi.get('/products/products/', { params });
+      console.log('[ProductService] ✅ Products response:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[ProductService] ❌ Products API failed:', {
+        message: error.message,
+        status: error.response?.status,
+        url: error.config?.url,
+        params: error.config?.params
+      });
       return handleError(error);
     }
   },

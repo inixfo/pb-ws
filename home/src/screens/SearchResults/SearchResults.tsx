@@ -98,6 +98,10 @@ export const SearchResults = (): JSX.Element => {
           });
           
           console.log('[SearchResults] 📦 Raw fallback response:', fallbackData);
+          console.log('[SearchResults] 📊 Fallback response type:', typeof fallbackData);
+          console.log('[SearchResults] 📊 Fallback results array:', fallbackData.results);
+          console.log('[SearchResults] 📊 Fallback results length:', fallbackData.results?.length);
+          console.log('[SearchResults] 📊 Fallback count:', fallbackData.count);
           
           // Transform the response to match search API format
           data = {
@@ -108,6 +112,8 @@ export const SearchResults = (): JSX.Element => {
             fallback_used: true
           };
           console.log('[SearchResults] ✅ Fallback search successful:', data);
+          console.log('[SearchResults] 🔍 Final data results:', data.results);
+          console.log('[SearchResults] 🔍 Final data count:', data.count);
           
         } catch (fallbackError) {
           console.error('[SearchResults] ❌ Fallback search also failed:', fallbackError);
@@ -120,6 +126,9 @@ export const SearchResults = (): JSX.Element => {
         console.log('[SearchResults] 🔄 Using fallback results - Advanced search unavailable');
       }
 
+      console.log('[SearchResults] 🎯 About to set search results:', data);
+      console.log('[SearchResults] 🎯 Data has results?', data && data.results && data.results.length > 0);
+      console.log('[SearchResults] 🎯 Results length:', data?.results?.length);
       setSearchResults(data);
 
       // Update URL with search query
@@ -349,6 +358,10 @@ export const SearchResults = (): JSX.Element => {
             </div>
           </div>
         )}
+
+        {/* Debug logging */}
+        {console.log('[SearchResults] 🖥️ RENDER - searchResults:', searchResults)}
+        {console.log('[SearchResults] 🖥️ RENDER - has results?', searchResults && searchResults.results && searchResults.results.length > 0)}
 
         {/* Results Grid/List */}
         {searchResults && searchResults.results.length > 0 && (
