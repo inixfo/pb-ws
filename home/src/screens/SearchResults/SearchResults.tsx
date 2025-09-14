@@ -39,6 +39,10 @@ export const SearchResults = (): JSX.Element => {
   const queryParams = new URLSearchParams(location.search);
   const initialQuery = queryParams.get('q') || '';
 
+  console.log('[SearchResults] 🔍 URL location:', location.pathname, location.search);
+  console.log('[SearchResults] 🔍 queryParams:', queryParams.toString());
+  console.log('[SearchResults] 🔍 initialQuery:', initialQuery);
+
   // Search state
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [searchResults, setSearchResults] = useState<SearchData | null>(null);
@@ -67,84 +71,74 @@ export const SearchResults = (): JSX.Element => {
     try {
       console.log(`[SearchResults] Performing search for: "${query}", page: ${page}`);
       
-      // Try advanced search first
+      // TEMPORARY: Skip advanced search, go directly to working API
+      console.log('[SearchResults] 🚀 BYPASSING advanced search, calling working API directly');
       let data;
-      let usedFallback = false;
+      let usedFallback = true; // Always show fallback notice
       
+      // Directly call the working products API
       try {
-        console.log('[SearchResults] 🔄 Attempting advanced search...');
-        data = await searchService.search(query, {
+        console.log('[SearchResults] 🔄 Calling working products API directly...');
+        console.log('[SearchResults] 📋 Direct API params:', {
+          search: query,
           page,
           page_size: pageSize,
           ordering: sortBy === 'price_low' ? 'base_price' : 
                    sortBy === 'price_high' ? '-base_price' :
                    sortBy === 'newest' ? '-created_at' : 
-                   'relevance'
-        });
-        console.log('[SearchResults] ✅ Advanced search successful:', data);
-      } catch (searchError: any) {
-        console.error('[SearchResults] ⚠️ Advanced search failed - activating fallback system');
-        console.error('[SearchResults] 📋 Search error details:', {
-          message: searchError?.message,
-          status: searchError?.status || 'unknown',
-          name: searchError?.name || 'Unknown Error'
+                   undefined
         });
         
-        usedFallback = true;
+        const directData = await productService.getAll({
+          search: query,
+          page,
+          page_size: pageSize,
+          ordering: sortBy === 'price_low' ? 'base_price' : 
+                   sortBy === 'price_high' ? '-base_price' :
+                   sortBy === 'newest' ? '-created_at' : 
+                   undefined
+        });
         
-        try {
-          console.log('[SearchResults] 🔄 Calling fallback products API...');
-          
-          const fallbackData = await productService.getAll({
-            search: query,
-            page,
-            page_size: pageSize,
-            ordering: sortBy === 'price_low' ? 'base_price' : 
-                     sortBy === 'price_high' ? '-base_price' :
-                     sortBy === 'newest' ? '-created_at' : 
-                     undefined
-          });
-          
-          console.log('[SearchResults] 📦 Fallback API response received:');
-          console.log('[SearchResults] 📊 Type:', typeof fallbackData);
-          console.log('[SearchResults] 📊 Count:', fallbackData?.count);
-          console.log('[SearchResults] 📊 Results length:', fallbackData?.results?.length);
-          console.log('[SearchResults] 📊 First result:', fallbackData?.results?.[0]?.name);
-          
-          // Transform the response to match search API format
-          data = {
-            results: fallbackData?.results || [],
-            count: fallbackData?.count || 0,
-            did_you_mean: null,
-            suggestions: [],
-            search_id: null,
-            fallback_used: true
-          };
-          
-          console.log('[SearchResults] ✅ Fallback transformation complete:');
-          console.log('[SearchResults] 🎯 Final results count:', data.count);
-          console.log('[SearchResults] 🎯 Final results length:', data.results.length);
-          console.log('[SearchResults] 🎯 Sample result:', data.results[0]?.name);
-          
-        } catch (fallbackError: any) {
-          console.error('[SearchResults] ❌ Fallback API also failed:');
-          console.error('[SearchResults] 📋 Fallback error details:', {
-            message: fallbackError?.message,
-            status: fallbackError?.status || 'unknown'
-          });
-          
-          // Don't throw error - provide empty results instead
-          console.log('[SearchResults] 🔧 Setting empty results due to API failures');
-          data = {
-            results: [],
-            count: 0,
-            did_you_mean: null,
-            suggestions: [],
-            search_id: null,
-            fallback_used: true,
-            error: 'Search services temporarily unavailable'
-          };
-        }
+        console.log('[SearchResults] 📦 Direct API data received:', directData);
+        console.log('[SearchResults] 📊 Direct API count:', directData?.count);
+        console.log('[SearchResults] 📊 Direct API results length:', directData?.results?.length);
+        
+        // Transform to expected format
+        data = {
+          results: directData?.results || [],
+          count: directData?.count || 0,
+          did_you_mean: null,
+          suggestions: [],
+          search_id: null,
+          fallback_used: true
+        };
+        
+        console.log('[SearchResults] ✅ Direct API transformation complete:', {
+          count: data.count,
+          resultsLength: data.results.length,
+          firstResult: data.results[0]?.name
+        });
+        
+      } catch (directError: any) {
+        console.error('[SearchResults] ❌ Direct API call failed');
+        console.error('[SearchResults] 📋 Direct API error details:', {
+          message: directError?.message,
+          status: directError?.status || 'unknown',
+          name: directError?.name || 'Unknown Error',
+          fullError: directError
+        });
+        
+        // Set empty results for now - this shouldn't happen if API is working
+        console.log('[SearchResults] 🔧 Setting empty results due to direct API failure');
+        data = {
+          results: [],
+          count: 0,
+          did_you_mean: null,
+          suggestions: [],
+          search_id: null,
+          fallback_used: true,
+          error: 'Search service temporarily unavailable'
+        };
       }
       
       // Add indicator if fallback was used
@@ -174,10 +168,16 @@ export const SearchResults = (): JSX.Element => {
 
   // Effect to search when query changes
   useEffect(() => {
+    console.log('[SearchResults] 🔄 useEffect triggered with debouncedQuery:', debouncedQuery);
+    console.log('[SearchResults] 🔄 searchQuery state:', searchQuery);
+    console.log('[SearchResults] 🔄 sortBy state:', sortBy);
+    
     if (debouncedQuery) {
+      console.log('[SearchResults] ✅ debouncedQuery exists, calling performSearch');
       setCurrentPage(1);
       performSearch(debouncedQuery, 1);
     } else {
+      console.log('[SearchResults] ❌ No debouncedQuery, setting null results');
       setSearchResults(null);
     }
   }, [debouncedQuery, sortBy]);
