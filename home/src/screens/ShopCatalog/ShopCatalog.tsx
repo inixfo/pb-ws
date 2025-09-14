@@ -1245,11 +1245,14 @@ export const ShopCatalog = (): JSX.Element => {
                   <div className="h-10 w-full flex items-center justify-center mb-1">
                     {brand.logo ? (
                       <img
-                        src={brand.logo}
+                        src={brand.logo.startsWith('http') ? brand.logo : 
+                             brand.logo.startsWith('/media/') ? `https://phonebay.xyz${brand.logo}` : 
+                             brand.logo}
                         alt={brand.name}
                         className="h-8 w-auto object-contain"
                         onError={(e) => {
                           // Fallback for broken images
+                          console.log(`[ShopCatalog] Brand logo failed to load: ${brand.logo}`);
                           e.currentTarget.src = "/placeholder-brand.png";
                         }}
                       />

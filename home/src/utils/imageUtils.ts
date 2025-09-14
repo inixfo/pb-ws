@@ -9,15 +9,26 @@ import { Product, ProductImage } from "../types/products";
  */
 export const ensureAbsoluteUrl = (url: string): string => {
   if (!url) return '/placeholder-product.png';
+  
+  // Already absolute URL
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
+  
+  // For URLs starting with /, we need to determine if they should be absolute
   if (url.startsWith('/')) {
+    // If it's a media or static file path, make it absolute using the current domain
+    if (url.startsWith('/media/') || url.startsWith('/static/') || url.startsWith('/brand_logos/')) {
+      const currentDomain = window.location.origin;
+      return `${currentDomain}${url}`;
+    }
+    // For other paths (like placeholders in public), keep as relative
     return url;
   }
-  // If it's a relative URL, prepend with base URL
-  const baseUrl = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000';
-  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+  
+  // If it's a relative URL without leading slash, prepend with base URL
+  const baseUrl = (import.meta as any).env?.VITE_API_BASE_URL || window.location.origin;
+  return `${baseUrl}/${url}`;
 };
 
 /**
