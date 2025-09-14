@@ -1225,18 +1225,25 @@ export const searchService = {
   // Advanced search with typo correction and exact match prioritization
   search: async (query: string, params?: any) => {
     try {
-      console.log(`Performing advanced search for: ${query}`);
+      console.log(`[SearchService] Performing advanced search for: "${query}"`);
       const searchParams = {
         q: query,
         ...params
       };
       
       const response = await publicApi.get('/products/search/', { params: searchParams });
-      console.log('Advanced search response:', response.data);
+      console.log('[SearchService] ✅ Advanced search response:', response.data);
       return response.data;
-    } catch (error) {
-      console.error('Error in advanced search:', error);
-      return handleError(error);
+    } catch (error: any) {
+      console.error('[SearchService] ❌ Advanced search failed:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      
+      // Re-throw the error so the fallback can catch it
+      throw new Error(`Advanced search failed: ${error.message} (Status: ${error.response?.status || 'unknown'})`);
     }
   },
   
@@ -1245,7 +1252,7 @@ export const searchService = {
     try {
       if (!query || query.length < 2) return { suggestions: [] };
       
-      console.log(`Getting autocomplete suggestions for: ${query}`);
+      console.log(`[SearchService] Getting autocomplete suggestions for: "${query}"`);
       const response = await publicApi.get('/products/autocomplete/', { 
         params: { 
           q: query,
@@ -1253,10 +1260,13 @@ export const searchService = {
         } 
       });
       
-      console.log('Autocomplete suggestions:', response.data);
+      console.log('[SearchService] ✅ Autocomplete suggestions:', response.data);
       return response.data;
-    } catch (error) {
-      console.error('Error getting autocomplete suggestions:', error);
+    } catch (error: any) {
+      console.warn('[SearchService] ⚠️ Autocomplete unavailable:', {
+        message: error.message,
+        status: error.response?.status
+      });
       // Return empty array on error instead of failing completely
       return { suggestions: [] };
     }

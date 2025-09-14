@@ -27,6 +27,7 @@ interface SearchData {
   did_you_mean?: string;
   suggestions?: string[];
   search_id?: number;
+  fallback_used?: boolean;
 }
 
 const CURRENCY_SYMBOL = '৳';
@@ -67,7 +68,10 @@ export const SearchResults = (): JSX.Element => {
       
       // Try advanced search first
       let data;
+      let usedFallback = false;
+      
       try {
+        console.log('[SearchResults] Attempting advanced search...');
         data = await searchService.search(query, {
           page,
           page_size: pageSize,
@@ -76,29 +80,44 @@ export const SearchResults = (): JSX.Element => {
                    sortBy === 'newest' ? '-created_at' : 
                    'relevance'
         });
-        console.log('[SearchResults] Advanced search response:', data);
+        console.log('[SearchResults] ✅ Advanced search successful:', data);
       } catch (searchError) {
-        console.warn('[SearchResults] Advanced search failed, falling back to regular search:', searchError);
+        console.warn('[SearchResults] ⚠️ Advanced search failed, using fallback:', searchError);
+        usedFallback = true;
         
-        // Fallback to regular product API with search parameter
-        const fallbackData = await productService.getAll({
-          search: query,
-          page,
-          page_size: pageSize,
-          ordering: sortBy === 'price_low' ? 'base_price' : 
-                   sortBy === 'price_high' ? '-base_price' :
-                   sortBy === 'newest' ? '-created_at' : 
-                   undefined
-        });
-        
-        // Transform the response to match search API format
-        data = {
-          results: fallbackData.results || [],
-          count: fallbackData.count || 0,
-          did_you_mean: null,
-          suggestions: []
-        };
-        console.log('[SearchResults] Fallback search response:', data);
+        try {
+          // Fallback to regular product API with search parameter
+          const fallbackData = await productService.getAll({
+            search: query,
+            page,
+            page_size: pageSize,
+            ordering: sortBy === 'price_low' ? 'base_price' : 
+                     sortBy === 'price_high' ? '-base_price' :
+                     sortBy === 'newest' ? '-created_at' : 
+                     undefined
+          });
+          
+          console.log('[SearchResults] 📦 Raw fallback response:', fallbackData);
+          
+          // Transform the response to match search API format
+          data = {
+            results: fallbackData.results || [],
+            count: fallbackData.count || 0,
+            did_you_mean: null,
+            suggestions: [],
+            fallback_used: true
+          };
+          console.log('[SearchResults] ✅ Fallback search successful:', data);
+          
+        } catch (fallbackError) {
+          console.error('[SearchResults] ❌ Fallback search also failed:', fallbackError);
+          throw fallbackError; // Re-throw to be caught by outer catch
+        }
+      }
+      
+      // Add indicator if fallback was used
+      if (usedFallback && data) {
+        console.log('[SearchResults] 🔄 Using fallback results - Advanced search unavailable');
       }
 
       setSearchResults(data);
@@ -287,6 +306,15 @@ export const SearchResults = (): JSX.Element => {
             <SearchIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h2 className="text-2xl font-semibold text-gray-600 mb-2">Start your search</h2>
             <p className="text-gray-500">Enter a product name, brand, or category to get started</p>
+          </div>
+        )}
+
+        {/* Fallback Notice */}
+        {searchResults?.fallback_used && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <p className="text-yellow-800 text-sm">
+              <span className="font-semibold">Note:</span> Using basic search (advanced search temporarily unavailable)
+            </p>
           </div>
         )}
 
