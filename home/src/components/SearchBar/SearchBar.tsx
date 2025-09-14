@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { SearchIcon } from 'lucide-react';
 import { searchService } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -28,6 +28,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const debouncedSearchTerm = useDebounce(searchQuery, 300);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
@@ -61,8 +62,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       setSuggestions(data.suggestions || []);
       setShowSuggestions(true);
     } catch (error) {
-      console.error('Error fetching suggestions:', error);
+      console.warn('Autocomplete service unavailable:', error);
+      // For now, just show empty suggestions when autocomplete fails
+      // Could implement a fallback here later
       setSuggestions([]);
+      setShowSuggestions(false);
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +80,18 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         onSearch(searchQuery.trim());
       } else {
         // Navigate to the search results page
-        navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        const searchUrl = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
+        
+        // If we're already on the search page, just update the URL
+        if (location.pathname === '/search') {
+          window.history.pushState(null, '', searchUrl);
+          // Dispatch a custom event to notify the SearchResults component
+          window.dispatchEvent(new CustomEvent('searchQueryUpdate', { 
+            detail: { query: searchQuery.trim() } 
+          }));
+        } else {
+          navigate(searchUrl);
+        }
       }
     }
   };
