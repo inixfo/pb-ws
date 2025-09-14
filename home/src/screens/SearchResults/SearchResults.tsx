@@ -5,6 +5,7 @@ import { searchService, productService } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import { HeaderByAnima } from '../ElectronicsStore/sections/HeaderByAnima/HeaderByAnima';
 import { CtaFooterByAnima } from '../ElectronicsStore/sections/CtaFooterByAnima/CtaFooterByAnima';
+import { getProductImageUrl } from '../../utils/imageUtils';
 
 interface Product {
   id: number;
@@ -12,7 +13,9 @@ interface Product {
   slug?: string;
   price: number;
   base_price: number;
-  images: Array<{ image: string; alt_text?: string }>;
+  primary_image?: string;
+  image?: string;
+  images?: Array<{ image: string; alt_text?: string }>;
   category: { id: number; name: string; slug: string };
   brand?: { id: number; name: string; slug: string };
   rating?: number;
@@ -415,10 +418,30 @@ export const SearchResults = (): JSX.Element => {
                   {/* Product Image */}
                   <div className={viewMode === 'list' ? 'w-24 h-24 flex-shrink-0' : 'aspect-square mb-3'}>
                     <img
-                      src={product.images?.[0]?.image || '/placeholder-image.jpg'}
-                      alt={product.images?.[0]?.alt_text || product.name}
+                      src={(() => {
+                        const imageUrl = getProductImageUrl(product, 'medium');
+                        console.log(`[SearchResults] Generated image URL for ${product.name}:`, {
+                          productId: product.id,
+                          primary_image: product.primary_image,
+                          image: product.image,
+                          generatedUrl: imageUrl
+                        });
+                        return imageUrl;
+                      })()}
+                      alt={product.name}
                       className="w-full h-full object-cover rounded-lg"
                       loading="lazy"
+                      onError={(e) => {
+                        console.error(`[SearchResults] Product image failed to load: ${e.currentTarget.src}`);
+                        // Try the direct API image URL as fallback
+                        if (product.primary_image && e.currentTarget.src !== product.primary_image) {
+                          console.log(`[SearchResults] Trying direct primary_image: ${product.primary_image}`);
+                          e.currentTarget.src = product.primary_image;
+                        } else {
+                          console.log('[SearchResults] Using placeholder image');
+                          e.currentTarget.src = '/placeholder-product.png';
+                        }
+                      }}
                     />
                   </div>
 
