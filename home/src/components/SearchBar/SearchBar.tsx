@@ -7,7 +7,13 @@ import { useDebounce } from '../../hooks/useDebounce';
 type SearchSuggestion = {
   type: 'product' | 'category' | 'brand';
   name: string;
-  slug: string;
+  slug?: string;
+  id?: number;
+  price?: number;
+  image?: string;
+  category?: string;
+  brand?: string;
+  url?: string;
 };
 
 interface SearchBarProps {
@@ -99,12 +105,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const handleSuggestionClick = (suggestion: SearchSuggestion) => {
     setShowSuggestions(false);
     
-    if (suggestion.type === 'product') {
-      navigate(`/product/${suggestion.slug}`);
+    if (suggestion.url) {
+      navigate(suggestion.url);
+    } else if (suggestion.type === 'product') {
+      navigate(`/product/${suggestion.slug || suggestion.id}`);
     } else if (suggestion.type === 'category') {
-      navigate(`/catalog/${suggestion.slug}`);
+      navigate(`/catalog/${suggestion.slug || suggestion.id}`);
     } else if (suggestion.type === 'brand') {
-      navigate(`/catalog?brand=${suggestion.slug}`);
+      navigate(`/catalog?brand=${suggestion.slug || suggestion.id}`);
     }
   };
 
@@ -128,32 +136,75 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
       {/* Suggestions dropdown */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+        <div className="absolute z-50 mt-1 w-full bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 max-h-96 overflow-y-auto">
           <ul className="divide-y divide-gray-100">
             {suggestions.map((suggestion, index) => (
               <li
-                key={`${suggestion.type}-${suggestion.slug}-${index}`}
-                className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-gray-800"
+                key={`${suggestion.type}-${suggestion.id || suggestion.slug}-${index}`}
+                className="hover:bg-gray-50 cursor-pointer text-gray-800 transition-colors"
                 onClick={() => handleSuggestionClick(suggestion)}
               >
-                <div className="flex items-center">
-                  {suggestion.type === 'product' && (
-                    <SearchIcon className="w-4 h-4 mr-2 text-gray-400" />
-                  )}
-                  {suggestion.type === 'category' && (
-                    <span className="w-4 h-4 mr-2 text-xs text-gray-500">📁</span>
-                  )}
-                  {suggestion.type === 'brand' && (
-                    <span className="w-4 h-4 mr-2 text-xs text-gray-500">®</span>
-                  )}
-                  <span>
-                    {suggestion.name}
-                    <span className="text-gray-400 text-xs ml-2">
-                      {suggestion.type === 'product' ? 'Product' : 
-                       suggestion.type === 'category' ? 'Category' : 'Brand'}
-                    </span>
-                  </span>
-                </div>
+                {suggestion.type === 'product' ? (
+                  <div className="flex items-center p-3 space-x-3">
+                    {/* Product Image */}
+                    <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
+                      {suggestion.image ? (
+                        <img
+                          src={suggestion.image.startsWith('http') ? suggestion.image : 
+                               suggestion.image.startsWith('/media/') ? `https://phonebay.xyz${suggestion.image}` : 
+                               suggestion.image}
+                          alt={suggestion.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = '/placeholder-product.png';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <SearchIcon className="w-5 h-5 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Product Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">
+                        {suggestion.name}
+                      </div>
+                      {suggestion.brand && (
+                        <div className="text-xs text-gray-500 truncate">
+                          {suggestion.brand}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Price */}
+                    {suggestion.price && (
+                      <div className="flex-shrink-0">
+                        <div className="text-sm font-semibold text-red-600">
+                          ৳{suggestion.price.toLocaleString()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="px-4 py-2">
+                    <div className="flex items-center">
+                      {suggestion.type === 'category' && (
+                        <span className="w-4 h-4 mr-2 text-xs text-gray-500">📁</span>
+                      )}
+                      {suggestion.type === 'brand' && (
+                        <span className="w-4 h-4 mr-2 text-xs text-gray-500">®</span>
+                      )}
+                      <span>
+                        {suggestion.name}
+                        <span className="text-gray-400 text-xs ml-2">
+                          {suggestion.type === 'category' ? 'Category' : 'Brand'}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

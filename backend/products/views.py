@@ -1197,16 +1197,27 @@ def autocomplete(request):
         Q(model_number__istartswith=query)
     )
     
-    products = Product.objects.filter(product_query).filter(is_approved=True).distinct()[:limit]
+    products = Product.objects.filter(product_query).filter(is_approved=True).select_related('brand', 'category').prefetch_related('images').distinct()[:limit]
     
-    # Add product suggestions
+    # Add product suggestions with image and price
     for product in products:
+        # Get primary image
+        primary_image = None
+        if hasattr(product, 'images') and product.images.exists():
+            primary_image = product.images.filter(is_primary=True).first()
+            if not primary_image:
+                primary_image = product.images.first()
+            if primary_image:
+                primary_image = primary_image.image.url if primary_image.image else None
+        
         suggestions.append({
             'type': 'product',
             'id': product.id,
             'name': product.name,
             'category': product.category.name if product.category else '',
             'brand': product.brand.name if product.brand else '',
+            'price': float(product.price) if hasattr(product, 'price') else float(product.base_price),
+            'image': primary_image,
             'url': f'/products/{product.slug}' if product.slug else f'/products/{product.id}'
         })
     
