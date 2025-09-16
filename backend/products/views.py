@@ -1166,124 +1166,52 @@ def advanced_search(request):
 @permission_classes([permissions.AllowAny])
 def autocomplete(request):
     """
-    Endpoint for search autocomplete suggestions with enhanced keyword support
+    Simplified endpoint for search autocomplete suggestions
     """
-    query = request.query_params.get('q', '')
-    limit = int(request.query_params.get('limit', 5))
-    
-    if not query or len(query) < 2:
-        return Response({'suggestions': []})
-    
-    suggestions = []
-    
-    # Get products matching the query prefix or containing keywords
-    keywords = query.lower().split()
-    
-    # Build search query for products using OR logic
-    product_query = Q()
-    for keyword in keywords:
-        product_query |= (
-            Q(name__istartswith=keyword) | 
-            Q(name__icontains=f" {keyword}") |
-            Q(sku__istartswith=keyword) |
-            Q(model_number__istartswith=keyword)
-        )
-    
-    # Also search for complete query
-    product_query |= (
-        Q(name__istartswith=query) | 
-        Q(name__icontains=f" {query}") |
-        Q(sku__istartswith=query) |
-        Q(model_number__istartswith=query)
-    )
-    
-    products = Product.objects.filter(product_query).filter(is_approved=True).select_related('brand', 'category').prefetch_related('images').distinct()[:limit]
-    
-    # Add product suggestions with image and price
-    for product in products:
-        # Get primary image
-        primary_image = None
-        if hasattr(product, 'images') and product.images.exists():
-            primary_image = product.images.filter(is_primary=True).first()
-            if not primary_image:
-                primary_image = product.images.first()
-            if primary_image:
-                primary_image = primary_image.image.url if primary_image.image else None
+    try:
+        query = request.query_params.get('q', '')
+        limit = int(request.query_params.get('limit', 5))
         
-        suggestions.append({
-            'type': 'product',
-            'id': product.id,
-            'name': product.name,
-            'category': product.category.name if product.category else '',
-            'brand': product.brand.name if product.brand else '',
-            'price': float(product.price) if hasattr(product, 'price') else float(product.base_price),
-            'image': primary_image,
-            'url': f'/products/{product.slug}' if product.slug else f'/products/{product.id}'
-        })
-    
-    # Get categories matching the query
-    category_query = Q()
-    for keyword in keywords:
-        category_query |= Q(name__icontains=keyword)
-    category_query |= Q(name__istartswith=query)
-    
-    categories = Category.objects.filter(category_query)[:3]
-    
-    # Add category suggestions
-    for category in categories:
-        suggestions.append({
-            'type': 'category',
-            'id': category.id,
-            'name': category.name,
-            'url': f'/catalog/{category.slug}' if category.slug else f'/catalog/{category.id}'
-        })
-    
-    # Get brands matching the query
-    brand_query = Q()
-    for keyword in keywords:
-        brand_query |= Q(name__icontains=keyword)
-    brand_query |= Q(name__istartswith=query)
-    
-    brands = Brand.objects.filter(brand_query)[:3]
-    
-    # Add brand suggestions
-    for brand in brands:
-        suggestions.append({
-            'type': 'brand',
-            'id': brand.id,
-            'name': brand.name,
-            'url': f'/catalog?brand={brand.slug}' if brand.slug else f'/catalog?brand={brand.id}'
-        })
-    
-    # Add common search terms based on keywords
-    common_terms = []
-    for keyword in keywords:
-        if len(keyword) >= 3:
-            # Find products that contain this keyword in specifications
-            spec_products = Product.objects.filter(
-                specifications__icontains=keyword
-            ).filter(is_approved=True).distinct()[:2]
+        if not query or len(query) < 2:
+            return Response({'suggestions': []})
+        
+        suggestions = []
+        
+        # Simple product search - focus on name only to avoid complex queries
+        products = Product.objects.filter(
+            Q(name__icontains=query) | Q(name__istartswith=query)
+        ).filter(is_approved=True).select_related('brand', 'category')[:limit]
+        
+        # Add product suggestions with basic info
+        for product in products:
+            # Get price safely - use base_price only to avoid variations complexity
+            try:
+                product_price = float(product.base_price)
+            except:
+                product_price = 0.0
             
-            for product in spec_products:
-                # Extract relevant specification values
-                if product.specifications:
-                    for key, value in product.specifications.items():
-                        if isinstance(value, str) and keyword.lower() in value.lower():
-                            common_terms.append({
-                                'type': 'keyword',
-                                'name': f"{key}: {value}",
-                                'url': f'/catalog?search={quote(keyword)}'
-                            })
-                            break
-    
-    # Add unique common terms
-    unique_terms = []
-    seen_terms = set()
-    for term in common_terms:
-        if term['name'] not in seen_terms:
-            unique_terms.append(term)
-            seen_terms.add(term['name'])
-    
-    suggestions.extend(unique_terms[:2])
-    
-    return Response({'suggestions': suggestions[:limit]})
+            # Get image safely
+            primary_image = None
+            try:
+                first_image = product.images.first()
+                if first_image and first_image.image:
+                    primary_image = first_image.image.url
+            except:
+                pass
+            
+            suggestions.append({
+                'type': 'product',
+                'id': product.id,
+                'name': product.name,
+                'category': product.category.name if product.category else '',
+                'brand': product.brand.name if product.brand else '',
+                'price': product_price,
+                'image': primary_image,
+                'url': f'/products/{product.slug}' if product.slug else f'/products/{product.id}'
+            })
+        
+        return Response({'suggestions': suggestions})
+        
+    except Exception as e:
+        # Return empty suggestions on any error
+        return Response({'suggestions': [], 'error': str(e)})
