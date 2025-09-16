@@ -74,79 +74,74 @@ export const SearchResults = (): JSX.Element => {
     try {
       console.log(`[SearchResults] Performing search for: "${query}", page: ${page}`);
       
-      // TEMPORARY: Skip advanced search, go directly to working API
-      console.log('[SearchResults] 🚀 BYPASSING advanced search, calling working API directly');
       let data;
-      let usedFallback = true; // Always show fallback notice
+      let usedFallback = false;
       
-      // Directly call the working products API
+      // Try advanced search first
       try {
-        console.log('[SearchResults] 🔄 Calling working products API directly...');
-        console.log('[SearchResults] 📋 Direct API params:', {
-          search: query,
+        console.log('[SearchResults] 🚀 Calling advanced search API...');
+        const searchParams = {
+          q: query,
           page,
           page_size: pageSize,
           ordering: sortBy === 'price_low' ? 'base_price' : 
                    sortBy === 'price_high' ? '-base_price' :
                    sortBy === 'newest' ? '-created_at' : 
+                   sortBy === 'relevance' ? 'relevance' :
                    undefined
-        });
-        
-        const directData = await productService.getAll({
-          search: query,
-          page,
-          page_size: pageSize,
-          ordering: sortBy === 'price_low' ? 'base_price' : 
-                   sortBy === 'price_high' ? '-base_price' :
-                   sortBy === 'newest' ? '-created_at' : 
-                   undefined
-        });
-        
-        console.log('[SearchResults] 📦 Direct API data received:', directData);
-        console.log('[SearchResults] 📊 Direct API count:', directData?.count);
-        console.log('[SearchResults] 📊 Direct API results length:', directData?.results?.length);
-        
-        // Transform to expected format
-        data = {
-          results: directData?.results || [],
-          count: directData?.count || 0,
-          did_you_mean: null,
-          suggestions: [],
-          search_id: null,
-          fallback_used: true
         };
         
-        console.log('[SearchResults] ✅ Direct API transformation complete:', {
-          count: data.count,
-          resultsLength: data.results.length,
-          firstResult: data.results[0]?.name
+        console.log('[SearchResults] 📋 Advanced search params:', searchParams);
+        
+        data = await searchService.search(query, searchParams);
+        
+        console.log('[SearchResults] ✅ Advanced search successful:', {
+          count: data?.count,
+          resultsLength: data?.results?.length,
+          firstResult: data?.results?.[0]?.name,
+          didYouMean: data?.did_you_mean,
+          searchId: data?.search_id
         });
         
-      } catch (directError: any) {
-        console.error('[SearchResults] ❌ Direct API call failed');
-        console.error('[SearchResults] 📋 Direct API error details:', {
-          message: directError?.message,
-          status: directError?.status || 'unknown',
-          name: directError?.name || 'Unknown Error',
-          fullError: directError
+      } catch (advancedError: any) {
+        console.warn('[SearchResults] ⚠️ Advanced search failed, trying fallback...', {
+          message: advancedError?.message,
+          status: advancedError?.status
         });
         
-        // Set empty results for now - this shouldn't happen if API is working
-        console.log('[SearchResults] 🔧 Setting empty results due to direct API failure');
-        data = {
-          results: [],
-          count: 0,
-          did_you_mean: null,
-          suggestions: [],
-          search_id: null,
-          fallback_used: true,
-          error: 'Search service temporarily unavailable'
-        };
-      }
-      
-      // Add indicator if fallback was used
-      if (usedFallback && data) {
-        console.log('[SearchResults] 🔄 Using fallback results - Advanced search unavailable');
+        // Fallback to basic product search
+        try {
+          console.log('[SearchResults] 🔄 Calling fallback product API...');
+          const fallbackData = await productService.getAll({
+            search: query,
+            page,
+            page_size: pageSize,
+            ordering: sortBy === 'price_low' ? 'base_price' : 
+                     sortBy === 'price_high' ? '-base_price' :
+                     sortBy === 'newest' ? '-created_at' : 
+                     undefined
+          });
+          
+          // Transform fallback data to match advanced search format
+          data = {
+            results: fallbackData?.results || [],
+            count: fallbackData?.count || 0,
+            did_you_mean: null,
+            suggestions: [],
+            search_id: null,
+            fallback_used: true
+          };
+          
+          usedFallback = true;
+          console.log('[SearchResults] ✅ Fallback search successful:', {
+            count: data.count,
+            resultsLength: data.results.length
+          });
+          
+        } catch (fallbackError: any) {
+          console.error('[SearchResults] ❌ Both advanced and fallback search failed');
+          throw fallbackError;
+        }
       }
 
       console.log('[SearchResults] 🎯 About to set search results:', data);
@@ -347,14 +342,6 @@ export const SearchResults = (): JSX.Element => {
           </div>
         )}
 
-        {/* Fallback Notice */}
-        {searchResults?.fallback_used && !searchResults?.error && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <p className="text-yellow-800 text-sm">
-              <span className="font-semibold">Note:</span> Using basic search (advanced search temporarily unavailable)
-            </p>
-          </div>
-        )}
 
         {/* Error Notice */}
         {searchResults?.error && (
